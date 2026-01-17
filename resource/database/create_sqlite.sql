@@ -1,4 +1,65 @@
 
+-- PRAGMA foreign_keys is required to enforce Foreign Key constraints in SQLite
+PRAGMA foreign_keys = ON;
+
+-- CREATE TABLE TGroup, group codes
+CREATE TABLE "TGroup" (
+   "GroupK" INTEGER NOT NULL
+   ,"FName" VARCHAR(200) NOT NULL
+   ,"FDescription" VARCHAR(250)
+   ,"FLabel" VARCHAR(100)
+   ,"FTable" VARCHAR(200)
+   ,"FMainTable" VARCHAR(200)
+   ,"FSchema" VARCHAR(50)
+   ,CONSTRAINT "PK_TGroup_GroupK" PRIMARY KEY ("GroupK")
+);
+
+-- CREATE TABLE TBaseCode, base code is used to connect codes that has a common meaning.
+CREATE TABLE "TBaseCode" (
+   "BaseCodeK" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL
+   ,"GroupK" INTEGER NOT NULL                                   -- fk to group
+   ,"CreatedD" TEXT
+   ,"UpdateD" TEXT
+   ,"FId" INTEGER                                               -- Id used if there is a need to control numbers
+   ,"FName" VARCHAR(200) NOT NULL
+   ,"FAbbreviation" VARCHAR(100)                                -- Short name for code, could be used when codes are displayed in a breadcrumb trail
+   ,"FDescription" VARCHAR(1000)
+   ,"FRank" INTEGER                                             -- Ranking is for making system easier to work with, maybe you need parents in a tree but just some items are suitable for parents. Select those with codes that has some sort of ranking
+   ,"FIdle" INTEGER DEFAULT 0
+   ,"FDeleted" INTEGER DEFAULT 0
+   ,CONSTRAINT "FK_TBaseCode_GroupK" FOREIGN KEY ("GroupK") REFERENCES "TGroup"("GroupK") ON DELETE CASCADE
+);
+
+CREATE INDEX "I_TBaseCode_GroupK" ON "TBaseCode" ("GroupK");
+
+-- CREATE TABLE TCode, code is used as a lookup table for fields in other tables
+CREATE TABLE "TCode" (
+    "CodeK" INTEGER PRIMARY KEY AUTOINCREMENT
+   ,"GroupK" INTEGER NOT NULL                -- fk to group
+   ,"BaseCodeK" INTEGER                      -- if connected to a common base code
+   ,"SuperK" INTEGER                         -- parent code
+   ,"CreatedD" TEXT
+   ,"UpdateD" TEXT
+   ,"FId" INTEGER                            -- Id used if there is a need to control numbers
+   ,"FName" VARCHAR(200) NOT NULL            -- Name for code
+   ,"FSystemName" VARCHAR(50)                -- Internal system name if needed
+   ,"FAbbreviation" VARCHAR(100)             -- Short name for code, could be used when codes are displayed in a breadcrumb trail
+   ,"FDescription" VARCHAR(250)              -- Describe the code, what is is suppose to be used for
+   ,"FRank" INTEGER                          -- Ranking is for making system easier to work with, maybe you need parents in a tree but just some items are suitable for parents. Select those with codes that has some sort of ranking
+   ,"FNotCompleted" INTEGER DEFAULT 0        -- Record needs more work
+   ,"FIdle" INTEGER DEFAULT 0                -- Code is temporarily suspended
+   ,"FDefault" INTEGER DEFAULT 0             -- Mark code as default, could be us to set this i no other code is selected
+   ,"FDeleted" INTEGER DEFAULT 0             -- deleted but kept in database
+   ,"FInteger0" INTEGER                      -- Custom integer
+   ,"FInteger1" INTEGER                      -- Custom integer
+   ,"FNumber0" REAL                          -- Custom number, could be used for anything that system is used for
+   ,"FText0" VARCHAR(100)                    -- Custom text, used for anything thats appropriate to system
+   ,CONSTRAINT "FK_TCode_GroupK" FOREIGN KEY ("GroupK") REFERENCES "TGroup"("GroupK") ON DELETE CASCADE
+);
+
+CREATE INDEX "I_TCode_GroupK" ON "TCode" ("GroupK");
+
+
 /* Used to group users and other items to a Container entity */
 CREATE TABLE TContainer (
     ContainerK  INTEGER NOT NULL PRIMARY KEY,
