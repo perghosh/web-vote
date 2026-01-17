@@ -2,6 +2,14 @@
 -- PRAGMA foreign_keys is required to enforce Foreign Key constraints in SQLite
 PRAGMA foreign_keys = ON;
 
+-- Each table gets a number
+CREATE TABLE table_number (
+   table_number_k INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+   number INTEGER,
+   name VARCHAR(100) CHECK(length(name) < 100),
+   description VARCHAR(250) CHECK(length(description) < 250)
+);
+
 -- CREATE TABLE TGroup, group codes
 CREATE TABLE "TGroup" (
    "GroupK" INTEGER NOT NULL
