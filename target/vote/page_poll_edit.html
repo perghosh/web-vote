@@ -1,0 +1,166 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+
+PAGE_Initialize - Initialize the page
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+<method name> - <description>
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="css/variables-green.css">
+   <link rel="stylesheet" href="css/elements.css">
+   <style>
+   html { height: 100%; margin: 0; overflow: hidden; padding: 0; }
+
+      body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
+
+      /* 2. THE FIX: Container needs to be a visible card */
+      .page-container {
+         background: white; /* Solid background so the form is readable */
+         padding: 40px;
+         border-radius: 12px;
+         box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+         width: 100%;
+         max-width: 400px; /* Limits width on desktop */
+      }
+
+      /* 3. THE FIX: The Wrapper (Context) */
+      .form-group {
+         position: relative; /* CRITICAL: Anchors the absolute label */
+         margin-bottom: 1.5rem; /* Space between fields */
+      }
+
+      /* Input Styling */
+      .input-control {
+         width: 100%;
+         padding: 14px 12px; /* Slightly more padding for aesthetics */
+         border: 2px solid var(--color-border);
+         border-radius: 6px;
+         font-size: 1rem;
+         background: var(--background-input); /* Must match label background */
+         color: var(--color-text);
+         transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      /* Label Styling (Floating Logic) */
+      .floating-label {
+         position: absolute;
+         left: 12px;
+         top: 14px; /* Matches input padding top */
+         color: var(--color-muted);
+         pointer-events: none; /* Allows clicking through label to input */
+         transition: 0.2s ease all;
+         background-color: var(--background-input); /* Masks the border line */
+         padding: 0 4px;
+         font-weight: normal;
+      }
+
+      /* Float label when input is focused OR has content (not placeholder) */
+      .input-control:focus ~ .floating-label,
+      .input-control:not(:placeholder-shown) ~ .floating-label {
+         top: -10px; /* Moves up */
+         font-size: 0.8rem;
+         color: var(--background-primary); /* Uses your green variable */
+         font-weight: bold;
+      }
+
+      /* Focus Ring */
+      .input-control:focus {
+         outline: none;
+         border-color: var(--background-primary);
+         box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2); /* Subtle green glow */
+      }
+
+      /* Help Text */
+      .help-text {
+         display: block;
+         color: var(--color-muted);
+         font-size: 0.8rem;
+         margin-top: 5px;
+         margin-left: 2px;
+      }
+   </style>
+</head>
+<body>
+   <div class="page-container">
+      <form>
+         <div class="form-group">
+            <input type="text" id="idName" class="input-control" placeholder=" ">
+            <label for="idName" class="floating-label">Name</label>
+         </div>
+
+         <div class="form-group">
+            <input type="text" id="idHeader" class="input-control" placeholder=" ">
+            <label for="idHeader" class="floating-label">Header</label>
+         </div>
+
+         <div class="form-group">
+            <textarea id="idDescription" class="input-control" placeholder=" "></textarea>
+            <label for="idDescription" class="floating-label">Description</label>
+         </div>
+
+      </form>
+   </div>
+
+   <script>
+   let oDocument_g;
+
+   /** --------------------------------------------------------------------- @API [tag: initialize]
+    * Main initialization function that initializes the page
+    */
+   function PAGE_Initialize() {
+      oDocument_g = new CDocument({});
+
+      // ## Start idle timer - call PAGE_OnIdle() once per second
+      CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+   }
+
+    /** --------------------------------------------------------------------- @API [tag: onidle]
+     * Handles idle state by updating UI elements and checking for changes
+     */
+    const PAGE_OnIdle = (function() {
+      var bLastModified = false;
+
+      return function() {
+         const bModified = oDocument_g.IsModified();
+
+         if( bModified !== bLastModified ) {
+
+            // TODO: Update UI elements based on modified status
+
+            bLastModified = bModified;
+         }
+      }
+   })();
+
+   // Start page initialization -----------------------------------------------
+   document.addEventListener('DOMContentLoaded', function() {
+      PAGE_Initialize();                                                      // Initialize page
+   });
+
+
+   // TODO: CDocumnt is used to manage data, this needs to be implemented
+
+   class CDocument {
+
+      static iIdleTimerId_s = null; // Global timer ID for idle callback
+
+      constructor( oOptions = {} ) {
+         this.bModified = false; // Initialize modified flag to false
+      }
+
+      // Check if document has been modified ------------------------------
+      IsModified() { return this.bModified; }
+      // Set modified flag to true or false -------------------------------
+      SetModified(bModified) { this.bModified = bModified; }
+
+   }
+
+   </script>
+</body>
+</html>
