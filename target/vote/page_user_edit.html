@@ -52,24 +52,11 @@
                     <span>Username</span>
                 </label>
             </div>
-
-            <!-- Duplicate form example - NO ID conflicts! -->
-            <div style="margin-top: 40px; border-top: 1px solid #e0e0e0; padding-top: 20px;">
-                <h4 style="margin-bottom: 15px; color: #666;">Second Form (Duplicate):</h4>
-                <div class="group">
-                    <label class="floating">
-                        <input type="text" placeholder=" ">
-                        <span>Password</span>
-                    </label>
-                </div>
-                <div class="group">
-                    <label class="floating">
-                        <input type="text" placeholder=" ">
-                        <span>Username</span>
-                    </label>
-                </div>
-            </div>
         </form>
+
+        <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 300px;">
+        </form>
+
     </div>
 
     <script>
@@ -80,7 +67,45 @@
 
         function PAGE_initialize() {
             console.log('Initializing login page...');
+            const eForm = document.getElementById('idUser');
+            if (eForm) {
+                PAGE_GenerateEditFields(eForm, aEditField);
+            }
         }
+
+        const aEditField = [
+           { label: "User name", description: "Name for user in system", field: "FName", type: "string", required: true },
+           { label: "Email", description: "Email for user in system", field: "FMail", type: "string", required: true },
+           { label: "Password", description: "Password for user in system", field: "FPassword", type: "string", required: true, input: "password", pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$" },
+           { label: "Display Name", description: "Name for user in system", field: "FDisplayName", type: "string" },
+           { label: "Login name", description: "Login name for user in system", field: "FLoginName", type: "string" }
+        ];
+
+        function PAGE_GenerateEditFields( eContainer, aEditField ) {
+            aEditField.forEach(oField => {
+                const div = document.createElement('div');
+                div.className = 'group';
+                div.style.marginTop = '20px';
+
+                const label = document.createElement('label');
+                label.className = 'floating';
+
+                const eInput = document.createElement('input');
+                eInput.type = oField.input || 'text';
+                eInput.placeholder = ' ';
+                eInput.required = oField.required;
+                eInput.pattern = oField.pattern;
+
+                const eSpan = document.createElement('span');
+                eSpan.textContent = oField.label;
+
+                label.appendChild(eInput);
+                label.appendChild(eSpan);
+                div.appendChild(label);
+                eContainer.appendChild(div);
+            });
+        }
+
     </script>
 </body>
 </html>
