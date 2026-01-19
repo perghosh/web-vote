@@ -3,110 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/variables-green.css">
+    <link rel="stylesheet" href="css/variables-corporate-blue.css">
     <link rel="stylesheet" href="css/elements.css">
+    <link rel="stylesheet" href="css/input-effects.css">
     <title>Login - Web Vote</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
 
-        /* 2. THE FIX: Container needs to be a visible card */
+        body {
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Container needs to be a visible card */
         .page-container {
-            background: white; /* Solid background so the form is readable */
+            background: white;
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             width: 100%;
-            max-width: 400px; /* Limits width on desktop */
-        }
-
-        /* 3. THE FIX: The Wrapper (Context) */
-        .form-group {
-            position: relative; /* CRITICAL: Anchors the absolute label */
-            margin-bottom: 1.5rem; /* Space between fields */
-        }
-
-        /* Input Styling */
-        .input-control {
-            width: 100%;
-            padding: 14px 12px; /* Slightly more padding for aesthetics */
-            border: 2px solid var(--color-border);
-            border-radius: 6px;
-            font-size: 1rem;
-            background: var(--background-input); /* Must match label background */
-            color: var(--color-text);
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        /* Label Styling (Floating Logic) */
-        .floating-label {
-            position: absolute;
-            left: 12px;
-            top: 14px; /* Matches input padding top */
-            color: var(--color-muted);
-            pointer-events: none; /* Allows clicking through label to input */
-            transition: 0.2s ease all;
-            background-color: var(--background-input); /* Masks the border line */
-            padding: 0 4px;
-            font-weight: normal;
-        }
-
-        /* Float label when input is focused OR has content (not placeholder) */
-        .input-control:focus ~ .floating-label,
-        .input-control:not(:placeholder-shown) ~ .floating-label {
-            top: -10px; /* Moves up */
-            font-size: 0.8rem;
-            color: var(--background-primary); /* Uses your green variable */
-            font-weight: bold;
-        }
-
-        /* Focus Ring */
-        .input-control:focus {
-            outline: none;
-            border-color: var(--background-primary);
-            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2); /* Subtle green glow */
-        }
-
-        /* Help Text */
-        .help-text {
-            display: block;
-            color: var(--color-muted);
-            font-size: 0.8rem;
-            margin-top: 5px;
-            margin-left: 2px;
+            max-width: 400px;
         }
     </style>
 </head>
 <body>
     <div class="page-container">
-       <!-- Sample #1 -->
-       <form onsubmit="event.preventDefault();" style="width: 300px;">
-          <!-- 4. THE FIX: Wrap input and label in .form-group -->
-          <div class="form-group">
-              <!-- placeholder=" " is a required hack for the :placeholder-shown CSS trick -->
-              <input type="text" id="password" class="input-control" placeholder=" ">
-              <label for="password" class="floating-label">Password</label>
-          </div>
+        <!-- Sample #1 -->
+        <form class="container-form" onsubmit="event.preventDefault();" style="width: 300px;">
+            <!-- Input nested inside label - NO IDs needed! -->
+            <div class="group">
+                <label class="floating">
+                    <input type="text" placeholder=" ">
+                    <span>Password</span>
+                </label>
+            </div>
 
-          <div class="help-text" style="text-align: center;">Must contain at least one special character.</div>
+            <div class="help-text" style="text-align: center;">Must contain at least one special character.</div>
 
-          <!-- Example of a second field to show interaction -->
-          <div class="form-group" style="margin-top: 20px;">
-            <input type="text" id="username" class="input-control" placeholder=" ">
-            <label for="username" class="floating-label">Username</label>
-          </div>
+            <!-- Example of a second field to show interaction -->
+            <div class="group" style="margin-top: 20px;">
+                <label class="floating">
+                    <input type="text" placeholder=" ">
+                    <span>Username</span>
+                </label>
+            </div>
 
-       </form>
+            <!-- Duplicate form example - NO ID conflicts! -->
+            <div style="margin-top: 40px; border-top: 1px solid #e0e0e0; padding-top: 20px;">
+                <h4 style="margin-bottom: 15px; color: #666;">Second Form (Duplicate):</h4>
+                <div class="group">
+                    <label class="floating">
+                        <input type="text" placeholder=" ">
+                        <span>Password</span>
+                    </label>
+                </div>
+                <div class="group">
+                    <label class="floating">
+                        <input type="text" placeholder=" ">
+                        <span>Username</span>
+                    </label>
+                </div>
+            </div>
+        </form>
     </div>
 
     <script>
-        // Event listener that starts when the page is fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Login page loaded successfully!');
             PAGE_initialize();
         });
 
-        // Separate initialization function
         function PAGE_initialize() {
             console.log('Initializing login page...');
         }

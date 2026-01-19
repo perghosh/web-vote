@@ -65,6 +65,9 @@
    /* Muted Text */
    --color-muted: #64748b;
 
+   /* Background Form */
+   --background-form: #ffffff;
+
    /* Inputs */
    --background-input: #ffffff;
    --color-input: #334155;

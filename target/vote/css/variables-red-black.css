@@ -67,6 +67,9 @@
    /* Muted Text: For subtitles, dates, placeholder text */
    --color-muted: #6c757d;
 
+   /* Background Form */
+   --background-form: #ffffff;
+
    /* Inputs: Background for text boxes */
    --background-input: #ffffff;
    --color-input: #333333;

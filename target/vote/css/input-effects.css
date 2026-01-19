@@ -1,0 +1,30 @@
+   .container-form { background: var(--background-form); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 20px; }
+
+   /* Container-scoped simplified classes */
+   .container-form .group { margin-bottom: 1.5rem; position: relative; }
+
+   /* Floating label */
+   .container-form .floating { display: block; position: relative; }
+
+   /* Input Styling */
+   .container-form .floating input { background: var(--background-input); border: 2px solid var(--color-border); border-radius: 6px; color: var(--color-text); display: block; font-size: 1rem; padding: 14px 12px; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; }
+
+   /* The floating label text - base (non-floating) state */
+   .container-form .floating span { background-color: var(--background-input); color: var(--color-muted); font-weight: normal; left: 12px; padding: 0 4px; pointer-events: none; position: absolute; top: 50%; transform: translateY(-50%); transition: 0.2s ease all; white-space: nowrap; }
+
+   /* Float label when input is focused OR has content (not showing placeholder) */
+   .container-form .floating:focus-within span,
+   .container-form .floating:not(:has(input:placeholder-shown)) span { color: var(--background-primary); font-size: 0.8rem; font-weight: bold; top: -10px; transform: translateY(0); }
+
+   /* Focus Ring */
+   .container-form .floating input:focus { border-color: var(--background-primary); box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2); outline: none; }
+
+   /* Help Text */
+   .container-form .help-text { color: var(--color-muted); display: block; font-size: 0.8rem; margin-left: 2px; margin-top: 5px; }
+
+   /* Fallback for browsers without :has() support */
+   @supports not (selector(:has(*))) {
+      .container-form .floating span {
+            transition: 0.2s ease all;
+      }
+   }

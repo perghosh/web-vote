@@ -68,6 +68,10 @@
    /* Muted Text: For subtitles and dates */
    --color-muted: #8a7e75;
 
+   /* Background Form */
+   --background-form: #ffffff;
+
+
    /* Inputs: Standard clean inputs */
    --background-input: #ffffff;
    --color-input: #333333;

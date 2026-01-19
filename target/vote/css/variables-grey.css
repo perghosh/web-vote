@@ -70,6 +70,9 @@
    /* Muted Text: For subtitles */
    --color-muted: #94a3b8;
 
+   /* Background Form */
+   --background-form: #ffffff;
+
    /* Inputs: Clean */
    --background-input: #ffffff;
    --color-input: #334155;
