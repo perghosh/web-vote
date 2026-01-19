@@ -1,0 +1,84 @@
+/*
+
+## base classes
+
+1. primary
+2. secondary
+3. success
+4. danger
+5. warning
+6. info
+7. light
+8. dark
+*/
+
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #000000;
+   --background-body: #ffffff;
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Cream */
+   --color-primary: #000000;
+   --background-primary: #fefae0;
+   --background-primary-hover: #e6d5bc;
+
+   /* Secondary: Warm Brown */
+   --color-secondary: #000000;
+   --background-secondary: #dda15e;
+   --background-secondary-hover: #c48b4a;
+
+   /* Success: Olive Green */
+   --color-success: #ffffff;
+   --background-success: #606c38;
+   --background-success-hover: #4a5528;
+
+   /* Danger: Warm Red */
+   --color-danger: #ffffff;
+   --background-danger: #bc4749;
+   --background-danger-hover: #9a3538;
+
+   /* Warning: Golden Brown */
+   --color-warning: #ffffff;
+   --background-warning: #dda15e;
+   --background-warning-hover: #c48b4a;
+
+   /* Info: Muted Blue */
+   --color-info: #ffffff;
+   --background-info: #598392;
+   --background-info-hover: #456875;
+
+   /* Light */
+   --color-light: #000000;
+   --background-light: #fefae0;
+   --background-light-hover: #e6d5bc;
+
+   /* Dark */
+   --color-dark: #ffffff;
+   --background-dark: #283618;
+   --background-dark-hover: #1a2310;
+
+   /* Borders */
+   --color-border: #e6d5bc;
+   --color-border-dark: #606c38;
+
+   /* Muted Text */
+   --color-muted: #6b7280;
+
+   /* Inputs */
+   --background-input: #ffffff;
+   --color-input: #000000;
+
+   /* Links: Matching Brown/Golden Theme */
+   --color-link: #bc6c25;
+   --color-link-hover: #9a551c;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #dda15e;
+   --color-active: #000000;
+
+   --background-disabled: #e6d5bc;
+   --color-disabled: #94a3b8;
+}

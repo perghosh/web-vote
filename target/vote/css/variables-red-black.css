@@ -1,0 +1,85 @@
+
+/*
+## base classes
+
+1. **primary**
+2. **secondary**
+3. **success**
+4. **danger**
+5. **warning**
+6. **info**
+7. **light**
+8. **dark**
+*/
+
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #333333; /* Dark gray is softer than pure black for reading */
+   --background-body: #ffffff; /* White background */
+
+   /* --- THEME COLORS (Your Red/Black/Gold Vibe) --- */
+
+   /* Primary: Dark Gray (Main Action) */
+   --color-primary: #ffffff;
+   --background-primary: #1a1a1a;
+   --background-primary-hover: #333333; /* Added Hover */
+
+   /* Secondary: Deep Red (Secondary Action) */
+   --color-secondary: #ffffff;
+   --background-secondary: #590000;
+   --background-secondary-hover: #7a0000; /* Added Hover */
+
+   /* Success: Green (Standard for success messages) */
+   --color-success: #ffffff;
+   --background-success: #28a745;
+   --background-success-hover: #218838;
+
+   /* Danger: Red (Standard for errors/delete) */
+   --color-danger: #ffffff;
+   --background-danger: #b22222;
+   --background-danger-hover: #8b1a1a;
+
+   /* Warning: Gold/Amber (Standard for warnings) */
+   --color-warning: #333333;
+   --background-warning: #f0ad4e;
+   --background-warning-hover: #ec971f;
+
+   /* Info: Blue (Standard for info) */
+   --color-info: #ffffff;
+   --background-info: #0275d8;
+   --background-info-hover: #025aa5;
+
+   /* Light: Used for subtle backgrounds or disabled buttons */
+   --color-light: #333333; /* Changed from White to Dark Gray for contrast */
+   --background-light: #eeeeee;
+   --background-light-hover: #e0e0e0;
+
+   /* Dark: Used for heavy emphasis or footers */
+   --color-dark: #ffffff; /* Changed from Dark Gray to White for contrast */
+   --background-dark: #000000;
+   --background-dark-hover: #222222;
+
+  /* Borders: For inputs, cards, dividers */
+   --color-border: #dddddd;
+   --color-border-dark: #444444; /* Darker border for dark themes */
+
+   /* Muted Text: For subtitles, dates, placeholder text */
+   --color-muted: #6c757d;
+
+   /* Inputs: Background for text boxes */
+   --background-input: #ffffff;
+   --color-input: #333333;
+
+   /* Link Color: Standard clickable links */
+   --color-link: #590000; /* Using your secondary red as the link color */
+   --color-link-hover: #330000;
+
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #590000;
+   --color-active: #ffffff;
+
+   --background-disabled: #e9ecef;
+   --color-disabled: #6c757d;
+}

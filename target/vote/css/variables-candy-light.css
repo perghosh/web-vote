@@ -1,0 +1,85 @@
+
+/*
+
+## base classes
+
+1. **primary**
+2. **secondary**
+3. **success**
+4. **danger**
+5. **warning**
+6. **info**
+7. **light**
+8. **dark**
+*/
+
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #334155; /* Soft charcoal for reading */
+   --background-body: #ffffff;
+
+   /* --- THEME COLORS (Soft Pastel / "Macaron" Palette) --- */
+
+   /* Primary: Soft Sky Blue */
+   --color-primary: #1e3a8a; /* Dark blue text */
+   --background-primary: #dbeafe; /* Light blue bg */
+   --background-primary-hover: #bfdbfe; /* Slightly darker on hover */
+
+   /* Secondary: Soft Mint/Teal */
+   --color-secondary: #0f766e; /* Dark teal text */
+   --background-secondary: #ccfbf1; /* Light teal bg */
+   --background-secondary-hover: #99f6e4;
+
+   /* Success: Soft Green (Fixed from Yellow) */
+   --color-success: #14532d; /* Dark green text */
+   --background-success: #dcfce7; /* Light green bg */
+   --background-success-hover: #bbf7d0;
+
+   /* Danger: Soft Pink/Red (Fixed from Orange) */
+   --color-danger: #7f1d1d; /* Dark red text */
+   --background-danger: #fee2e2; /* Light pink bg */
+   --background-danger-hover: #fecaca;
+
+   /* Warning: Soft Amber/Orange (Fixed from Pink) */
+   --color-warning: #78350f; /* Dark brown text */
+   --background-warning: #fef3c7; /* Light yellow bg */
+   --background-warning-hover: #fde68a;
+
+   /* Info: Soft Lavender/Purple */
+   --color-info: #312e81; /* Dark purple text */
+   --background-info: #e0e7ff; /* Light purple bg */
+   --background-info-hover: #c7d2fe;
+
+   /* Light: Almost White */
+   --color-light: #334155;
+   --background-light: #f8fafc;
+   --background-light-hover: #f1f5f9;
+
+   /* Dark: Charcoal (Softer than pure black) */
+   --color-dark: #ffffff;
+   --background-dark: #1e293b;
+   --background-dark-hover: #0f172a;
+
+   /* Borders: Subtle grey-blue to match the pastel vibe */
+   --color-border: #e2e8f0;
+   --color-border-dark: #cbd5e1;
+
+   /* Muted Text */
+   --color-muted: #94a3b8;
+
+   /* Inputs */
+   --background-input: #ffffff;
+   --color-input: #334155;
+
+   /* Links: Matching the Primary Blue */
+   --color-link: #1e3a8a;
+   --color-link-hover: #1e40af;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #dbeafe;
+   --color-active: #1e3a8a;
+
+   --background-disabled: #f1f5f9;
+   --color-disabled: #cbd5e1;
+}
