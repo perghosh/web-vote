@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="css/variables-corporate-blue.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
+    <script src="js/gd_browser.js"></script>
     <title>Login - Web Vote</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,15 +28,15 @@
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             width: 100%;
-            max-width: 400px;
+            max-width: 800px;
         }
     </style>
 </head>
 <body>
-    <div class="page-container">
+    <div id="idPage" class="page-container" data-section="container">
         <!-- Sample #1 -->
+        <!--
         <form class="container-form" onsubmit="event.preventDefault();" style="width: 300px;">
-            <!-- Input nested inside label - NO IDs needed! -->
             <div class="group">
                 <label class="floating">
                     <input type="text" placeholder=" ">
@@ -45,7 +46,6 @@
 
             <div class="help-text" style="text-align: center;">Must contain at least one special character.</div>
 
-            <!-- Example of a second field to show interaction -->
             <div class="group" style="margin-top: 20px;">
                 <label class="floating">
                     <input type="text" placeholder=" ">
@@ -53,8 +53,15 @@
                 </label>
             </div>
         </form>
+        -->
 
-        <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 300px;">
+        <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;">
+           <div data-section="field"></div>
+           <div class="row" data-section="command" style="justify-content: flex-end;">
+               <button class="button" data-action="add">Save as new user</button>
+               <button class="button" data-action="update">Update</button>
+               <button class="button" data-action="delete">Delete</button>
+           </div>
         </form>
 
     </div>
@@ -67,13 +74,20 @@
 
         function PAGE_initialize() {
             console.log('Initializing login page...');
-            const eForm = document.getElementById('idUser');
-            if (eForm) {
-                PAGE_GenerateEditFields(eForm, aEditField);
-            }
+            const eForm = document.getElementById('idUser').querySelector('div[data-section="field"]');
+            PAGE_GenerateEditFields(eForm, aEditField);
+
+            // ## Prepare base url ............................................
+            const sBaseUrl = gd.GetBaseUrl();
+            gd.SetBaseUrl(sBaseUrl);
+
+            // ## Set listeners ..............................................
+            PAGE_SetListeners();
+
         }
 
         const aEditField = [
+           { label: "Alias", description: "Alias for user in system", field: "FAlias", type: "string", required: true },
            { label: "User name", description: "Name for user in system", field: "FName", type: "string", required: true },
            { label: "Email", description: "Email for user in system", field: "FMail", type: "string", required: true },
            { label: "Password", description: "Password for user in system", field: "FPassword", type: "string", required: true, input: "password", pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$" },
@@ -94,7 +108,11 @@
                 eInput.type = oField.input || 'text';
                 eInput.placeholder = ' ';
                 eInput.required = oField.required;
-                eInput.pattern = oField.pattern;
+                //if( oField.pattern ) { eInput.pattern = oField.pattern; }
+                eInput.dataset.field = oField.field;
+
+                // generate random value
+                eInput.value = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
                 const eSpan = document.createElement('span');
                 eSpan.textContent = oField.label;
@@ -106,6 +124,117 @@
             });
         }
 
+      /** --------------------------------------------------------------------- @API [tag: event, command]
+      * Configure page listeners, handle page specific events
+      */
+      function PAGE_SetListeners() {
+
+         // ## Initialize page work area listener .............................
+
+         const eUserContainer = document.getElementById('idUser');
+         eUserContainer.addEventListener("click", function(e_) {
+            const eTarget = e_.target;
+            if(!eTarget.dataset.action) return;                             // If no action is defined, return
+            e_.stopPropagation();
+            const eContainer = eTarget.closest('[data-section="container"]');
+
+            // ## Collect values from elements with attribute 'data-field'
+            const aFields = eContainer.querySelectorAll('[data-field]');
+            const oFields = {};
+            aFields.forEach(function(eField) {
+               const sField = eField.dataset.field;
+               const sValue = eField.value;
+               oFields[sField] = sValue;
+            });
+
+            const sAction = eTarget.dataset.action;
+            switch(sAction) {
+               case "add": {                                                 // send command to wed server
+                  const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName})";
+                  const sValues = JSON.stringify(oFields);
+                  const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}`;
+                  gd.SendToServer("", "!db/insert", sArguments).then(function(oResult) {
+                     PAGE_ProcessResponse(oResult);
+                  });
+
+                  alert(sResult);
+                  //SERVER_Send(sEndpoint, sEndpoint64).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
+               } break;
+               case "keep": {                                                  // save command
+               } break;
+               default:
+                  console.error("Unknown action:", sAction);
+            }
+         });
+      }
+
+      /** ---------------------------------------------------------------------
+       * Handle response data from server and display it in the container
+       *
+       * Response data format is { type: <format>, data: <data> } and type can be any of
+       * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
+       *
+       * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+       */
+      function PAGE_ProcessResponse(oData) {
+         let sResult = '';
+         switch(oData.type) {
+            case 'json':
+               sResult = JSON.stringify(oData.data, null, 2);
+               break;
+            case 'xml':
+               // If oData.data is an XML Document object, serialize it to string
+               if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+                  sResult = (new XMLSerializer()).serializeToString(oData.data);
+               } else {
+                  // If it's already a string, use it directly
+                  sResult = oData.data;
+               }
+               break;
+            case 'text':
+               sResult = oData.data;
+               break;
+            default:
+               console.error("Unknown response type:", oData.type);
+         }
+
+         alert(sResult);
+      }
+
+
+
+      /** --------------------------------------------------------------------- @API [tag: onidle]
+      * Handles idle state by updating UI elements and checking for changes
+      */
+      const PAGE_OnIdle = (function() {
+         var bLastModified = false;
+
+         return function() {
+            const bModified = oDocument_g.IsModified();
+
+            if( bModified !== bLastModified ) {
+
+               // TODO: Update UI elements based on modified status
+
+               bLastModified = bModified;
+            }
+         }
+      })();
+
+
+      class CDocument {
+
+         static iIdleTimerId_s = null; // Global timer ID for idle callback
+
+         constructor( oOptions = {} ) {
+            this.bModified = false; // Initialize modified flag to false
+         }
+
+         // Check if document has been modified ------------------------------
+         IsModified() { return this.bModified; }
+         // Set modified flag to true or false -------------------------------
+         SetModified(bModified) { this.bModified = bModified; }
+      }
     </script>
 </body>
 </html>

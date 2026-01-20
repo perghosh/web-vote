@@ -1,5 +1,20 @@
 .container-form { background: var(--background-form); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 20px; }
 
+.container-form .row { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
+.container-form .row:last-child { margin-bottom: 0; } /* to align last item to bottom */
+.container-form .rows { margin-bottom: 16px; }
+
+.container-form .fill {flex: 1;} /* makes select fill available width */
+.container-form .half { flex: 1; max-width: 50%; }
+.container-form .third { flex: 1; max-width: 33.33%; }
+.container-form .quarter { flex: 1; max-width: 25%; }
+
+.container-form .right { justify-content: flex-end; }
+
+.container-form .button { background-color: var(--background-primary); border-radius: 4px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; }
+
+
+
 /* Container-scoped simplified classes */
 .container-form .group { margin-bottom: 1.5rem; position: relative; }
 
