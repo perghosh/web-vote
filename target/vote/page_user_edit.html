@@ -153,7 +153,7 @@
                   const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName})";
                   const sValues = JSON.stringify(oFields);
                   const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}`;
-                  gd.SendToServer("", "!db/insert", sArguments).then(function(oResult) {
+                  gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
                      PAGE_ProcessResponse(oResult);
                   });
 
