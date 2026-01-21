@@ -17,24 +17,14 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    <link rel="stylesheet" href="css/input-effects.css">
    <script src="js/gd_browser.js"></script>
    <style>
-   html { height: 100%; margin: 0; overflow: hidden; padding: 0; }
+   * { box-sizing: border-box; margin: 0; padding: 0; }
+   body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
 
-      body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
-
-      /* Container needs to be a visible card */
-      .page-container {
-         background: white;
-         padding: 40px;
-         border-radius: 12px;
-         box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-         width: 100%;
-         max-width: 400px;
-      }
    </style>
 </head>
 <body>
    <div id="idContainer" class="page-container">
-      <form id="idForm" class="container-form" onsubmit="event.preventDefault();">
+      <form id="idForm" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;">
          <div class="group">
             <label class="floating">
                <input type="text" placeholder=" " data-field="FName">
