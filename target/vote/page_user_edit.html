@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="css/variables-corporate-blue.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
+    <script src="js/gd_ui_toast.js"></script>
     <script src="js/gd_browser.js"></script>
     <title>Login - Web Vote</title>
     <style>
@@ -150,10 +151,11 @@
             const sAction = eTarget.dataset.action;
             switch(sAction) {
                case "add": {                                                 // send command to wed server
-                  const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName})";
+                  const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK";
+                  const sSelect = "SELECT FAlias FROM TUser WHERE UserK = {::key}";
                   const sValues = JSON.stringify(oFields);
-                  const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}`;
-                  gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
+                  const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}` + "\n" + `query=${sSelect}`;
+                  gd.SendToServer("", "!db/insert/select?echo=user", sArguments).then(function(oResult) {
                      PAGE_ProcessResponse(oResult);
                   });
 
