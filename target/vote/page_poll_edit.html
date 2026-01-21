@@ -34,7 +34,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 </head>
 <body>
    <div id="idContainer" class="page-container">
-      <form id="idForm" class="container-form">
+      <form id="idForm" class="container-form" onsubmit="event.preventDefault();">
          <div class="group">
             <label class="floating">
                <input type="text" placeholder=" " data-field="FName">
@@ -65,6 +65,11 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
    <script>
    let oDocument_g;
+
+   // Start page initialization -----------------------------------------------
+   document.addEventListener('DOMContentLoaded', function() {
+      PAGE_Initialize();                                                      // Initialize page
+   });
 
    /** --------------------------------------------------------------------- @API [tag: initialize]
     * Main initialization function that initializes the page
@@ -127,25 +132,54 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                const sValues = JSON.stringify(oFields);
 
                const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}`;
-               
+
                gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
-                  //PAGE_ProcessResponse(oResult);
-                  console.log(oResult);
+                  PAGE_ProcessResponse(oResult);
                });
             } break;
+            default:
+               console.error("Unknown action:", sAction);
          }
 
       });
 
    }
 
-   // Start page initialization -----------------------------------------------
-   document.addEventListener('DOMContentLoaded', function() {
-      PAGE_Initialize();                                                      // Initialize page
-   });
+   /** ---------------------------------------------------------------------
+    * Handle response data from server and display it in the container
+    *
+    * Response data format is { type: <format>, data: <data> } and type can be any of
+    * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
+    *
+    * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+    */
+   function PAGE_ProcessResponse(oData) {
+      let sResult = '';
+      switch(oData.type) {
+         case 'json':
+            sResult = JSON.stringify(oData.data, null, 2);
+            break;
+         case 'xml':
+            // If oData.data is an XML Document object, serialize it to string
+            if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+               sResult = (new XMLSerializer()).serializeToString(oData.data);
+            } else {
+               // If it's already a string, use it directly
+               sResult = oData.data;
+            }
+            break;
+         case 'text':
+            sResult = oData.data;
+            break;
+         default:
+            console.error("Unknown response type:", oData.type);
+      }
+
+      alert(sResult);
+   }
 
 
-   // TODO: CDocumnt is used to manage data, this needs to be implemented
+   // TODO: CDocument is used to manage data, this needs to be implemented
 
    class CDocument {
 
