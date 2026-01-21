@@ -46,8 +46,10 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             </label>
          </div>
 
-         <div class="row">
+         <div class="row" id="idButtons">
             <button class="button" data-action="add">Add</button>
+                                                                              <!--<button class="button" data-action="update">Update</button>
+                                                                                 <button class="button" data-action="delete">Delete</button>-->
          </div>
 
       </form>
@@ -55,6 +57,22 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
    <script>
    let oDocument_g;
+
+   function CreateButtons(eParent)
+   {
+      const eButtonUpdate = document.createElement("button");
+      eButtonUpdate.className = "button";
+      eButtonUpdate.dataset.action = "update";
+      eButtonUpdate.innerHTML = "Update";
+
+      const eButtonDelete = document.createElement("button");
+      eButtonDelete.className = "button";
+      eButtonDelete.dataset.action = "delete";
+      eButtonDelete.innerHTML = "Delete";
+
+      eParent.appendChild(eButtonUpdate);
+      eParent.appendChild(eButtonDelete);
+   }
 
    // Start page initialization -----------------------------------------------
    document.addEventListener('DOMContentLoaded', function() {
@@ -125,6 +143,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
                gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult);
+                  CreateButtons(document.querySelector("#idButtons"));
                });
             } break;
             default:
@@ -151,12 +170,17 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             break;
          case 'xml':
             // If oData.data is an XML Document object, serialize it to string
-            if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+            /*if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
                sResult = (new XMLSerializer()).serializeToString(oData.data);
             } else {
                // If it's already a string, use it directly
                sResult = oData.data;
-            }
+            }*/
+
+            let sValue = JSON.parse(oData.data.querySelector("result").textContent);
+            sResult = sValue.key;
+
+
             break;
          case 'text':
             sResult = oData.data;
