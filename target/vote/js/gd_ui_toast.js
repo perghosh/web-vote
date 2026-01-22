@@ -208,7 +208,7 @@ class UIToast {
       // Apply base styles
       eToast.style.pointerEvents = 'auto';
       eToast.style.position = 'relative';
-      eToast.style.minWidth = '250px';
+      eToast.style.minWidth = oToastOptions.minWidth || '250px';
       eToast.style.maxWidth = '100%';
       eToast.style.padding = '12px 16px';
       eToast.style.backgroundColor = sBackground;
@@ -318,6 +318,7 @@ class UIToast {
          eProgressBar.style.height = '100%';
          eProgressBar.style.width = '100%';
          eProgressBar.style.transition = 'none';
+         eProgressBar.style.backgroundColor = 'currentColor';
 
          eProgress.appendChild(eProgressBar);
          eToast.appendChild(eProgress);
@@ -372,6 +373,7 @@ class UIToast {
     * @param {boolean} [oOptions_.bShowProgress] - Override default progress bar visibility.
     * @param {boolean} [oOptions_.bShowClose] - Override default close button visibility.
     * @param {Function} [oOptions_.fnOnClose] - Callback when toast is closed.
+    * @param {string} [oOptions_.minWidth='250px'] - Minimum width of the toast.
     * @returns {HTMLElement} The toast element.
     */
    Show(sMessage, oOptions_ = {}) {
@@ -409,9 +411,10 @@ class UIToast {
       // Start progress bar animation and auto-dismiss
       if( oToastOptions.iDuration > 0 && oToastOptions.bShowProgress && eToast._progressBar ) {
          // Animate progress bar
+         // Need TWO animation frames to ensure browser sees initial state first
          requestAnimationFrame(() => {
             eToast._progressBar.style.transition = `width ${oToastOptions.iDuration}ms linear`;
-            eToast._progressBar.style.width = '0%';
+            requestAnimationFrame(() => { eToast._progressBar.style.width = '0%'; });
          });
 
          // Set auto-dismiss timeout

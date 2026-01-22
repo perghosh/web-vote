@@ -35,26 +35,6 @@
 </head>
 <body>
     <div id="idPage" class="page-container" data-section="container">
-        <!-- Sample #1 -->
-        <!--
-        <form class="container-form" onsubmit="event.preventDefault();" style="width: 300px;">
-            <div class="group">
-                <label class="floating">
-                    <input type="text" placeholder=" ">
-                    <span>Password</span>
-                </label>
-            </div>
-
-            <div class="help-text" style="text-align: center;">Must contain at least one special character.</div>
-
-            <div class="group" style="margin-top: 20px;">
-                <label class="floating">
-                    <input type="text" placeholder=" ">
-                    <span>Username</span>
-                </label>
-            </div>
-        </form>
-        -->
 
         <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;">
            <div data-section="field"></div>
@@ -68,6 +48,20 @@
     </div>
 
     <script>
+    'use strict';
+
+const aEditField = [
+   { label: "Alias", description: "Alias for user in system", field: "FAlias", type: "string", required: true },
+   { label: "User name", description: "Name for user in system", field: "FName", type: "string", required: true },
+   { label: "Email", description: "Email for user in system", field: "FMail", type: "string", required: true },
+   { label: "Password", description: "Password for user in system", field: "FPassword", type: "string", required: true, input: "password", pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$" },
+   { label: "Display Name", description: "Name for user in system", field: "FDisplayName", type: "string" },
+   { label: "Login name", description: "Login name for user in system", field: "FLoginName", type: "string" }
+];
+
+let oToast_g;
+
+
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Login page loaded successfully!');
             PAGE_initialize();
@@ -75,8 +69,15 @@
 
         function PAGE_initialize() {
             console.log('Initializing login page...');
+
+            // ## Generate input form for user ................................
+
             const eForm = document.getElementById('idUser').querySelector('div[data-section="field"]');
             PAGE_GenerateEditFields(eForm, aEditField);
+
+            // ## Configure toast ............................................
+
+            oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
 
             // ## Prepare base url ............................................
             const sBaseUrl = gd.GetBaseUrl();
@@ -86,15 +87,6 @@
             PAGE_SetListeners();
 
         }
-
-        const aEditField = [
-           { label: "Alias", description: "Alias for user in system", field: "FAlias", type: "string", required: true },
-           { label: "User name", description: "Name for user in system", field: "FName", type: "string", required: true },
-           { label: "Email", description: "Email for user in system", field: "FMail", type: "string", required: true },
-           { label: "Password", description: "Password for user in system", field: "FPassword", type: "string", required: true, input: "password", pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$" },
-           { label: "Display Name", description: "Name for user in system", field: "FDisplayName", type: "string" },
-           { label: "Login name", description: "Login name for user in system", field: "FLoginName", type: "string" }
-        ];
 
         function PAGE_GenerateEditFields( eContainer, aEditField ) {
             aEditField.forEach(oField => {
@@ -152,10 +144,13 @@
             switch(sAction) {
                case "add": {                                                 // send command to wed server
                   const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK";
-                  const sSelect = "SELECT FAlias FROM TUser WHERE UserK = {::key}";
+                  const sSelect = "SELECT * FROM TUser WHERE UserK = x''{::key}''";
                   const sValues = JSON.stringify(oFields);
                   const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}` + "\n" + `query=${sSelect}`;
-                  gd.SendToServer("", "!db/insert/select?echo=user", sArguments).then(function(oResult) {
+
+                  oToast_g.Show('Skickar!');
+
+                  gd.SendToServer("", "!db/insert/ask?echo=user", sArguments).then(function(oResult) {
                      PAGE_ProcessResponse(oResult);
                   });
 
@@ -180,6 +175,8 @@
        */
       function PAGE_ProcessResponse(oData) {
          let sResult = '';
+         let eResults = null; // results element from xml responses with results/result format
+
          switch(oData.type) {
             case 'json':
                sResult = JSON.stringify(oData.data, null, 2);
@@ -187,7 +184,10 @@
             case 'xml':
                // If oData.data is an XML Document object, serialize it to string
                if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
-                  sResult = (new XMLSerializer()).serializeToString(oData.data);
+                  //sResult = (new XMLSerializer()).serializeToString(oData.data);
+
+                  // ## query results element
+                  eResults = oData.data.querySelector('results');
                } else {
                   // If it's already a string, use it directly
                   sResult = oData.data;
@@ -200,7 +200,34 @@
                console.error("Unknown response type:", oData.type);
          }
 
-         alert(sResult);
+         if( eResults ) {
+            // ## get hint
+            //
+            //
+
+
+            const aAsk = eResults.querySelectorAll('result[command="ask"]');
+            const sContent = aAsk[0].textContent;
+
+            // parse content to json object
+            const oContent = JSON.parse(sContent);
+
+            let sMessage = "Användare skapa med alias: " + oContent.FAlias;
+            oToast_g.Show(sMessage, {sType: "info", iDuration: 10000, minWidth: "600px"});
+
+            // Iternate over child items in results
+            //
+            /*
+            for( let i = 0; i < eResults.children.length; i++ ) {
+               let eChild = eResults.children[i];
+               console.log(eChild.tagName, eChild.textContent);
+               const sCommand = eChild.getAttribute("command");
+               console.log(sCommand);
+            }
+            */
+
+         }
+
       }
 
 
