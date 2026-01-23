@@ -111,6 +111,182 @@ class UIToast {
    }
 
    /** -----------------------------------------------------------------------
+    * Show a toast message.
+    * @param {string} sMessage - The message content (can be HTML).
+    * @param {Object} [oOptions_={}] - Options for this specific toast.
+    * @param {string} [oOptions_.sType='primary'] - Toast type.
+    * @param {number} [oOptions_.iDuration] - Override default duration.
+    * @param {boolean} [oOptions_.bShowProgress] - Override default progress bar visibility.
+    * @param {boolean} [oOptions_.bShowClose] - Override default close button visibility.
+    * @param {Function} [oOptions_.fnOnClose] - Callback when toast is closed.
+    * @param {string} [oOptions_.minWidth='250px'] - Minimum width of the toast.
+    * @returns {HTMLElement} The toast element.
+    */
+   Show(sMessage, oOptions_ = {}) {
+      // ## Configure defaults ...............................................
+      const oToastOptions = Object.assign({
+         sType: 'primary',
+         iDuration: this.oOptions.iDuration,
+         bShowProgress: this.oOptions.bShowProgress,
+         bShowClose: this.oOptions.bShowClose,
+         fnOnClose: null
+      }, oOptions_);
+
+      // ## Check if we've exceeded max stack ................................
+      if( this.aToasts.length >= this.oOptions.iMaxStack ) {
+         // Remove oldest toast
+         const eOldestToast = this.aToasts.shift();
+         this._dismiss_toast(eOldestToast, false);
+      }
+
+      // Create toast element
+      const eToast = this._create_toast_element(sMessage, oToastOptions);
+
+      // Add to DOM
+      this.eContainer.appendChild(eToast);
+      this.aToasts.push(eToast);
+
+      // Trigger entry animation
+      requestAnimationFrame(() => {
+         eToast.style.opacity = '1';
+         eToast.style.transform = 'translateY(0)';
+      });
+
+      // Store callbacks and timeout
+      eToast._onClose = oToastOptions.fnOnClose;
+
+      // Start progress bar animation and auto-dismiss
+      if( oToastOptions.iDuration > 0 && oToastOptions.bShowProgress && eToast._progressBar ) {
+         // Animate progress bar
+         // Need TWO animation frames to ensure browser sees initial state first
+         requestAnimationFrame(() => {
+            eToast._progressBar.style.transition = `width ${oToastOptions.iDuration}ms linear`;
+            requestAnimationFrame(() => { eToast._progressBar.style.width = '0%'; });
+         });
+
+         // Set auto-dismiss timeout
+         eToast._timeout = setTimeout(() => {
+            this._dismiss_toast(eToast, true);
+         }, oToastOptions.iDuration);
+      }
+      else if( oToastOptions.iDuration > 0 ) {
+         // Auto-dismiss without progress bar
+         eToast._timeout = setTimeout(() => { this._dismiss_toast(eToast, true); }, oToastOptions.iDuration);
+      }
+
+      return eToast;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Show a success toast (shorthand for Show with type='success').
+    * @param {string} sMessage - The message content.
+    * @param {Object} [oOptions_={}] - Additional toast options.
+    * @returns {HTMLElement} The toast element.
+    */
+   Success(sMessage, oOptions_ = {}) { return this.Show(sMessage, Object.assign({ sType: 'success' }, oOptions_)); }
+
+   /** -----------------------------------------------------------------------
+    * Show an error/danger toast (shorthand for Show with type='danger').
+    * @param {string} sMessage - The message content.
+    * @param {Object} [oOptions_={}] - Additional toast options.
+    * @returns {HTMLElement} The toast element.
+    */
+   Error(sMessage, oOptions_ = {}) { return this.Show(sMessage, Object.assign({ sType: 'danger' }, oOptions_)); }
+
+   /** -----------------------------------------------------------------------
+    * Show a warning toast (shorthand for Show with type='warning').
+    * @param {string} sMessage - The message content.
+    * @param {Object} [oOptions_={}] - Additional toast options.
+    * @returns {HTMLElement} The toast element.
+    */
+   Warning(sMessage, oOptions_ = {}) { return this.Show(sMessage, Object.assign({ sType: 'warning' }, oOptions_)); }
+
+   /** -----------------------------------------------------------------------
+    * Show an info toast (shorthand for Show with type='info').
+    * @param {string} sMessage - The message content.
+    * @param {Object} [oOptions_={}] - Additional toast options.
+    * @returns {HTMLElement} The toast element.
+    */
+   Info(sMessage, oOptions_ = {}) { return this.Show(sMessage, Object.assign({ sType: 'info' }, oOptions_)); }
+
+   /** -----------------------------------------------------------------------
+    * Show an info toast (shorthand for Show with type='info').
+    * @param {string} sMessage - The message content.
+    * @param {Object} [oOptions_={}] - Additional toast options.
+    * @returns {HTMLElement} The toast element.
+    */
+   Info(sMessage, oOptions_ = {}) { return this.Show(sMessage, Object.assign({ sType: 'info' }, oOptions_)); }
+
+   /** -----------------------------------------------------------------------
+    * Dismiss all active toasts immediately.
+    * @param {boolean} bAnimated - Whether to animate the dismissal (default: true).
+    */
+   DismissAll(bAnimated = true) {
+      // Copy array to avoid issues while iterating
+      const aToastsCopy = [...this.aToasts];
+
+      aToastsCopy.forEach(eToast => {
+         if( bAnimated ) {
+            this._dismiss_toast(eToast, false);
+         }
+         else {
+            // Immediate dismissal without animation
+            if( eToast._timeout ) {
+               clearTimeout(eToast._timeout);
+            }
+
+            if( eToast.parentNode ) {
+               eToast.parentNode.removeChild(eToast);
+            }
+
+            if( eToast._onClose && typeof eToast._onClose === 'function' ) {
+               eToast._onClose(false);
+            }
+         }
+      });
+
+      // Clear array
+      this.aToasts = [];
+   }
+
+   /** -----------------------------------------------------------------------
+    * Update the default options for new toasts.
+    * @param {Object} oOptions_ - New default options to apply.
+    */
+   UpdateOptions(oOptions_) {
+      Object.assign(this.oOptions, oOptions_);
+
+      // Re-apply position styles if position changed
+      if( oOptions_.sPosition ) {
+         this._apply_position_styles();
+      }
+   }
+
+   /** -----------------------------------------------------------------------
+    * Get the number of currently active toasts.
+    * @returns {number} Number of active toasts.
+    */
+   GetActiveCount() { return this.aToasts.length; }
+
+   /** -----------------------------------------------------------------------
+    * Destroy the toast manager and clean up all toasts.
+    */
+   Destroy() {
+      // Clear all timeouts and remove toasts
+      this.DismissAll(false);
+
+      // Remove container from DOM
+      if( this.eContainer && this.eContainer.parentNode ) {
+         this.eContainer.parentNode.removeChild(this.eContainer);
+      }
+
+      // Clear references
+      this.aToasts = [];
+      this.eContainer = null;
+      this.eParent = null;
+   }
+
+   /** -----------------------------------------------------------------------
     * Apply position-based styles to container based on position option.
     * @private
     */
@@ -185,6 +361,10 @@ class UIToast {
 
    /** -----------------------------------------------------------------------
     * Create a toast element with content, close button, and progress bar.
+    *
+    * This method creates a toast element with the specified message and options.
+    * It applies the appropriate styles and event listeners to the toast.
+    *
     * @param {string} sMessage - The message content (can be HTML).
     * @param {Object} oToastOptions - Options specific to this toast.
     * @returns {HTMLElement} The toast element.
@@ -205,7 +385,7 @@ class UIToast {
       const sColor = this._get_type_style(sType, 'color');
       const sBackgroundHover = this._get_type_style(sType, 'background-hover');
 
-      // Apply base styles
+      // ## Apply base styles .................................................
       eToast.style.pointerEvents = 'auto';
       eToast.style.position = 'relative';
       eToast.style.minWidth = oToastOptions.minWidth || '250px';
@@ -219,43 +399,38 @@ class UIToast {
       eToast.style.opacity = '0';
       eToast.style.transform = this._get_entry_transform();
 
-      // Add hover effect
+      // ### Add hover effect .................................................
       eToast.addEventListener('mouseenter', () => {
-         if( !eToast.classList.contains('toast-closing') ) {
-            eToast.style.backgroundColor = sBackgroundHover;
-         }
+         if( !eToast.classList.contains('toast-closing') ) { eToast.style.backgroundColor = sBackgroundHover; }
       });
 
       eToast.addEventListener('mouseleave', () => {
-         if( !eToast.classList.contains('toast-closing') ) {
-            eToast.style.backgroundColor = sBackground;
-         }
+         if( !eToast.classList.contains('toast-closing') ) { eToast.style.backgroundColor = sBackground; }
       });
 
-      // Create content wrapper
+      // ## Create content wrapper ............................................
       const eContent = document.createElement('div');
       eContent.innerHTML = sMessage;
 
-      if( this.oStyle.content ) {
-         eContent.classList.add(this.oStyle.content);
-      }
+      if( this.oStyle.content ) { eContent.classList.add(this.oStyle.content); }
       eContent.style.flex = '1';
       eContent.style.marginRight = oToastOptions.bShowClose ? '24px' : '0';
 
       eToast.appendChild(eContent);
 
-      // Add close button if enabled
+      // ### Add close button if enabled ......................................
       if( oToastOptions.bShowClose ) {
          const eClose = document.createElement('button');
          eClose.innerHTML = '&times;';
          eClose.setAttribute('type', 'button');
          eClose.setAttribute('aria-label', 'Close');
 
-         if( this.oStyle.close ) {
-            eClose.classList.add(this.oStyle.close);
-         }
+         if (this.oStyle.close) { eClose.classList.add(this.oStyle.close); }
 
-         // Close button styles
+         // #### Close button styles .........................................
+         Object.assign(eClose.style, {alignItems:'center',background:'none',border:'none',color:'inherit',cursor:'pointer',display:'flex',fontSize:'20px',height:'20px',justifyContent:'center',lineHeight:'1',opacity:'0.7',padding:'0',position:'absolute',right:'8px',top:'8px',width:'20px'});
+
+/*
          eClose.style.position = 'absolute';
          eClose.style.top = '8px';
          eClose.style.right = '8px';
@@ -272,26 +447,21 @@ class UIToast {
          eClose.style.alignItems = 'center';
          eClose.style.justifyContent = 'center';
          eClose.style.opacity = '0.7';
+         */
 
-         eClose.addEventListener('mouseenter', () => {
-            eClose.style.opacity = '1';
-         });
+         eClose.addEventListener('mouseenter', () => { eClose.style.opacity = '1'; });
 
-         eClose.addEventListener('mouseleave', () => {
-            eClose.style.opacity = '0.7';
-         });
+         eClose.addEventListener('mouseleave', () => { eClose.style.opacity = '0.7'; });
 
          // Store close handler for cleanup
-         const closeHandler = () => {
-            this._dismiss_toast(eToast, false);
-         };
+         const closeHandler = () => { this._dismiss_toast(eToast, false); };
          eClose.addEventListener('click', closeHandler);
          eToast._closeHandler = closeHandler;
 
          eToast.appendChild(eClose);
       }
 
-      // Add progress bar if enabled
+      // ## Add progress bar if enabled .......................................
       if( oToastOptions.bShowProgress && oToastOptions.iDuration > 0 ) {
          const eProgress = document.createElement('div');
 
@@ -299,7 +469,7 @@ class UIToast {
             eProgress.classList.add(this.oStyle.progress);
          }
 
-         // Progress bar container styles
+         // ### Progress bar container styles .................................
          eProgress.style.position = 'absolute';
          eProgress.style.bottom = '0';
          eProgress.style.left = '0';
@@ -314,7 +484,7 @@ class UIToast {
             eProgressBar.classList.add(this.oStyle.progressBar);
          }
 
-         // Progress bar styles
+         // ### Progress bar styles ...........................................
          eProgressBar.style.height = '100%';
          eProgressBar.style.width = '100%';
          eProgressBar.style.transition = 'none';
@@ -364,73 +534,6 @@ class UIToast {
       return 'translateY(-20px)';
    }
 
-   /** -----------------------------------------------------------------------
-    * Show a toast message.
-    * @param {string} sMessage - The message content (can be HTML).
-    * @param {Object} [oOptions_={}] - Options for this specific toast.
-    * @param {string} [oOptions_.sType='primary'] - Toast type.
-    * @param {number} [oOptions_.iDuration] - Override default duration.
-    * @param {boolean} [oOptions_.bShowProgress] - Override default progress bar visibility.
-    * @param {boolean} [oOptions_.bShowClose] - Override default close button visibility.
-    * @param {Function} [oOptions_.fnOnClose] - Callback when toast is closed.
-    * @param {string} [oOptions_.minWidth='250px'] - Minimum width of the toast.
-    * @returns {HTMLElement} The toast element.
-    */
-   Show(sMessage, oOptions_ = {}) {
-      const oToastOptions = Object.assign({
-         sType: 'primary',
-         iDuration: this.oOptions.iDuration,
-         bShowProgress: this.oOptions.bShowProgress,
-         bShowClose: this.oOptions.bShowClose,
-         fnOnClose: null
-      }, oOptions_);
-
-      // Check if we've exceeded max stack
-      if( this.aToasts.length >= this.oOptions.iMaxStack ) {
-         // Remove oldest toast
-         const eOldestToast = this.aToasts.shift();
-         this._dismiss_toast(eOldestToast, false);
-      }
-
-      // Create toast element
-      const eToast = this._create_toast_element(sMessage, oToastOptions);
-
-      // Add to DOM
-      this.eContainer.appendChild(eToast);
-      this.aToasts.push(eToast);
-
-      // Trigger entry animation
-      requestAnimationFrame(() => {
-         eToast.style.opacity = '1';
-         eToast.style.transform = 'translateY(0)';
-      });
-
-      // Store callbacks and timeout
-      eToast._onClose = oToastOptions.fnOnClose;
-
-      // Start progress bar animation and auto-dismiss
-      if( oToastOptions.iDuration > 0 && oToastOptions.bShowProgress && eToast._progressBar ) {
-         // Animate progress bar
-         // Need TWO animation frames to ensure browser sees initial state first
-         requestAnimationFrame(() => {
-            eToast._progressBar.style.transition = `width ${oToastOptions.iDuration}ms linear`;
-            requestAnimationFrame(() => { eToast._progressBar.style.width = '0%'; });
-         });
-
-         // Set auto-dismiss timeout
-         eToast._timeout = setTimeout(() => {
-            this._dismiss_toast(eToast, true);
-         }, oToastOptions.iDuration);
-      }
-      else if( oToastOptions.iDuration > 0 ) {
-         // Auto-dismiss without progress bar
-         eToast._timeout = setTimeout(() => {
-            this._dismiss_toast(eToast, true);
-         }, oToastOptions.iDuration);
-      }
-
-      return eToast;
-   }
 
    /** -----------------------------------------------------------------------
     * Dismiss a toast with exit animation.
@@ -448,144 +551,26 @@ class UIToast {
          if( eClose ) eClose.removeEventListener('click', eToast._closeHandler);
       }
 
-      // Clear any pending timeout
-      if( eToast._timeout ) { clearTimeout(eToast._timeout); }
+      if( eToast._timeout ) { clearTimeout(eToast._timeout); }                // Clear any pending timeout
 
-      // Mark as closing to prevent duplicate dismissals
-      eToast.classList.add('toast-closing');
+      eToast.classList.add('toast-closing');                                  // Mark as closing to prevent duplicate dismissals
 
-      // Remove from active toasts array
+      // ## Remove from active toasts array ..................................
       const iIndex = this.aToasts.indexOf(eToast);
-      if( iIndex > -1 ) {
-         this.aToasts.splice(iIndex, 1);
-      }
+      if( iIndex > -1 ) { this.aToasts.splice(iIndex, 1); }
 
       // Trigger exit animation
       eToast.style.opacity = '0';
       eToast.style.transform = this._get_exit_transform();
       eToast.style.marginTop = eToast.offsetHeight + 'px'; // Make room for stacking animation
 
-      // Remove from DOM after animation completes
+      // ## Remove from DOM after animation completes .........................
       setTimeout(() => {
-         if( eToast.parentNode ) {
-            eToast.parentNode.removeChild(eToast);
-         }
+         if( eToast.parentNode ) { eToast.parentNode.removeChild(eToast); }
 
          // Call close callback if provided
-         if( eToast._onClose && typeof eToast._onClose === 'function' ) {
-            eToast._onClose(bAuto);
-         }
+         if( eToast._onClose && typeof eToast._onClose === 'function' ) { eToast._onClose(bAuto); }
       }, 300); // Match transition duration
    }
 
-   /** -----------------------------------------------------------------------
-    * Show a success toast (shorthand for Show with type='success').
-    * @param {string} sMessage - The message content.
-    * @param {Object} [oOptions_={}] - Additional toast options.
-    * @returns {HTMLElement} The toast element.
-    */
-   Success(sMessage, oOptions_ = {}) {
-      return this.Show(sMessage, Object.assign({ sType: 'success' }, oOptions_));
-   }
-
-   /** -----------------------------------------------------------------------
-    * Show an error/danger toast (shorthand for Show with type='danger').
-    * @param {string} sMessage - The message content.
-    * @param {Object} [oOptions_={}] - Additional toast options.
-    * @returns {HTMLElement} The toast element.
-    */
-   Error(sMessage, oOptions_ = {}) {
-      return this.Show(sMessage, Object.assign({ sType: 'danger' }, oOptions_));
-   }
-
-   /** -----------------------------------------------------------------------
-    * Show a warning toast (shorthand for Show with type='warning').
-    * @param {string} sMessage - The message content.
-    * @param {Object} [oOptions_={}] - Additional toast options.
-    * @returns {HTMLElement} The toast element.
-    */
-   Warning(sMessage, oOptions_ = {}) {
-      return this.Show(sMessage, Object.assign({ sType: 'warning' }, oOptions_));
-   }
-
-   /** -----------------------------------------------------------------------
-    * Show an info toast (shorthand for Show with type='info').
-    * @param {string} sMessage - The message content.
-    * @param {Object} [oOptions_={}] - Additional toast options.
-    * @returns {HTMLElement} The toast element.
-    */
-   Info(sMessage, oOptions_ = {}) {
-      return this.Show(sMessage, Object.assign({ sType: 'info' }, oOptions_));
-   }
-
-   /** -----------------------------------------------------------------------
-    * Dismiss all active toasts immediately.
-    * @param {boolean} bAnimated - Whether to animate the dismissal (default: true).
-    */
-   DismissAll(bAnimated = true) {
-      // Copy array to avoid issues while iterating
-      const aToastsCopy = [...this.aToasts];
-
-      aToastsCopy.forEach(eToast => {
-         if( bAnimated ) {
-            this._dismiss_toast(eToast, false);
-         }
-         else {
-            // Immediate dismissal without animation
-            if( eToast._timeout ) {
-               clearTimeout(eToast._timeout);
-            }
-
-            if( eToast.parentNode ) {
-               eToast.parentNode.removeChild(eToast);
-            }
-
-            if( eToast._onClose && typeof eToast._onClose === 'function' ) {
-               eToast._onClose(false);
-            }
-         }
-      });
-
-      // Clear array
-      this.aToasts = [];
-   }
-
-   /** -----------------------------------------------------------------------
-    * Update the default options for new toasts.
-    * @param {Object} oOptions_ - New default options to apply.
-    */
-   UpdateOptions(oOptions_) {
-      Object.assign(this.oOptions, oOptions_);
-
-      // Re-apply position styles if position changed
-      if( oOptions_.sPosition ) {
-         this._apply_position_styles();
-      }
-   }
-
-   /** -----------------------------------------------------------------------
-    * Get the number of currently active toasts.
-    * @returns {number} Number of active toasts.
-    */
-   GetActiveCount() {
-      return this.aToasts.length;
-   }
-
-   /** -----------------------------------------------------------------------
-    * Destroy the toast manager and clean up all toasts.
-    */
-   Destroy() {
-      // Clear all timeouts and remove toasts
-      this.DismissAll(false);
-
-      // Remove container from DOM
-      if( this.eContainer && this.eContainer.parentNode ) {
-         this.eContainer.parentNode.removeChild(this.eContainer);
-      }
-
-      // Clear references
-      this.aToasts = [];
-      this.eContainer = null;
-      this.eParent = null;
-   }
 }

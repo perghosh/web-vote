@@ -1,3 +1,18 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+
+PAGE_Initialize - Main initialization function that sets up the page, creates draggable elements and configures listeners
+PAGE_GenerateEditFields - Generates edit fields for the page
+PAGE_SetListeners - Configures event listeners for page interactions, handling actions like send and save
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+
+
+@TODO [tag: table, delete] [description: when delete from history recalculate row indexes]
+
+-->
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +22,7 @@
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
     <script src="js/gd_ui_toast.js"></script>
+    <script src="js/gd_db.js"></script>
     <script src="js/gd_browser.js"></script>
     <title>Login - Web Vote</title>
     <style>
@@ -40,8 +56,8 @@
            <div data-section="field"></div>
            <div class="row" data-section="command" style="justify-content: flex-end;">
                <button class="button" data-action="add">Save as new user</button>
-               <button class="button" data-action="update">Update</button>
-               <button class="button" data-action="delete">Delete</button>
+               <button class="button" style="visibility: hidden;" data-action="update" data-idle="user_key">Update</button>
+               <button class="button" style="visibility: hidden;" data-action="delete" data-idle="user_key">Delete</button>
            </div>
         </form>
 
@@ -60,195 +76,227 @@ const aEditField = [
 ];
 
 let oToast_g;
+let oDocument_g;
 
 
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Login page loaded successfully!');
-            PAGE_initialize();
-        });
+document.addEventListener('DOMContentLoaded', function() {
+   console.log('Login page loaded successfully!');
+   PAGE_initialize();
+});
 
-        function PAGE_initialize() {
-            console.log('Initializing login page...');
+/** --------------------------------------------------------------------------
+ * Initialize edit user page
+ */
+function PAGE_initialize() {
+   console.log('Initializing edit user page...');
 
-            // ## Generate input form for user ................................
+   // Initialize document object
+   oDocument_g = new CDocument;
+   let oRecord = new DBRecord({sName: "UserK", bKey: true}, "TUser" );
+   oDocument_g.AddRecord(oRecord);
 
-            const eForm = document.getElementById('idUser').querySelector('div[data-section="field"]');
-            PAGE_GenerateEditFields(eForm, aEditField);
+   // ## Generate input form for user .........................................
+   const eForm = document.getElementById('idUser').querySelector('div[data-section="field"]');
+   PAGE_GenerateEditFields(eForm, aEditField);
 
-            // ## Configure toast ............................................
+   // ## Configure toast ............................................
+   oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
 
-            oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
+   // ## Prepare base url .....................................................
+   const sBaseUrl = gd.GetBaseUrl();
+   gd.SetBaseUrl(sBaseUrl);
 
-            // ## Prepare base url ............................................
-            const sBaseUrl = gd.GetBaseUrl();
-            gd.SetBaseUrl(sBaseUrl);
+   // ## Set listeners ........................................................
+   PAGE_SetListeners();
 
-            // ## Set listeners ..............................................
-            PAGE_SetListeners();
+   // ## Start idle timer - call PAGE_OnIdle() once per second
+   CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+}
 
-        }
+/** ---------------------------------------------------------------------------
+ * Generates edit fields for the page
+ */
+function PAGE_GenerateEditFields( eContainer, aEditField ) {
+   aEditField.forEach(oField => {
+         const div = document.createElement('div');
+         div.className = 'group';
+         div.style.marginTop = '20px';
 
-        function PAGE_GenerateEditFields( eContainer, aEditField ) {
-            aEditField.forEach(oField => {
-                const div = document.createElement('div');
-                div.className = 'group';
-                div.style.marginTop = '20px';
+         const label = document.createElement('label');
+         label.className = 'floating';
 
-                const label = document.createElement('label');
-                label.className = 'floating';
+         const eInput = document.createElement('input');
+         eInput.type = oField.input || 'text';
+         eInput.placeholder = ' ';
+         eInput.required = oField.required;
+         //if( oField.pattern ) { eInput.pattern = oField.pattern; }
+         eInput.dataset.field = oField.field;
 
-                const eInput = document.createElement('input');
-                eInput.type = oField.input || 'text';
-                eInput.placeholder = ' ';
-                eInput.required = oField.required;
-                //if( oField.pattern ) { eInput.pattern = oField.pattern; }
-                eInput.dataset.field = oField.field;
+         // generate random value
+         eInput.value = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-                // generate random value
-                eInput.value = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+         const eSpan = document.createElement('span');
+         eSpan.textContent = oField.label;
 
-                const eSpan = document.createElement('span');
-                eSpan.textContent = oField.label;
+         label.appendChild(eInput);
+         label.appendChild(eSpan);
+         div.appendChild(label);
+         eContainer.appendChild(div);
+   });
+}
 
-                label.appendChild(eInput);
-                label.appendChild(eSpan);
-                div.appendChild(label);
-                eContainer.appendChild(div);
+/** --------------------------------------------------------------------- @API [tag: event, command]
+ * Configure page listeners, handle page specific events
+ */
+function PAGE_SetListeners() {
+
+   // ## Initialize page work area listener .............................
+
+   const eUserContainer = document.getElementById('idUser');
+   eUserContainer.addEventListener("click", function(e_) {
+      const eTarget = e_.target;
+      if(!eTarget.dataset.action) return;                             // If no action is defined, return
+      e_.stopPropagation();
+      const eContainer = eTarget.closest('[data-section="container"]');
+
+      // ## Collect values from elements with attribute 'data-field'
+      const aFields = eContainer.querySelectorAll('[data-field]');
+      const oFields = {};
+      aFields.forEach(function(eField) {
+         const sField = eField.dataset.field;
+         const sValue = eField.value;
+         oFields[sField] = sValue;
+      });
+
+      const sAction = eTarget.dataset.action;
+      switch(sAction) {
+         case "add": {                                                 // send command to wed server
+            const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
+            const sSelect = "SELECT * FROM TUser WHERE UserK = x''{::key}''";
+            const sValues = JSON.stringify(oFields);
+            const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}` + "\n" + `query=${sSelect}`;
+
+            oToast_g.Show('Skickar!');
+
+            gd.SendToServer("", "!db/insert/ask?echo=user", sArguments).then(function(oResult) {
+               PAGE_ProcessResponse(oResult);
             });
-        }
 
-      /** --------------------------------------------------------------------- @API [tag: event, command]
-      * Configure page listeners, handle page specific events
+            //SERVER_Send(sEndpoint, sEndpoint64).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
+         } break;
+         case "keep": {                                                  // save command
+         } break;
+         default:
+            console.error("Unknown action:", sAction);
+      }
+   });
+}
+
+/** ---------------------------------------------------------------------
+ * Handle response data from server and display it in the container
+ *
+ * Response data format is { type: <format>, data: <data> } and type can be any of
+ * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
+ *
+ * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+ */
+function PAGE_ProcessResponse(oData) {
+   let sResult = '';
+   let eResults = null; // results element from xml responses with results/result format
+
+   switch(oData.type) {
+      case 'json':
+         sResult = JSON.stringify(oData.data, null, 2);
+         break;
+      case 'xml':
+         // If oData.data is an XML Document object, serialize it to string
+         if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+            //sResult = (new XMLSerializer()).serializeToString(oData.data);
+
+            // ## query results element
+            eResults = oData.data.querySelector('results');                   // get results element holding result elements
+         } else {
+            // If it's already a string, use it directly
+            sResult = oData.data;
+         }
+         break;
+      case 'text':
+         sResult = oData.data;
+         break;
+      default:
+         console.error("Unknown response type:", oData.type);
+   }
+
+   if( eResults ) {
+      // ## get hint
+      //
+      //
+
+      // ## Extract the generated user key
+      const eInsert = eResults.querySelector('result[command="insert"]');
+      const oUser = JSON.parse( eInsert.textContent );
+      const oDBRecord = oDocument_g.GetRecord( oUser.table );                                      console.assert( oDBRecord, "oDBRecord is null" );
+      oDBRecord.SetKeyValue( oUser.key );
+
+      const aAsk = eResults.querySelectorAll('result[command="ask"]');
+
+      // parse content to json object
+      const oContent = JSON.parse(aAsk[0].textContent);
+
+      const sMessage = "Användare skapad med alias: " + oContent.FAlias;
+      oToast_g.Show(sMessage, {sType: "info", iDuration: 10000, minWidth: "600px"});
+      oDocument_g.SetModified(true);
+
+      // Iternate over child items in results
+      //
+      /*
+      for( let i = 0; i < eResults.children.length; i++ ) {
+         let eChild = eResults.children[i];
+         console.log(eChild.tagName, eChild.textContent);
+         const sCommand = eChild.getAttribute("command");
+         console.log(sCommand);
+      }
       */
-      function PAGE_SetListeners() {
 
-         // ## Initialize page work area listener .............................
+   }
 
-         const eUserContainer = document.getElementById('idUser');
-         eUserContainer.addEventListener("click", function(e_) {
-            const eTarget = e_.target;
-            if(!eTarget.dataset.action) return;                             // If no action is defined, return
-            e_.stopPropagation();
-            const eContainer = eTarget.closest('[data-section="container"]');
+}
 
-            // ## Collect values from elements with attribute 'data-field'
-            const aFields = eContainer.querySelectorAll('[data-field]');
-            const oFields = {};
-            aFields.forEach(function(eField) {
-               const sField = eField.dataset.field;
-               const sValue = eField.value;
-               oFields[sField] = sValue;
+
+
+/** -------------------------------------------------------------------------- @API [tag: onidle]
+ * Handles idle state by updating UI elements and checking for changes
+ */
+const PAGE_OnIdle = (function() {
+   var bLastModified = false;
+
+   return function() {
+      const bModified = oDocument_g.IsModified();
+
+      if( bModified !== bLastModified ) {
+
+         // ## Updaate based on DBRecord for TUser holds key value or not
+         const oDBRecordUser = oDocument_g.GetRecord( "TUser" );
+         const bUserHasKey = oDBRecordUser.HasKeyValue();
+
+         const eUser = document.getElementById("idUser");
+
+         const aUserButtons = eUser.querySelectorAll("[data-idle='user_key']");
+
+         if( bUserHasKey === true ) {
+            aUserButtons.forEach( eButton => {
+               eButton.style.visibility = "visible";
             });
+         } else {
+            aUserButtons.forEach( eButton => {
+               eButton.style.visibility = "hidden";
+            });
+         }
 
-            const sAction = eTarget.dataset.action;
-            switch(sAction) {
-               case "add": {                                                 // send command to wed server
-                  const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK";
-                  const sSelect = "SELECT * FROM TUser WHERE UserK = x''{::key}''";
-                  const sValues = JSON.stringify(oFields);
-                  const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}` + "\n" + `query=${sSelect}`;
-
-                  oToast_g.Show('Skickar!');
-
-                  gd.SendToServer("", "!db/insert/ask?echo=user", sArguments).then(function(oResult) {
-                     PAGE_ProcessResponse(oResult);
-                  });
-
-                  alert(sResult);
-                  //SERVER_Send(sEndpoint, sEndpoint64).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
-               } break;
-               case "keep": {                                                  // save command
-               } break;
-               default:
-                  console.error("Unknown action:", sAction);
-            }
-         });
+         bLastModified = bModified;
       }
-
-      /** ---------------------------------------------------------------------
-       * Handle response data from server and display it in the container
-       *
-       * Response data format is { type: <format>, data: <data> } and type can be any of
-       * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
-       *
-       * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
-       */
-      function PAGE_ProcessResponse(oData) {
-         let sResult = '';
-         let eResults = null; // results element from xml responses with results/result format
-
-         switch(oData.type) {
-            case 'json':
-               sResult = JSON.stringify(oData.data, null, 2);
-               break;
-            case 'xml':
-               // If oData.data is an XML Document object, serialize it to string
-               if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
-                  //sResult = (new XMLSerializer()).serializeToString(oData.data);
-
-                  // ## query results element
-                  eResults = oData.data.querySelector('results');
-               } else {
-                  // If it's already a string, use it directly
-                  sResult = oData.data;
-               }
-               break;
-            case 'text':
-               sResult = oData.data;
-               break;
-            default:
-               console.error("Unknown response type:", oData.type);
-         }
-
-         if( eResults ) {
-            // ## get hint
-            //
-            //
-
-
-            const aAsk = eResults.querySelectorAll('result[command="ask"]');
-            const sContent = aAsk[0].textContent;
-
-            // parse content to json object
-            const oContent = JSON.parse(sContent);
-
-            let sMessage = "Användare skapa med alias: " + oContent.FAlias;
-            oToast_g.Show(sMessage, {sType: "info", iDuration: 10000, minWidth: "600px"});
-
-            // Iternate over child items in results
-            //
-            /*
-            for( let i = 0; i < eResults.children.length; i++ ) {
-               let eChild = eResults.children[i];
-               console.log(eChild.tagName, eChild.textContent);
-               const sCommand = eChild.getAttribute("command");
-               console.log(sCommand);
-            }
-            */
-
-         }
-
-      }
-
-
-
-      /** --------------------------------------------------------------------- @API [tag: onidle]
-      * Handles idle state by updating UI elements and checking for changes
-      */
-      const PAGE_OnIdle = (function() {
-         var bLastModified = false;
-
-         return function() {
-            const bModified = oDocument_g.IsModified();
-
-            if( bModified !== bLastModified ) {
-
-               // TODO: Update UI elements based on modified status
-
-               bLastModified = bModified;
-            }
-         }
-      })();
+   }
+})();
 
 
       class CDocument {
@@ -257,12 +305,22 @@ let oToast_g;
 
          constructor( oOptions = {} ) {
             this.bModified = false; // Initialize modified flag to false
+            this.aRecords = [];
          }
 
          // Check if document has been modified ------------------------------
          IsModified() { return this.bModified; }
          // Set modified flag to true or false -------------------------------
          SetModified(bModified) { this.bModified = bModified; }
+
+         // Add a record to the document -------------------------------------
+         AddRecord(oRecord) {
+            this.aRecords.push(oRecord);
+         }
+
+         GetRecord( sTable ) {
+            return this.aRecords.find(oRecord => oRecord.table === sTable);
+         }
       }
     </script>
 </body>

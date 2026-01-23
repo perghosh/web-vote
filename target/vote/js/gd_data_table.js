@@ -78,9 +78,7 @@ class Table {
     * @param {Array<string>} [options_.aColumn=[]]
     */
    constructor(columns_ = [], options_ = {}) {
-      if( typeof columns_ === "string" ) {
-         columns_ = columns_.split(",")
-      }
+      if( typeof columns_ === "string" ) { columns_ = columns_.split(","); }
       if( !Array.isArray(columns_) ) { throw new Error("Invalid argument"); }
 
       // Check if the first element is an array to identify a 2D table structure

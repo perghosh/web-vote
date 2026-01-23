@@ -1,3 +1,5 @@
+// @FILE [tag: draggable] [description: Object to make HTML elements draggable] [name: gd_ui_draggable.js]
+
 /**
  * Class to make HTML elements draggable
  *
