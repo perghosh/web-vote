@@ -2,13 +2,19 @@ class DBRecord {
    static column = class {
       /**
        * @param {Object|string} options_ - Either a configuration object or the column name string
-       * @param {string} options_.sName
-       * @param {string} [options_.sAlias]
-       * @param {string} [options_.sType="unknown"]
+       * @param {string} options_.sName - The name of the column, this may be same name as field in database.
+       * @param {string} [options_.sAlias] - The alias of the column, this may be different from the name.
+       * @param {string} [options_.sType="unknown"] - The type of the column, e.g., "string", "number", "date", "boolean", "array", "object", "enum", "custom".
        * @param {number} [options_.iState=0]
        * @param {number} [options_.iSpecificType=0]
-       * @param {number} [options_.bKey=false]
-       * @param {number} [options_.bFKey=false]
+       * @param {number} [options_.bKey=false] - Whether the column is a primary key.
+       * @param {number} [options_.bFKey=false] - Whether the column is a foreign key.
+       * @param {string} [options_.sLabel=""] - The label of the column, which is displayed to the user.
+       * @param {string} [options_.sDescription=""] - The description of the column, which provides additional information about the column.
+       * @param {string|RegExp|null} [options_.pattern=null] - The pattern to validate the column value.
+       * @param {string[]} [options_.aMatch=null] - The array of values to match the column value.
+       * @param {string} [options_.sError=""]
+       * @param {any} [options_.default=null]
        */
       constructor(options_ = {}) {
          if(typeof options_ === "string") { options_ = { sName: options_ }; }
@@ -23,6 +29,12 @@ class DBRecord {
          this.iSpecificType = oOptions.iSpecificType || 0;
          this.bKey = oOptions.bKey || false;
          this.bFKey = oOptions.bFKey || false;
+         this.sLabel = oOptions.sLabel || "";
+         this.sDescription = oOptions.sDescription || "";
+         this.pattern_ = oOptions.pattern || null;
+         this.aMatch = oOptions.aMatch || null;
+         this.sError = oOptions.sError || "";
+         this.default = oOptions.default || null;
       }
 
       is_string() { return this.sType === "string"; }
@@ -74,26 +86,42 @@ class DBRecord {
 
    get table() { return this.sTable; }
 
+   /** ------------------------------------------------------------------------
+    * Add value(s) to the record
+    * @param {Object|Array|*} value_ - Value to add (object with {name, value}, array of such objects, or single value)
+    */
    AddValue(value_) {
-      // ## Convert to array if not already
-      if(value_.constructor === Object) {
-         Object.keys(value_).forEach(key => this.aValues.push( {name: key, value: value_[key]})); // iterate all key values in object and add to array
+      if(value_.constructor === Object && value_.name !== undefined) {
+         // ## Single {name, value} object ...................................
+         this._set_value_internal(value_.name, value_.value);
       }
-      else if(Array.isArray(value_)) { this.aValues.push(...value_); }
-      else {
-         this.aValues.push(value_);
+      else if(Array.isArray(value_)) {
+         // ## Array of {name, value} objects ................................
+         value_.forEach(item => {
+            if(item.constructor === Object && item.name !== undefined) {
+               this._set_value_internal(item.name, item.value);
+            }
+         });
+      }
+      else if(value_.constructor === Object) {
+         // ## Plain object with key-value pairs
+         Object.keys(value_).forEach(key => this._set_value_internal(key, value_[key]));
       }
    }
 
+   /** ------------------------------------------------------------------------
+    * Set a single value by column name
+    * @param {string|Object} name_ - Column name or object with {sName, value}
+    * @param {*} [value_] - Value to set (if name_ is string)
+    */
    SetValue(name_, value_) {
       let sName = name_.constructor === Object ? name_.sName : name_;
-      value_ = name_.constructor === Object ? name_.value : value_;
+      let vValue = name_.constructor === Object ? name_.value : value_;
 
-      const oColumn = this._get_column(sName);                                                     console.assert( oColumn, "Column ${sName} not found" );
+      const oColumn = this._get_column(sName);
+      if(!oColumn) { throw new Error(`Column '${sName}' not found`); }
 
-      const iIndex = this._get_value_index(sName);
-      if(iIndex !== -1) { this.aValues[iIndex].value = value_; }
-      else { this.aValues.push({name: sName, value: value_}); }
+      this._set_value_internal(sName, vValue);
    }
 
    /** ------------------------------------------------------------------------
@@ -162,6 +190,49 @@ class DBRecord {
     */
    GetColumnNames() { return this.aColumn.map(column => column.sName); }
 
+   /** ------------------------------------------------------------------------
+    * Add column(s) to the record
+    * @param {Object|Array} column_ - Column definition or array of column definitions
+    * @param {Object|string} [map_] - Mapping object or string to map source properties to column properties
+    *   - If object: { targetProp: sourceProp, ... } e.g., { sLabel: "label", sName: "field" }
+    *   - If string: "targetProp,sourceProp;..." e.g., "sLabel,label;sName,field"
+    */
+   AddColumn(column_, map_) {
+      if(Array.isArray(column_)) {
+         // ## Process array of column definitions ............................
+         if(map_) {
+            // ## Parse mapping if string ...................................
+            let oMap = map_;
+            if(typeof map_ === "string") {
+               oMap = {};
+               map_.split(";").forEach(pair => {
+                  const [target, source] = pair.split(",").map(s => s.trim());
+                  if(target && source) { oMap[target] = source; }
+               });
+            }
+
+            // ## Apply mapping to each item and add column .................
+            column_.forEach(item_ => {
+               const oColumn = {}; // new column to add
+               Object.keys(oMap).forEach(sTargetKey => {
+                  const sSourceKey = oMap[sTargetKey]; // get the key used to describe filed in input data
+                  if(item_[sSourceKey] !== undefined) { oColumn[sTargetKey] = item_[sSourceKey]; } // copy to column if value exists
+               });
+               this.aColumn.push(new DBRecord.column(oColumn));
+            });
+         }
+         else {
+            column_.forEach(item => { this.aColumn.push(new DBRecord.column(item)); }); // No mapping, add columns directly
+         }
+
+         this._aKeyColumns = null;                                            // Invalidate key column cache
+      }
+      else {
+         this.aColumn.push(new DBRecord.column(column_));                     // Single column definition
+         this._aKeyColumns = null;                                            // Invalidate key column cache
+      }
+   }
+
     /** ------------------------------------------------------------------------
      * Convert record to JSON-serializable object
      * @returns {Object} Object with table, columns, and values
@@ -176,7 +247,12 @@ class DBRecord {
              iState: col.iState,
              iSpecificType: col.iSpecificType,
              bKey: col.bKey,
-             bFKey: col.bFKey
+             bFKey: col.bFKey,
+             sLabel: col.sLabel,
+             sDescription: col.sDescription,
+             sError: col.sError,
+             aMatch: col.aMatch,
+             default: col.default
           })),
           oValues: this.GetAllValues()
        };

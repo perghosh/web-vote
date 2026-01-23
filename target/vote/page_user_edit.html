@@ -5,10 +5,12 @@ PAGE_ Method Documentation:
 PAGE_Initialize - Main initialization function that sets up the page, creates draggable elements and configures listeners
 PAGE_GenerateEditFields - Generates edit fields for the page
 PAGE_SetListeners - Configures event listeners for page interactions, handling actions like send and save
+PAGE_Update - Update UI elements
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 
 
-@TODO [tag: table, delete] [description: when delete from history recalculate row indexes]
+@TODO [tag: TUser, update] [description: update user]
+@TODO [tag: TUser, delete] [description: delete user]
 
 -->
 
@@ -93,6 +95,12 @@ function PAGE_initialize() {
    // Initialize document object
    oDocument_g = new CDocument;
    let oRecord = new DBRecord({sName: "UserK", bKey: true}, "TUser" );
+
+   oRecord.AddColumn( {sLabel: "label", sDescription: "description", sName: "field-name", sType: "string"} );
+   oRecord.AddColumn( aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type"} );
+   oRecord.AddColumn( aEditField, "sLabel,label;sDescription,description;sName,field;sType,type" );
+
+
    oDocument_g.AddRecord(oRecord);
 
    // ## Generate input form for user .........................................
@@ -118,30 +126,30 @@ function PAGE_initialize() {
  */
 function PAGE_GenerateEditFields( eContainer, aEditField ) {
    aEditField.forEach(oField => {
-         const div = document.createElement('div');
-         div.className = 'group';
-         div.style.marginTop = '20px';
+      const div = document.createElement('div');
+      div.className = 'group';
+      div.style.marginTop = '20px';
 
-         const label = document.createElement('label');
-         label.className = 'floating';
+      const label = document.createElement('label');
+      label.className = 'floating';
 
-         const eInput = document.createElement('input');
-         eInput.type = oField.input || 'text';
-         eInput.placeholder = ' ';
-         eInput.required = oField.required;
-         //if( oField.pattern ) { eInput.pattern = oField.pattern; }
-         eInput.dataset.field = oField.field;
+      const eInput = document.createElement('input');
+      eInput.type = oField.input || 'text';
+      eInput.placeholder = ' ';
+      eInput.required = oField.required;
+      //if( oField.pattern ) { eInput.pattern = oField.pattern; }
+      eInput.dataset.field = oField.field;
 
-         // generate random value
-         eInput.value = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      // generate random value
+      eInput.value = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-         const eSpan = document.createElement('span');
-         eSpan.textContent = oField.label;
+      const eSpan = document.createElement('span');
+      eSpan.textContent = oField.label;
 
-         label.appendChild(eInput);
-         label.appendChild(eSpan);
-         div.appendChild(label);
-         eContainer.appendChild(div);
+      label.appendChild(eInput);
+      label.appendChild(eSpan);
+      div.appendChild(label);
+      eContainer.appendChild(div);
    });
 }
 
@@ -181,10 +189,17 @@ function PAGE_SetListeners() {
             gd.SendToServer("", "!db/insert/ask?echo=user", sArguments).then(function(oResult) {
                PAGE_ProcessResponse(oResult);
             });
-
-            //SERVER_Send(sEndpoint, sEndpoint64).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
          } break;
-         case "keep": {                                                  // save command
+         case "update": {                                                  // save command
+            const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{::key}''";
+            const sValues = JSON.stringify(oFields);
+            const sArguments = `query=${sUpdate}` + "\n" + `values=${sValues}`;
+
+            oToast_g.Show('Update user ' + oFields.FAlias);
+
+            gd.SendToServer("", "!db/update/ask?echo=user", sArguments).then(function(oResult) {
+               PAGE_ProcessResponse(oResult);
+            });
          } break;
          default:
             console.error("Unknown action:", sAction);
@@ -245,7 +260,7 @@ function PAGE_ProcessResponse(oData) {
 
       const sMessage = "Användare skapad med alias: " + oContent.FAlias;
       oToast_g.Show(sMessage, {sType: "info", iDuration: 10000, minWidth: "600px"});
-      oDocument_g.SetModified(true);
+      PAGE_Update();
 
       // Iternate over child items in results
       //
@@ -262,6 +277,31 @@ function PAGE_ProcessResponse(oData) {
 
 }
 
+/** ---------------------------------------------------------------------------
+ * Update UI elements
+ */
+function PAGE_Update() {
+   // ## Updaate based on DBRecord for TUser holds key value or not
+   const oDBRecordUser = oDocument_g.GetRecord( "TUser" );
+   const bUserHasKey = oDBRecordUser.HasKeyValue();
+
+   const eUser = document.getElementById("idUser");
+
+   const aUserButtons = eUser.querySelectorAll("[data-idle='user_key']");
+
+   if( bUserHasKey === true ) {
+      aUserButtons.forEach( eButton => {
+         eButton.style.visibility = "visible";
+      });
+   } else {
+      aUserButtons.forEach( eButton => {
+         eButton.style.visibility = "hidden";
+      });
+   }
+}
+
+
+
 
 
 /** -------------------------------------------------------------------------- @API [tag: onidle]
@@ -274,24 +314,7 @@ const PAGE_OnIdle = (function() {
       const bModified = oDocument_g.IsModified();
 
       if( bModified !== bLastModified ) {
-
-         // ## Updaate based on DBRecord for TUser holds key value or not
-         const oDBRecordUser = oDocument_g.GetRecord( "TUser" );
-         const bUserHasKey = oDBRecordUser.HasKeyValue();
-
-         const eUser = document.getElementById("idUser");
-
-         const aUserButtons = eUser.querySelectorAll("[data-idle='user_key']");
-
-         if( bUserHasKey === true ) {
-            aUserButtons.forEach( eButton => {
-               eButton.style.visibility = "visible";
-            });
-         } else {
-            aUserButtons.forEach( eButton => {
-               eButton.style.visibility = "hidden";
-            });
-         }
+         PAGE_Update();
 
          bLastModified = bModified;
       }
@@ -299,29 +322,29 @@ const PAGE_OnIdle = (function() {
 })();
 
 
-      class CDocument {
+class CDocument {
 
-         static iIdleTimerId_s = null; // Global timer ID for idle callback
+   static iIdleTimerId_s = null; // Global timer ID for idle callback
 
-         constructor( oOptions = {} ) {
-            this.bModified = false; // Initialize modified flag to false
-            this.aRecords = [];
-         }
+   constructor( oOptions = {} ) {
+      this.bModified = false; // Initialize modified flag to false
+      this.aRecords = [];
+   }
 
-         // Check if document has been modified ------------------------------
-         IsModified() { return this.bModified; }
-         // Set modified flag to true or false -------------------------------
-         SetModified(bModified) { this.bModified = bModified; }
+   // Check if document has been modified ------------------------------
+   IsModified() { return this.bModified; }
+   // Set modified flag to true or false -------------------------------
+   SetModified(bModified) { this.bModified = bModified; }
 
-         // Add a record to the document -------------------------------------
-         AddRecord(oRecord) {
-            this.aRecords.push(oRecord);
-         }
+   // Add a record to the document -------------------------------------
+   AddRecord(oRecord) {
+      this.aRecords.push(oRecord);
+   }
 
-         GetRecord( sTable ) {
-            return this.aRecords.find(oRecord => oRecord.table === sTable);
-         }
-      }
+   GetRecord( sTable ) {
+      return this.aRecords.find(oRecord => oRecord.table === sTable);
+   }
+}
     </script>
 </body>
 </html>
