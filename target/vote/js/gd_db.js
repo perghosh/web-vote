@@ -240,19 +240,19 @@ class DBRecord {
     ToJSON() {
        return {
           sTable: this.sTable,
-          aColumn: this.aColumn.map(col => ({
-             sName: col.sName,
-             sAlias: col.sAlias,
-             sType: col.sType,
-             iState: col.iState,
-             iSpecificType: col.iSpecificType,
-             bKey: col.bKey,
-             bFKey: col.bFKey,
-             sLabel: col.sLabel,
-             sDescription: col.sDescription,
-             sError: col.sError,
-             aMatch: col.aMatch,
-             default: col.default
+          aColumn: this.aColumn.map(c_ => ({
+             sName: c_.sName,
+             sAlias: c_.sAlias,
+             sType: c_.sType,
+             iState: c_.iState,
+             iSpecificType: c_.iSpecificType,
+             bKey: c_.bKey,
+             bFKey: c_.bFKey,
+             sLabel: c_.sLabel,
+             sDescription: c_.sDescription,
+             sError: c_.sError,
+             aMatch: c_.aMatch,
+             default: c_.default
           })),
           oValues: this.GetAllValues()
        };
