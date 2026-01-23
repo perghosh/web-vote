@@ -156,6 +156,12 @@ class DBRecord {
       return aKeyColumns.some(column => this.mapValues.has(column.sName));
    }
 
+   /** ------------------------------------------------------------------------
+    * Get all column names
+    * @returns {Array<string>} Array of column names
+    */
+   GetColumnNames() { return this.aColumn.map(column => column.sName); }
+
     /** ------------------------------------------------------------------------
      * Convert record to JSON-serializable object
      * @returns {Object} Object with table, columns, and values
@@ -176,38 +182,34 @@ class DBRecord {
        };
     }
 
-   /** ------------------------------------------------------------------------
-    * Find index in array with values
-    * @param {string} sName
-    */
-   _get_value_index( sName ) {
-      return this.aValues.findIndex(value_ => typeof value_ === "object" && value_.name === sName);
-   }
+    /** ------------------------------------------------------------------------
+     * Get a column by name, index, or properties
+     * @param {string|number|Object} column_ - Column identifier
+     * @returns {Object|undefined} The column or undefined
+     * @private
+     */
+    _get_column(column_) {
+       let oColumn;
+       if(typeof column_ === "string") {
+          oColumn = this.aColumn.find(column => column.sName === column_);
+       }
+       else if(typeof column_ === "number") {
+          oColumn = this.aColumn[column_];
+       }
+       else if(typeof column_ === "object") {
+          if(column_.sName) {
+             oColumn = this.aColumn.find(column => column.sName === column_.sName);
+          }
+          else if(column_.bKey) {
+             oColumn = this.aColumn.find(column => column.bKey === true);
+          }
+          else if(column_.bFKey) {
+             oColumn = this.aColumn.find(column => column.bFKey === true);
+          }
+       }
 
-   _get_column(column_) {
-      let oColumn;
-      if( typeof column_ === "string" ) {
-         oColumn = this.aColumn.find(column => column.sName === column_);
-      }
-      else if( typeof column_ === "number" ) {
-         oColumn = this.aColumn[column_];
-      }
-      else if(typeof column_ === "object") {
-         if( column_.bKey ) {
-            oColumn = this.aColumn.find(column => column.sName === column_.sName);
-         }
-         else if( column_.bFKey ) {
-            oColumn = this.aColumn.find(column => column.sName === column_.sName);
-         }
-         else {
-            oColumn = this.aColumn.find(column => column.sName === column_.sName);
-         }
-      }
-      else {
-         throw new Error("Invalid argument");
-      }
-      return oColumn;
-   }
+       return oColumn;
+    }
 
    /** ------------------------------------------------------------------------
     * Get all columns matching criteria
