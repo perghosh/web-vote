@@ -69,6 +69,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
     'use strict';
 
 const aEditField = [
+   { field: "UserK", type: "string", key: true },
    { label: "Alias", description: "Alias for user in system", field: "FAlias", type: "string", required: true },
    { label: "User name", description: "Name for user in system", field: "FName", type: "string", required: true },
    { label: "Email", description: "Email for user in system", field: "FMail", type: "string", required: true },
@@ -94,11 +95,11 @@ function PAGE_initialize() {
 
    // Initialize document object
    oDocument_g = new CDocument;
-   let oRecord = new DBRecord({sName: "UserK", bKey: true}, "TUser" );
+   //let oRecord = new DBRecord({sName: "UserK", bKey: true}, "TUser" );
+   let oRecord = new DBRecord();
+   oRecord.table = "TUser";
 
-   oRecord.AddColumn( {sLabel: "label", sDescription: "description", sName: "field-name", sType: "string"} );
-   oRecord.AddColumn( aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type"} );
-   oRecord.AddColumn( aEditField, "sLabel,label;sDescription,description;sName,field;sType,type" );
+   oRecord.AddColumn( aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"} );
 
 
    oDocument_g.AddRecord(oRecord);
@@ -122,7 +123,7 @@ function PAGE_initialize() {
 
    const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
    const sArguments = `query=${sInsert}` + "\n" + `name=user-add`
-   gd.SendToServer("", "!sys/meta/query/add?format=jinja&type=select", sArguments).then(function(oResult) {
+   gd.SendToServer("", "!sys/meta/query/add?format=jinja&type=insert", sArguments).then(function(oResult) {
       PAGE_ProcessResponse(oResult, "meta");
    });
 
@@ -133,6 +134,8 @@ function PAGE_initialize() {
  */
 function PAGE_GenerateEditFields( eContainer, aEditField ) {
    aEditField.forEach(oField => {
+      if( !oField.label ) return;
+
       const div = document.createElement('div');
       div.className = 'group';
       div.style.marginTop = '20px';
@@ -186,7 +189,8 @@ function PAGE_SetListeners() {
       const sAction = eTarget.dataset.action;
       switch(sAction) {
          case "add": {                                                 // send command to wed server
-            const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
+            // const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
+            const sInsert = "#user-add";
             const sSelect = "SELECT * FROM TUser WHERE UserK = x''{::key}''";
             const sValues = JSON.stringify(oFields);
             const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}` + "\n" + `query=${sSelect}`;

@@ -57,6 +57,7 @@ class DBRecord {
     * @param {Array} [options_.aValues] - Initial values
     */
    constructor(columns_ = [], options_ = {}) {
+      if( columns_ === undefined || columns_ === null ) columns_ = [];
       if(typeof columns_ === "string") { columns_ = columns_.split(","); }
       else if(columns_.constructor === Object) { columns_ = [columns_]; }
       if(!Array.isArray(columns_)) { throw new Error("Invalid argument: columns must be array, object, or string"); }
@@ -85,6 +86,7 @@ class DBRecord {
    }
 
    get table() { return this.sTable; }
+   set table(value_) { this.sTable = value_; }
 
    /** ------------------------------------------------------------------------
     * Add value(s) to the record
