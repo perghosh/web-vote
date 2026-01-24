@@ -119,6 +119,13 @@ function PAGE_initialize() {
 
    // ## Start idle timer - call PAGE_OnIdle() once per second
    CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+
+   const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
+   const sArguments = `query=${sInsert}` + "\n" + `name=user-add`
+   gd.SendToServer("", "!sys/meta/query/add?format=jinja&type=select", sArguments).then(function(oResult) {
+      PAGE_ProcessResponse(oResult, "meta");
+   });
+
 }
 
 /** ---------------------------------------------------------------------------
@@ -187,7 +194,7 @@ function PAGE_SetListeners() {
             oToast_g.Show('Skickar!');
 
             gd.SendToServer("", "!db/insert/ask?echo=user", sArguments).then(function(oResult) {
-               PAGE_ProcessResponse(oResult);
+               PAGE_ProcessResponse(oResult, "user");
             });
          } break;
          case "update": {                                                  // save command
@@ -198,7 +205,7 @@ function PAGE_SetListeners() {
             oToast_g.Show('Update user ' + oFields.FAlias);
 
             gd.SendToServer("", "!db/update/ask?echo=user", sArguments).then(function(oResult) {
-               PAGE_ProcessResponse(oResult);
+               PAGE_ProcessResponse(oResult, "user");
             });
          } break;
          default:
@@ -214,8 +221,9 @@ function PAGE_SetListeners() {
  * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
  *
  * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+ * @param {string} sOperation - The operation that was performed
  */
-function PAGE_ProcessResponse(oData) {
+function PAGE_ProcessResponse(oData, sOperation) {
    let sResult = '';
    let eResults = null; // results element from xml responses with results/result format
 
@@ -243,38 +251,30 @@ function PAGE_ProcessResponse(oData) {
    }
 
    if( eResults ) {
-      // ## get hint
-      //
-      //
+      if( sOperation === "meta" ) {
 
-      // ## Extract the generated user key
-      const eInsert = eResults.querySelector('result[command="insert"]');
-      const oUser = JSON.parse( eInsert.textContent );
-      const oDBRecord = oDocument_g.GetRecord( oUser.table );                                      console.assert( oDBRecord, "oDBRecord is null" );
-      oDBRecord.SetKeyValue( oUser.key );
-
-      const aAsk = eResults.querySelectorAll('result[command="ask"]');
-
-      // parse content to json object
-      const oContent = JSON.parse(aAsk[0].textContent);
-
-      const sMessage = "Användare skapad med alias: " + oContent.FAlias;
-      oToast_g.Show(sMessage, {sType: "info", iDuration: 10000, minWidth: "600px"});
-      PAGE_Update();
-
-      // Iternate over child items in results
-      //
-      /*
-      for( let i = 0; i < eResults.children.length; i++ ) {
-         let eChild = eResults.children[i];
-         console.log(eChild.tagName, eChild.textContent);
-         const sCommand = eChild.getAttribute("command");
-         console.log(sCommand);
       }
-      */
+      else if( sOperation === "user" ) {
 
+         // ## Extract the generated user key
+         const eInsert = eResults.querySelector('result[command="insert"]');
+         const oUser = JSON.parse( eInsert.textContent );
+         const oDBRecord = oDocument_g.GetRecord( oUser.table );                                      console.assert( oDBRecord, "oDBRecord is null" );
+         oDBRecord.SetKeyValue( oUser.key );
+
+         const aAsk = eResults.querySelectorAll('result[command="ask"]');
+
+         // parse content to json object
+         const oContent = JSON.parse(aAsk[0].textContent);
+
+         const sMessage = "Användare skapad med alias: " + oContent.FAlias;
+         oToast_g.Show(sMessage, {sType: "info", iDuration: 10000, minWidth: "600px"});
+         PAGE_Update();
+      }
+      else {
+         console.assert( false, "sOperation is unknown" );
+      }
    }
-
 }
 
 /** ---------------------------------------------------------------------------
