@@ -121,12 +121,18 @@ function PAGE_initialize() {
    // ## Start idle timer - call PAGE_OnIdle() once per second
    CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
 
-   const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
-   const sArguments = `query=${sInsert}` + "\n" + `name=user-add`
-   gd.SendToServer("", "!sys/meta/query/add?format=jinja&type=insert", sArguments).then(function(oResult) {
-      PAGE_ProcessResponse(oResult, "meta");
+   gd.SendToServer("", "!sys/meta/query/exists?name=user-add").then(function(oResult) {
+      const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
+      if( sQueryId ) { oToast_g.Show('Query user-add exists in server, no need to add it again');  }
+      else {
+         const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
+         const sArguments = `query=${sInsert}` + "\n" + `name=user-add`
+         gd.SendToServer("", "!sys/meta/query/add?format=jinja&type=insert", sArguments).then(function(oResult) {
+            const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
+            oToast_g.Show('Query user-add added to server, id:' + sQueryId);
+         });
+      }
    });
-
 }
 
 /** ---------------------------------------------------------------------------
