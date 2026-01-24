@@ -136,7 +136,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
          switch(sAction) {
             case("add"): {
-               const sInsert = "INSERT INTO TPoll (FName, FHeader, FDescription) VALUES ({FName}, {FHeader}, {FDescription})";
+               const sInsert = "INSERT INTO TPoll (FName, FHeader, FDescription) VALUES ({FName}, {FHeader}, {FDescription}) RETURNING PollK AS 'key', 'TPoll' AS 'table'";
                const sValues = JSON.stringify(oFields);
 
                const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}`;
@@ -145,6 +145,21 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                   PAGE_ProcessResponse(oResult);
                   CreateButtons(document.querySelector("#idButtons"));
                });
+            } break;
+            case("update"): {
+               const sUpdate = "UPDATE TPoll SET FName = {FName}, FHeader = {FHeader}, FDescription = {FDescription} WHERE PollK = {PollK}";
+
+               oFields.PollK = oDocument_g.key_;
+               const sValues = JSON.stringify(oFields);
+
+               const sArguments = `query=${sUpdate}` + `\n` + `values=${sValues}`;
+
+               
+               gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
+                  PAGE_ProcessResponse(oResult);
+                  //CreateButtons(document.querySelector("#idButtons"));
+               });
+
             } break;
             default:
                console.error("Unknown action:", sAction);
@@ -179,6 +194,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
             let sValue = JSON.parse(oData.data.querySelector("result").textContent);
             sResult = sValue.key;
+            oDocument_g.key_ = sResult;
 
 
             break;
@@ -201,6 +217,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
       constructor( oOptions = {} ) {
          this.bModified = false; // Initialize modified flag to false
+         this.key_ = null;
       }
 
       // Check if document has been modified ------------------------------
