@@ -208,13 +208,23 @@ function PAGE_SetListeners() {
             });
          } break;
          case "update": {                                                  // save command
-            const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{::key}''";
+            const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{UserK}''";
             const sValues = JSON.stringify(oFields);
             const sArguments = `query=${sUpdate}` + "\n" + `values=${sValues}`;
 
             oToast_g.Show('Update user ' + oFields.FAlias);
 
             gd.SendToServer("", "!db/update/ask?echo=user", sArguments).then(function(oResult) {
+               PAGE_ProcessResponse(oResult, "user");
+            });
+         } break;
+         case "delete": {                                                   // delete command
+            const sDelete = "DELETE FROM TUser WHERE UserK = x''{UserK}''";
+            const sArguments = `query=${sDelete}`;
+
+            oToast_g.Show('Delete user ' + oFields.FAlias);
+
+            gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
                PAGE_ProcessResponse(oResult, "user");
             });
          } break;
