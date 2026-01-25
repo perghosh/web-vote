@@ -55,7 +55,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
     <div id="idPage" class="page-container" data-section="container">
 
         <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;">
-           <div data-section="field"></div>
+           <div data-section="form"></div>
            <div class="row" data-section="command" style="justify-content: flex-end;">
                <button class="button" data-action="add">Save as new user</button>
                <button class="button" style="visibility: hidden;" data-action="update" data-idle="user_key">Update</button>
@@ -71,7 +71,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 const aEditField = [
    { field: "UserK", type: "string", key: true },
    { label: "Alias", description: "Alias for user in system", field: "FAlias", type: "string", required: true },
-   { label: "User name", description: "Name for user in system", field: "FName", type: "string", required: true },
+   { label: "User name", description: "Name for user in system", field: "FFirstName", type: "string", required: true },
+   { label: "Last name", description: "Last name for user in system", field: "FLastName", type: "string" },
    { label: "Email", description: "Email for user in system", field: "FMail", type: "string", required: true },
    { label: "Password", description: "Password for user in system", field: "FPassword", type: "string", required: true, input: "password", pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$" },
    { label: "Display Name", description: "Name for user in system", field: "FDisplayName", type: "string" },
@@ -105,7 +106,7 @@ function PAGE_initialize() {
    oDocument_g.AddRecord(oRecord);
 
    // ## Generate input form for user .........................................
-   const eForm = document.getElementById('idUser').querySelector('div[data-section="field"]');
+   const eForm = document.getElementById('idUser').querySelector('div[data-section="form"]');
    PAGE_GenerateEditFields(eForm, aEditField);
 
    // ## Configure toast ............................................
@@ -125,7 +126,7 @@ function PAGE_initialize() {
       const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
       if( sQueryId ) { oToast_g.Show('Query user-add exists in server, no need to add it again');  }
       else {
-         const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
+         const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FFirstName}, {FLastName}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
          const sArguments = `query=${sInsert}` + "\n" + `name=user-add`
          gd.SendToServer("", "!sys/meta/query/add?format=jinja&type=insert", sArguments).then(function(oResult) {
             const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
@@ -208,24 +209,33 @@ function PAGE_SetListeners() {
             });
          } break;
          case "update": {                                                  // save command
-            const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{UserK}''";
+            const oDBRecord = oDocument_g.GetRecord( "TUser" );                                    console.assert( oDBRecord, "oDBRecord is null" );
+            const sUserKey = oDBRecord.GetKeyValue();
+            const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FFirstName = {FFirstName}, FLastName = {FLastName}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{=UserK}''";
+            oFields["UserK"] = oDBRecord.GetKeyValue();
             const sValues = JSON.stringify(oFields);
             const sArguments = `query=${sUpdate}` + "\n" + `values=${sValues}`;
 
             oToast_g.Show('Update user ' + oFields.FAlias);
 
             gd.SendToServer("", "!db/update/ask?echo=user", sArguments).then(function(oResult) {
-               PAGE_ProcessResponse(oResult, "user");
+               const iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+               if(iCount !== 0) { oToast_g.Show('User updated successfully'); }
+               else { oToast_g.Show('Failed to update user'); }
             });
          } break;
          case "delete": {                                                   // delete command
-            const sDelete = "DELETE FROM TUser WHERE UserK = x''{UserK}''";
-            const sArguments = `query=${sDelete}`;
+            // Get key for active user that is found in DBRecord
+            const oDBRecord = oDocument_g.GetRecord( "TUser" );                                    console.assert( oDBRecord, "oDBRecord is null" );
+            const sUserKey = oDBRecord.GetKeyValue();
+            const sArguments = `query=DELETE FROM TUser WHERE UserK = x''{=UserK}''` + "\n" + `values=${JSON.stringify({UserK: sUserKey})}`;
 
-            oToast_g.Show('Delete user ' + oFields.FAlias);
 
+            oToast_g.Show('User key ' + sUserKey);
             gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
-               PAGE_ProcessResponse(oResult, "user");
+               const iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+               if(iCount !== 0) { oToast_g.Show('User deleted successfully'); }
+               else { oToast_g.Show('Failed to delete user'); }
             });
          } break;
          default:
@@ -288,7 +298,7 @@ function PAGE_ProcessResponse(oData, sOperation) {
          const oContent = JSON.parse(aAsk[0].textContent);
 
          const sMessage = "Användare skapad med alias: " + oContent.FAlias;
-         oToast_g.Show(sMessage, {sType: "info", iDuration: 10000, minWidth: "600px"});
+         oToast_g.Show(sMessage, {sType: "info", minWidth: "600px"});
          PAGE_Update();
       }
       else {
