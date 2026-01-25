@@ -127,6 +127,28 @@ class DBRecord {
    }
 
    /** ------------------------------------------------------------------------
+    * Set value(s) for one or more columns
+    * @param {string|Object} name_ - Column name, object with {sName, value}, or object with column names as keys
+    * @param {*} [value_] - Value to set (if name_ is string)
+    */
+   SetValue(name_, value_) {
+      if(name_.constructor === Object && value_ === undefined) {
+         // ## Set muliple values {columnName1: value1, columnName2: value2, ...}
+         Object.keys(name_).forEach(sColumnName => {
+            const oColumn = this._get_column(sColumnName);
+            if(oColumn) { this._set_value_internal(sColumnName, name_[sColumnName]); } // Only set if column exists, skip if not found
+         });
+      }
+      // ## Handle string column name with value .............................
+      else if(typeof name_ === "string") {
+         const oColumn = this._get_column(name_);
+         if(!oColumn) { throw new Error(`Column '${name_}' not found`); }
+         this._set_value_internal(name_, value_);
+      }
+      else { throw new Error("Invalid arguments: expected string or object"); }
+   }
+
+   /** ------------------------------------------------------------------------
     * Get a value by column name
     * @param {string} sName - Column name
     * @returns {*} The value or undefined if not found

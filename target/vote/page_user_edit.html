@@ -193,7 +193,21 @@ function PAGE_SetListeners() {
          oFields[sField] = sValue;
       });
 
+      // ## User table record and action .....................................
+      const oDBRecord = oDocument_g.GetRecord( "TUser" );                                          console.assert( oDBRecord, "oDBRecord is null" );
       const sAction = eTarget.dataset.action;
+
+      // ## Collect values from elements with attribute 'data-field'
+      const aFields = eContainer.querySelectorAll('[data-field]');
+      const oFields = {};
+      aFields.forEach(function(eField) {
+         const sField = eField.dataset.field;
+         const sValue = eField.value;
+         oFields[sField] = sValue;
+      });
+
+      oDBRecord.SetValues(oFields);
+
       switch(sAction) {
          case "add": {                                                 // send command to wed server
             // const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
@@ -209,7 +223,6 @@ function PAGE_SetListeners() {
             });
          } break;
          case "update": {                                                  // save command
-            const oDBRecord = oDocument_g.GetRecord( "TUser" );                                    console.assert( oDBRecord, "oDBRecord is null" );
             const sUserKey = oDBRecord.GetKeyValue();
             const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FFirstName = {FFirstName}, FLastName = {FLastName}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{=UserK}''";
             oFields["UserK"] = oDBRecord.GetKeyValue();
@@ -226,7 +239,6 @@ function PAGE_SetListeners() {
          } break;
          case "delete": {                                                   // delete command
             // Get key for active user that is found in DBRecord
-            const oDBRecord = oDocument_g.GetRecord( "TUser" );                                    console.assert( oDBRecord, "oDBRecord is null" );
             const sUserKey = oDBRecord.GetKeyValue();
             const sArguments = `query=DELETE FROM TUser WHERE UserK = x''{=UserK}''` + "\n" + `values=${JSON.stringify({UserK: sUserKey})}`;
 
