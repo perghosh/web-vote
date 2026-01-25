@@ -184,15 +184,6 @@ function PAGE_SetListeners() {
       e_.stopPropagation();
       const eContainer = eTarget.closest('[data-section="container"]');
 
-      // ## Collect values from elements with attribute 'data-field'
-      const aFields = eContainer.querySelectorAll('[data-field]');
-      const oFields = {};
-      aFields.forEach(function(eField) {
-         const sField = eField.dataset.field;
-         const sValue = eField.value;
-         oFields[sField] = sValue;
-      });
-
       // ## User table record and action .....................................
       const oDBRecord = oDocument_g.GetRecord( "TUser" );                                          console.assert( oDBRecord, "oDBRecord is null" );
       const sAction = eTarget.dataset.action;
@@ -206,7 +197,7 @@ function PAGE_SetListeners() {
          oFields[sField] = sValue;
       });
 
-      oDBRecord.SetValues(oFields);
+      oDBRecord.SetValue(oFields);
 
       switch(sAction) {
          case "add": {                                                 // send command to wed server
