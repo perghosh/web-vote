@@ -16,6 +16,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    <link rel="stylesheet" href="css/elements.css">
    <link rel="stylesheet" href="css/input-effects.css">
    <script src="js/gd_browser.js"></script>
+   <script src="js/gd_ui_toast.js"></script>
    <style>
    * { box-sizing: border-box; margin: 0; padding: 0; }
    body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
@@ -56,6 +57,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    </div>
 
    <script>
+
+   let oToast_g;
    let oDocument_g;
 
    function CreateButtons(eParent)
@@ -84,6 +87,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
     */
    function PAGE_Initialize() {
       oDocument_g = new CDocument({});
+
+      oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
 
       // ## Start idle timer - call PAGE_OnIdle() once per second
       CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
@@ -144,6 +149,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult);
                   CreateButtons(document.querySelector("#idButtons"));
+                  oToast_g.Show("Skapad!")
                });
             } break;
             case("update"): {
@@ -155,9 +161,13 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                const sArguments = `query=${sUpdate}` + `\n` + `values=${sValues}`;
 
                
-               gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
-                  PAGE_ProcessResponse(oResult);
+               gd.SendToServer("", "!db/update?echo=user", sArguments).then(function(oResult) {
+                  //PAGE_ProcessResponse(oResult);
                   //CreateButtons(document.querySelector("#idButtons"));
+                  let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+
+                  if( iCount !== 0) { oToast_g.Show("Updaterad!"); }
+                  else {oToast_g.Show("Kunde inte uppdatera")}
                });
 
             } break;
@@ -191,7 +201,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                // If it's already a string, use it directly
                sResult = oData.data;
             }*/
-
+            console.log(oData.data);
             let sValue = JSON.parse(oData.data.querySelector("result").textContent);
             sResult = sValue.key;
             oDocument_g.key_ = sResult;
