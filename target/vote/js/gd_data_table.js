@@ -149,6 +149,55 @@ class Table {
        return this.aColumn.map(column => column.sAlias || column.sName);
     }
 
+   /** -----------------------------------------------------------------------
+    * Add rows to the table
+    *
+    * Add rows and most flexible way possible. It can handle arrays, objects, and strings.
+    * Adding rows as string needs a splitter, default is ","
+    * If object is passed the key is matched to the column name
+    *
+    * @example
+    * // Add a single row as an array
+    * table.Add(["John", "Doe", 30]);
+    *
+    * // Add multiple rows as an array of arrays
+    * table.Add([["John", "Doe", 30], ["Jane", "Smith", 25]]);
+    *
+    * // Add a single row as an object
+    * table.Add({name: "John", surname: "Doe", age: 30});
+    *
+    * // Add multiple rows as an array of objects
+    * table.Add([{name: "John", surname: "Doe", age: 30}, {name: "Jane", surname: "Smith", age: 25}]);
+    *
+    * // Add a single row as a string with a custom separator
+    * table.Add("John,Doe,30", ",");
+    *
+    * @param {Object |Array | string} table_ - Data to add (string, row array, or array of rows)
+    * @param {string} sSeperator - Optional separator for string input (default: ",")
+    */
+   Add(table_, sSeperator) {
+      let aTable = table_; // array with rows to add
+      if(typeof table_ === "string") {
+         if(!sSeperator) { sSeperator = "," }                                 // default separator is ","
+         aTable = [table_.split(sSeperator)];
+      }
+      else if(Array.isArray(table_) && table_.every(Array.isArray) == false) { aTable = [table_]; } // check for single [] to add
+      else if( Object.prototype.toString.call(table_) === "[object Object]") {
+         // ## generate array with the amount of columns table has
+         const iColumnCount = this.GetColumnCount();
+         aTable = Array(iColumnCount); // Initialize array with undefined values
+
+         // ## Iterate object, find matching column and set value in array ...
+         for(const [key_, value_] of Object.entries(table_)) {
+            const iColumn = this.GetColumnIndex(key_); // column index for key name
+            if(iColumn !== -1) { aTable[iColumn] = value_; }
+         }
+         aTable = [aTable];                                                   // Wrap the array in another array to match the expected format
+      }
+
+      // ## Add rows to internal table .......................................
+      for(let i = 0; i < aTable.length; i++) { this.aTable.push(aTable[i]); }
+   }
 
    /** -----------------------------------------------------------------------
     * Returns array with table data
@@ -684,39 +733,6 @@ class Table {
    // Return number of rows --------------------------------------------------
    Size() { return this.aTable.length; }
    GetRowCount() {  return this.aTable.length; }
-
-   /** -----------------------------------------------------------------------
-    * Add rows to the table
-    *
-    * Adding rows as string needs a splitter, default is ","
-    * If object is passed the key is matched to the column name
-    *
-    * @param {Object |Array | string} table_ - Data to add (string, row array, or array of rows)
-    * @param {string} sSeperator - Optional separator for string input (default: ",")
-    */
-   Add(table_, sSeperator) {
-      let aTable = table_;
-      if(typeof table_ === "string") {
-         if(!sSeperator) { sSeperator = "," }                                 // default separator is ","
-         aTable = [table_.split(sSeperator)];
-      }
-      else if(Array.isArray(table_) && table_.every(Array.isArray) == false) { aTable = [table_]; } // check for single [] to add
-      else if( Object.prototype.toString.call(table_) === "[object Object]") {
-         // ## generate array with the amount of columns table has
-         const iColumnCount = this.GetColumnCount();
-         aTable = Array(iColumnCount); // Initialize array with undefined values
-
-         // ## Iterate object, find matching column and set value in array ...
-         for(const [key_, value_] of Object.entries(table_)) {
-            const iColumn = this.GetColumnIndex(key_); // column index for key name
-            if(iColumn !== -1) { aTable[iColumn] = value_; }
-         }
-         aTable = [aTable];                                                   // Wrap the array in another array to match the expected format
-      }
-
-      // ## Add rows to internal table .......................................
-      for(let i = 0; i < aTable.length; i++) { this.aTable.push(aTable[i]); }
-   }
 
    /** -----------------------------------------------------------------------
     * Deletes one or more rows from the table.

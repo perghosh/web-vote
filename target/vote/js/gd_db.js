@@ -172,6 +172,9 @@ class DBRecord {
 
    /** ------------------------------------------------------------------------
     * Get the key value (works when there's exactly one key column)
+    *
+    * Key values are values used as primary keys in the database.
+    *
     * @returns {*} The key value or undefined
     */
    GetKeyValue() {
