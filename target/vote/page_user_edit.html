@@ -77,13 +77,8 @@ data-section="edit-user-command" - Container for the command buttons used to edi
             border-bottom: 2px solid var(--color-border);
         }
 
-        .container-result tbody tr {
-            border-bottom: 1px solid var(--color-border);
-        }
-
-        .container-result tbody tr:hover {
-            background: var(--background-light-hover);
-        }
+        .container-result tbody tr { border-bottom: 1px solid var(--color-border); }
+        .container-result tbody tr:hover { background: var(--background-light-hover); }
 
         .container-result td {
            cursor: pointer;
@@ -98,7 +93,7 @@ data-section="edit-user-command" - Container for the command buttons used to edi
 <body>
     <div id="idPage" class="page-container" data-section="container">
 
-        <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;">
+        <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;" novalidate>
            <!-- Search Bar -->
            <div data-section="search" class="group" style="margin-bottom: 20px; margin-top: 0;">
               <div class="row">
@@ -113,7 +108,7 @@ data-section="edit-user-command" - Container for the command buttons used to edi
            </div>
 
            <div data-section="select-users" class="container-result"></div>
-           <div data-section="form"></div>
+           <div data-section="user-form"></div>
            <div class="row" data-section="edit-user-command" style="justify-content: flex-end;">
                <button class="button" data-action="add">Save as new user</button>
                <button class="button" style="visibility: hidden;" data-action="update" data-idle="user_key">Update</button>
@@ -164,8 +159,8 @@ function PAGE_initialize() {
    oDocument_g.AddRecord(oRecord);
 
    // ## Generate input form for user .........................................
-   const eForm = document.getElementById('idUser').querySelector('div[data-section="form"]');
-   PAGE_GenerateEditFields(eForm, aEditField);
+   const eUserForm = document.getElementById('idUser').querySelector('div[data-section="user-form"]');
+   PAGE_GenerateEditFields(eUserForm, aEditField);
 
    // ## Configure toast ............................................
    oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
@@ -242,12 +237,23 @@ function PAGE_SetListeners() {
       if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key ) {
          e_.stopPropagation();
          const sKey = eTarget.parentNode.dataset.key;
-         console.log( `Clicked on TD with key ${sKey}` );
          const sSelect = "SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}";
          const sArguments = `query=${sSelect}`+ "\n" + `values=${JSON.stringify({ UserK: sKey })}`;
          gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
-            const sResult = oResult.data.querySelector("result").textContent;
-            console.log( `Received result: ${sResult}` );
+            const aUserResult = JSON.parse( oResult.data.querySelector("result").textContent );
+            const oDBRecord = oDocument_g.GetRecord( "TUser" );                                    console.assert( oDBRecord, "oDBRecord is null" );
+            oDBRecord.SetValue( aUserResult );
+            oDBRecord.SetKeyValue( sKey );
+
+            const oValues = oDBRecord.GetAllValues();
+            // Iterate over the values and display them in the UI, find values with data-field attribute and key
+            const eUserForm = document.getElementById('idUser').querySelector('div[data-section="user-form"]');
+
+            // Set values for all data-field inputs in one pass
+            const eInputs = eUserForm.querySelectorAll('[data-field]');
+            for(const eInput of eInputs) { eInput.value = oValues[eInput.dataset.field] || ""; }
+
+            PAGE_Update();
          });
          return;
       }
@@ -320,8 +326,14 @@ function PAGE_SetListeners() {
             oToast_g.Show('User key ' + sUserKey);
             gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
                const iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
-               if(iCount !== 0) { oToast_g.Show('User deleted successfully'); }
+               if(iCount !== 0) {
+                  oToast_g.Show('User deleted successfully');
+                  oDBRecord.ClearValues();
+                  document.getElementById('idUser').querySelectorAll("[data-field]").forEach(eInput => eInput.value = "");
+               }
                else { oToast_g.Show('Failed to delete user'); }
+
+               PAGE_Update();
             });
          } break;
          default:
@@ -412,7 +424,7 @@ function PAGE_ProcessResponse(oData, sOperation) {
             }
          };
 
-         const oUITable = new UITableLite( eSelectUser, oTable, { aColumns: [1,2,3], bHeader: true, bIndices: true, fnCallback: fnSelectUser } );
+         const oUITable = new UITableLite( eSelectUser, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, fnCallback: fnSelectUser } );
          oUITable.Render();
 
          // eSelectUser.innerText = oTable.AsJson();
