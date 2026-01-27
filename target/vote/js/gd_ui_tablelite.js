@@ -36,13 +36,14 @@
  * @param {Array<number|string>} [options_.aColumns=null] - Array of column indices or names to render (null = all columns).
  * @param {boolean} [options_.bHeader=true] - Whether to render header row.
  * @param {boolean} [options_.bIndex=false] - Whether to include row index column.
+ * @param {boolean} [options_.bIndices=false] - Whether to retrieve and pass original row indices to callbacks.
  * @param {number} [options_.iSort=0] - Column to sort by (positive=ascending, negative=descending).
  * @param {Function} [options_.fnCallback] - Single callback for all customization: (sCommand, oData) => any.
  *   Commands:
- *   - "row": Customize row element. oData: { aRow, iIndex, eRow }
- *   - "cell": Customize cell content. oData: { value, iColumn, iRow, eCell }. Return string/HTMLElement to override content.
- *   - "row_class": Set row classes. oData: { aRow, iIndex }. Return string|Array<string>.
- *   - "cell_class": Set cell classes. oData: { value, iColumn, iRow }. Return string|Array<string>.
+ *   - "row": Customize row element. oData: { aRow, iIndex, iOriginalIndex, eRow }
+ *   - "cell": Customize cell content. oData: { value, iColumn, iRow, iOriginalIndex, eCell }. Return string/HTMLElement to override content.
+ *   - "row_class": Set row classes. oData: { aRow, iIndex, iOriginalIndex }. Return string|Array<string>.
+ *   - "cell_class": Set cell classes. oData: { value, iColumn, iRow, iOriginalIndex }. Return string|Array<string>.
  * @param {Object} [options_.oStyle] - CSS class names for styling.
  * @param {string} [options_.oStyle.table=''] - Class for table element.
  * @param {string} [options_.oStyle.thead=''] - Class for thead element.
@@ -55,16 +56,11 @@ class UITableLite {
 
    constructor(parent_, table_, options_ = {}) {
       // ## Resolve parent element ............................................
-      let eParent;
-      if( typeof parent_ === "string" ) {
-         eParent = document.querySelector(parent_);
-         if( !eParent ) eParent = document.getElementById(parent_);
-      }
-      else {
-         eParent = parent_;
-      }
+      const eParent = typeof parent_ === "string"
+         ? document.querySelector(parent_) ?? document.getElementById(parent_)
+         : parent_;
 
-      if( !eParent ) { throw new Error('UITableLite: Parent element not found'); }
+      if(!eParent) { throw new Error('UITableLite: Parent element not found'); }
       if( !(table_ instanceof Table) ) { throw new Error('UITableLite: Invalid Table instance'); }
 
       // Store references
@@ -74,7 +70,7 @@ class UITableLite {
       // ## Apply options with defaults .......................................
       this.oOptions = Object.assign({
          // null = all columns
-         aColumns: null, bHeader: true, bIndex: false, iSort: 0, fnCallback: null,
+         aColumns: null, bHeader: false, bIndex: false, iSort: 0, fnCallback: null,
          oStyle: { table: '', thead: '', tbody: '', tr: '', th: '', td: '' }
       }, options_);
 
@@ -90,11 +86,14 @@ class UITableLite {
    /** -----------------------------------------------------------------------
     * Render the table into the parent container.
     * Creates a new table element and populates it with data from the Table instance.
+    * @param {Table} [oTable] - The Table instance to render.
     * @returns {HTMLElement} The rendered table element.
     */
-   Render() {
+   Render(oTable = this.table) {
+      if(!(oTable instanceof Table)) { throw new Error('Render: Invalid Table instance'); }
+
       // ## Remove existing table if present ..................................
-      if( this.eTable && this.eTable.parentNode ) { this.eTable.parentNode.removeChild(this.eTable); }
+      this.eTable?.parentNode?.removeChild(this.eTable);
 
       // ## Create table element ..............................................
       this.eTable = document.createElement('table');
@@ -105,10 +104,15 @@ class UITableLite {
          bHeader: this.oOptions.bHeader,
          bIndex: this.oOptions.bIndex,
          iSort: this.oOptions.iSort,
-         aColumn: this.oOptions.aColumns
+         aColumn: this.oOptions.aColumns,
+         bIndices: this.oOptions.bIndices,
       };
 
-      const aData = this.table.GetData(oGetDataOptions);
+      const aGetDataResult = oTable.GetData(oGetDataOptions);
+
+      // Check if GetData returned two arrays (data and indices) or one (just data)
+      const aData = this.oOptions.bIndices ? aGetDataResult[0] : aGetDataResult;
+      const aIndices = this.oOptions.bIndices ? aGetDataResult[1] : null;
 
       if( aData.length === 0 ) {
          // Empty table
@@ -117,15 +121,15 @@ class UITableLite {
       }
 
       // ## Render header if present ..........................................
-      let iDataStart = 0;
+      let iStart = 0;
       if( this.oOptions.bHeader && aData.length > 0 ) {
          const eThead = this._create_thead(aData[0]);
          this.eTable.appendChild(eThead);
-         iDataStart = 1;
+         iStart = 1;
       }
 
       // ## Render body rows ..................................................
-      const eTbody = this._create_tbody(aData, iDataStart);
+      const eTbody = this._create_tbody(aData, iStart, aIndices);
       this.eTable.appendChild(eTbody);
 
       // ## Append to parent ..................................................
@@ -223,77 +227,35 @@ class UITableLite {
     * Create tbody element with data rows.
     * @param {Array<Array>} aData - 2D array of table data.
     * @param {number} iStart - Index to start reading data from.
+    * @param {Array<number>|null} aIndices - Array of original row indices (null if not available).
     * @returns {HTMLElement} The tbody element.
     * @private
     */
-   _create_tbody(aData, iStart) {
+   _create_tbody(aData, iStart, aIndices = null) {
       const eTbody = document.createElement('tbody');
-      if( this.oOptions.oStyle.tbody ) {
-         this._add_classes(eTbody, this.oOptions.oStyle.tbody);
-      }
+      if(this.oOptions.oStyle.tbody) { this._add_classes(eTbody, this.oOptions.oStyle.tbody);  }
 
-      // ## Create rows .......................................................
-      for( let iRow = iStart; iRow < aData.length; iRow++ ) {
+      for(let iRow = iStart; iRow < aData.length; iRow++) {
          const aRow = aData[iRow];
-         const iActualRow = iRow - iStart; // Actual row index (excluding header)
+         const iActualRow = iRow - iStart;
+         const iOriginalIndex = aIndices ? aIndices[iRow - iStart] : iActualRow;
 
-         const eTr = document.createElement('tr');
+         const eTr = document.createElement('tr'); // create table row element
+         this._add_classes(eTr, this.oOptions.oStyle.tr);
 
-         // ### Apply base row class ..........................................
-         if( this.oOptions.oStyle.tr ) {
-            this._add_classes(eTr, this.oOptions.oStyle.tr);
-         }
+         this._apply_row_classes(eTr, aRow, iActualRow, iOriginalIndex);
 
-         // ### Apply custom row classes from callback .......................
-         if( this.oOptions.fnCallback ) {
-            const sClass = this.oOptions.fnCallback("row_class", { aRow: aRow, iIndex: iActualRow });
-            if( sClass ) { this._add_classes(eTr, sClass); }
-         }
+         for(let iCol = 0; iCol < aRow.length; iCol++) {
+            const eTd = document.createElement('td'); // create table cell element
+            this._add_classes(eTd, this.oOptions.oStyle.td);
 
-         // ### Create cells ..................................................
-         for( let iCol = 0; iCol < aRow.length; iCol++ ) {
-            const eTd = document.createElement('td');
-
-            // #### Apply base cell class .....................................
-            if( this.oOptions.oStyle.td ) {
-               this._add_classes(eTd, this.oOptions.oStyle.td);
-            }
-
-            // #### Apply custom cell classes from callback ..................
-            if( this.oOptions.fnCallback ) {
-               const sClass = this.oOptions.fnCallback("cell_class", { value: aRow[iCol], iColumn: iCol, iRow: iActualRow });
-               if( sClass ) { this._add_classes(eTd, sClass); }
-            }
-
-            // #### Set cell content ..........................................
-            let vContent = aRow[iCol];
-
-            // ##### Apply cell callback if provided ..........................
-            if( this.oOptions.fnCallback ) {
-               const vResult = this.oOptions.fnCallback("cell", { value: vContent, iColumn: iCol, iRow: iActualRow, eCell: eTd });
-               if( vResult !== undefined && vResult !== null ) {
-                  vContent = vResult;
-               }
-            }
-
-            // ##### Set content ..............................................
-            if( typeof vContent === 'string' || typeof vContent === 'number' ) {
-               eTd.textContent = vContent;
-            }
-            else if( vContent instanceof HTMLElement ) {
-               eTd.appendChild(vContent);
-            }
-            else if( vContent !== null && vContent !== undefined ) {
-               eTd.textContent = String(vContent);
-            }
+            this._apply_cell_classes(eTd, aRow[iCol], iCol, iActualRow, iOriginalIndex);
+            this._apply_cell_content(eTd, aRow[iCol], iCol, iActualRow, iOriginalIndex);
 
             eTr.appendChild(eTd);
          }
 
-         // ### Apply row callback ............................................
-         if( this.oOptions.fnCallback ) {
-            this.oOptions.fnCallback("row", { aRow: aRow, iIndex: iActualRow, eRow: eTr });
-         }
+         this._get_callback_result("row", { aRow, iIndex: iActualRow, iOriginalIndex, eRow: eTr });
 
          eTbody.appendChild(eTr);
       }
@@ -308,7 +270,7 @@ class UITableLite {
     * @private
     */
    _add_classes(element_, classes_) {
-      if( !classes_ ) return;
+      if( !classes_ ) return;                                                 // return early if no classes provided
 
       if( Array.isArray(classes_) ) {
          classes_.forEach(sClass => {
@@ -318,6 +280,41 @@ class UITableLite {
       else if( typeof classes_ === 'string' ) {
          const aClasses = classes_.split(' ').filter(s => s.length > 0);
          aClasses.forEach(sClass => element_.classList.add(sClass));
+      }
+   }
+
+   // Helper to safely call the callback
+   _get_callback_result(command, data) {
+      if(!this.oOptions.fnCallback) return undefined;                         // return early if no callback provided
+      return this.oOptions.fnCallback(command, data);
+   }
+
+   // Apply custom row classes
+   _apply_row_classes(eTr, aRow, iActualRow, iOriginalIndex) {
+      const classes = this._get_callback_result("row_class", { aRow, iIndex: iActualRow, iOriginalIndex });
+      if(classes) this._add_classes(eTr, classes);
+   }
+
+   // Apply custom cell classes
+   _apply_cell_classes(eTd, value, iColumn, iRow, iOriginalIndex) {
+      const classes = this._get_callback_result("cell_class", { value, iColumn, iRow, iOriginalIndex });
+      if(classes) this._add_classes(eTd, classes);
+   }
+
+   // Handle cell content + callback override
+   _apply_cell_content(eTd, value, iColumn, iRow, iOriginalIndex) {
+      let content = value;
+
+      const result = this._get_callback_result("cell", { value, iColumn, iRow, iOriginalIndex, eCell: eTd });
+
+      if(result !== undefined && result !== null) { content = result; }
+
+      if(typeof content === 'string' || typeof content === 'number') {
+         eTd.textContent = content;
+      } else if(content instanceof HTMLElement) {
+         eTd.appendChild(content);
+      } else if(content != null) {
+         eTd.textContent = String(content);
       }
    }
 }

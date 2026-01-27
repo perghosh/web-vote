@@ -150,6 +150,23 @@ class Table {
     }
 
    /** -----------------------------------------------------------------------
+    * Get cell
+    * This differs from GetCellValue by returning the cell object instead of the value.
+    * Value in cell if cell is array is the first element of the array.
+    * @param {number} iRow index for row
+    * @param {number | string} column_ index for column or column name
+    */
+   GetCell(iRow, column_) {
+      let iColumn = column_;
+      if( typeof column_ === "string") { iColumn = this.GetColumnIndex(column_); }
+      if(iRow < 0 || iRow >= this.aTable.length || iColumn < 0 || iColumn >= this.aColumn.length) {
+         return null;
+      }
+
+      return this._GetCellValue(iRow, iColumn);
+   }
+
+   /** -----------------------------------------------------------------------
     * Add rows to the table
     *
     * Add rows and most flexible way possible. It can handle arrays, objects, and strings.
@@ -201,6 +218,15 @@ class Table {
 
    /** -----------------------------------------------------------------------
     * Returns array with table data
+    *
+    * @example
+    * // Normal call → just data
+    * const data = table.GetData();
+    *
+    * @example
+    * // With indices after sorting / filtering
+    * const [displayed, origIndices] = table.GetData({ bIndices: true, iSort: -1, aRows: [3,1,4] });
+    *
     * @param {Object|string} options_ Configuration options or a string shorthand
     * @param {boolean} [options_.bHeader=true] Include header row at the beginning
     * @param {boolean} [options_.bIndex=false] Include row index as first column
@@ -209,30 +235,11 @@ class Table {
     *                                    Index adjusts based on bIndex option.
     * @param {Array<number>} [options_.aRows] Array of row indices to include
     * @param {Array<number>} [options_.aColumn] Array of column indices to include
-    * @returns {Array<Array>} 2D array of table data
-    * @example
-    * // Get all data with header (default)
-    * const data = table.GetData();
-    *
-    * @example
-    * // String shorthand: include index column
-    * const data = table.GetData('index');
-    *
-    * @example
-    * // String shorthand: include both index and header
-    * const data = table.GetData('index header');
-    *
-    * @example
-    * // String shorthand: include both index and header, and selected rows
-    * const data = table.GetData({ aRows: [0, 2, 4] });
-    *
-    * @example
-    * // Object options: sort by column 2 descending, no header
-    * const data = table.GetData({
-    *   bHeader: false,
-    *   bIndex: true,
-    *   iSort: -2  // Sorts by second column descending
-    * });
+    * @param {boolean} [options_.bIndices=false] If true then two arrays are returned.
+    *                                            The first array contains the data, and
+    *                                            the second array contains the indices
+    *                                            of the rows in the original table.
+    * @returns {Array<Array>|Array<Array, Array<number>>} 2D array of table data — or — [data, original row indices]
     */
    GetData(options_) {
       if( typeof options_ === 'string' ) {
@@ -243,70 +250,78 @@ class Table {
          options_ = o;
       }
 
-      const oOptions = Object.assign({ bHeader: true, iSort: 0, bIndex: false, aRows: null, aColumn: null }, options_); // retrieval configuration
-      let aData = []; // Generated data that is returned
+      const oOptions = Object.assign({ bHeader: true, iSort: 0, bIndex: false, aRows: null, aColumn: null, bIndices: false }, options_); // retrieval configuration
+      let aData = []; // Generated data rows that will be returned
+      let aIndices = []; // Parallel array tracking original row positions
 
       // ## Build table data to return  .......................................
       if( oOptions.bIndex === false ) {                                       // No index, be aware about how to access row data
-         for(let i = 0; i < this.aTable.length; i++) { aData.push(this.GetRow(i)); }
+         for(let i = 0; i < this.aTable.length; i++) {
+            aData.push(this.GetRow(i));
+            aIndices.push(i);
+         }
       }
       else if( oOptions.bIndex === true ) {                                   // Add index to row
          for(let i = 0; i < this.aTable.length; i++) {
             let aRow = [i];
-            aRow = aRow.concat(this.GetRow(i))
-            aData.push( aRow );
+            aRow = aRow.concat(this.GetRow(i));
+            aData.push(aRow);
+            aIndices.push(i);
          }
       }
 
       // ## If selected rows then extract rows into new array and use that ...
       if( oOptions.aRows !== null ) {
-         aData = oOptions.aRows.map(iRow => aData[iRow]);
+         const aNewData = [];
+         const aNewIndices = [];
+         for( let i = 0; i < oOptions.aRows.length; i++ ) {
+            const iOrig = oOptions.aRows[i];
+            aNewData.push(aData[iOrig]);
+            aNewIndices.push(aIndices[iOrig]);
+         }
+         aData = aNewData;
+         aIndices = aNewIndices;
       }
 
       // ## If selected columns then extract columns from each row ...............
       if( oOptions.aColumn !== null ) {
-         aData = aData.map(aRow => {
-            return oOptions.aColumn.map(iCol => aRow[iCol]);
-         });
+         aData = aData.map(aRow => oOptions.aColumn.map(iCol => aRow[iCol]));
+         // aIndices remains unchanged — it refers to original source rows
       }
 
       // ## Sorting ...........................................................
       const iFirstColumn = oOptions.bIndex === true ? 1 : 0;                  // If index then first column is at 1
       const bIsString = this.GetColumnType(iFirstColumn) === 'string';        // Check if column type is string
-      if(oOptions.iSort > 0) {                                                // ascending order
-         const iSort = oOptions.iSort - iFirstColumn;
-         aData.sort((a, b) => {
-            if(bIsString) {
-               const a_ = a[iSort];
-               const b_ = b[iSort];
 
-               // ## Handle null/undefined values for strings .................
-               if(a_ == null && bIsString == null) return 0;
-               if(a_ == null) return -1;                                     // null/undefined comes before strings
-               if(b_ == null) return 1;                                      // null/undefined comes before strings
-
-               return String(a_).localeCompare(String(b_));
-            }
-            return a[iSort] - b[iSort];
-         });
-      }
-
-      if(oOptions.iSort < 0) {                                                // descending order
+      if(oOptions.iSort !== 0) {
+         const iDirection = oOptions.iSort > 0 ? 1 : -1;
          const iSort = Math.abs(oOptions.iSort) - iFirstColumn;
-         aData.sort((a, b) => {
-            if(bIsString) {
-               const a_ = a[iSort];
-               const b_ = b[iSort];
 
-               // ## Handle null/undefined values for strings (descending order)
-               if(a_ == null && b_ == null) return 0;
-               if(a_ == null) return 1;                                      // null/undefined comes after strings in descending
-               if(b_ == null) return -1;                                     // null/undefined comes after strings in descending
+         let aSortOrder = Array.from({length: aData.length}, (_, iIndex) => iIndex); // Create sort helper indices to keep track of original order
 
-               return String(b_).localeCompare(String(a_));
+         aSortOrder.sort((idxA, idxB) => {
+            const va_ = aData[idxA][iSort];
+            const vb_ = aData[idxB][iSort];
+
+            if( bIsString ) {
+               // ## Handle null/undefined values for strings ................
+               if( va_ == null && vb_ == null ) return 0;
+               if( va_ == null ) return -1 * iDirection;
+               if( vb_ == null ) return  1 * iDirection;
+               return iDirection * String(va_).localeCompare(String(vb_));
             }
-            return b[iSort] - a[iSort];
+
+            // ## numeric comparison ..........................................
+            if( va_ == null ) return -1 * iDirection;
+            if( vb_ == null ) return  1 * iDirection;
+            return iDirection * (va_ - vb_);
          });
+
+         // Apply the same sort order to both data and indices
+         const aSortedData = aSortOrder.map(iIndex => aData[iIndex]);
+         const aSortedIndices = aSortOrder.map(iIndex => aIndices[iIndex]);
+         aData = aSortedData;
+         aIndices = aSortedIndices;
       }
 
       // ## Add header row if specified ......................................
@@ -315,11 +330,12 @@ class Table {
          if(oOptions.aColumn !== null) { aHeader = oOptions.aColumn.map(iColumn => aHeader[iColumn]); } // Filter header columns
          if(oOptions.bIndex) { aHeader = ["#", ...aHeader]; }                 // Add index column if specified
          aData.unshift(aHeader);
+         // Note: no header index is added to aIndices
       }
 
+      if( oOptions.bIndices ) { return [aData, aIndices]; }
       return aData;
    }
-
    /** -----------------------------------------------------------------------
     * Find rows based on find condition
     * @param {Object|Function} find_ Find condition configuration or callback function
@@ -619,23 +635,6 @@ class Table {
 
    // Get internal table data array ------------------------------------------
    Data() { return this.aTable; }
-
-   /** -----------------------------------------------------------------------
-    * Get cell
-    * This difers from GetCellValue by returning the cell object instead of the value.
-    * Value in cell if cell is array is the first element of the array.
-    * @param {number} iRow index for row
-    * @param {number | string} column_ index for column or column name
-    */
-   GetCell(iRow, column_) {
-      let iColumn = column_;
-      if( typeof column_ === "string") { iColumn = this.GetColumnIndex(column_); }
-      if(iRow < 0 || iRow >= this.aTable.length || iColumn < 0 || iColumn >= this.aColumn.length) {
-         return null;
-      }
-
-      return this._GetCellValue(iRow, iColumn);
-   }
 
    /** -----------------------------------------------------------------------
     * Get cell value

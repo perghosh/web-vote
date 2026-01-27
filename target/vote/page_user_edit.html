@@ -63,7 +63,7 @@ data-section="edit-user-command" - Container for the command buttons used to edi
         }
 
         .container-result thead {
-            background: #f5f5f5;
+            background: var(--background-light);
             position: sticky;
             top: 0;
             z-index: 1;
@@ -73,45 +73,26 @@ data-section="edit-user-command" - Container for the command buttons used to edi
             padding: 6px 8px;
             text-align: left;
             font-weight: 600;
-            color: #333;
-            border-bottom: 2px solid #ddd;
+            color: var(--color-body);
+            border-bottom: 2px solid var(--color-border);
         }
 
         .container-result tbody tr {
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--color-border);
         }
 
         .container-result tbody tr:hover {
-            background: #f9f9f9;
+            background: var(--background-light-hover);
         }
 
         .container-result td {
+           cursor: pointer;
             padding: 5px 8px;
-            color: #555;
+            color: var(--color-muted);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-
-        /* Column widths */
-        .container-result th:nth-child(1),
-        .container-result td:nth-child(1) { width: 35%; }  /* id */
-        .container-result th:nth-child(2),
-        .container-result td:nth-child(2) { width: 35%; }  /* alias */
-        .container-result th:nth-child(3),
-        .container-result td:nth-child(3) { width: 15%; }  /* name */
-        .container-result th:nth-child(4),
-        .container-result td:nth-child(4) { width: 15%; }  /* lastname */
-
-        /* Container needs to be a visible card */
-        /*.page-container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 800px;
-        }*/
     </style>
 </head>
 <body>
@@ -257,6 +238,21 @@ function PAGE_SetListeners() {
    const eUserContainer = document.getElementById('idUser');
    eUserContainer.addEventListener("click", function(e_) {
       const eTarget = e_.target;
+
+      if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key ) {
+         e_.stopPropagation();
+         const sKey = eTarget.parentNode.dataset.key;
+         console.log( `Clicked on TD with key ${sKey}` );
+         const sSelect = "SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}";
+         const sArguments = `query=${sSelect}`+ "\n" + `values=${JSON.stringify({ UserK: sKey })}`;
+         gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
+            const sResult = oResult.data.querySelector("result").textContent;
+            console.log( `Received result: ${sResult}` );
+         });
+         return;
+      }
+
+
       if(!eTarget.dataset.action) return;                             // If no action is defined, return
       e_.stopPropagation();
       const eContainer = eTarget.closest('[data-section="container"]');
@@ -394,7 +390,7 @@ function PAGE_ProcessResponse(oData, sOperation) {
       else if( sOperation === "select-users" ) {
          const eSelect = eResults.querySelector('result[command="select"]');   // get result from select query finding users
          const aUser = JSON.parse( eSelect.textContent );
-         aUser.shift();                                                        // remove first row from aUser that is columns
+         aUser.shift();                                                         // remove first row from aUser that is columns
 
          const eSelectUser = document.getElementById("idUser").querySelector('[data-section="select-users"]');
          eSelectUser.innerHTML = "";
@@ -405,7 +401,18 @@ function PAGE_ProcessResponse(oData, sOperation) {
          // loop array and add rows to table
          for (const aRow of aUser) {  oTable.Add( aRow ); }
 
-         const oUITable = new UITableLite( eSelectUser, oTable );
+         // callback used for selecting a user
+         const fnSelectUser = (sEvent, oParameter) => {
+            //console.log( sEvent, oParameter );
+            if( sEvent === "row" ) {
+               const iRow = oParameter.iOriginalIndex;
+               const eRow = oParameter.eRow;
+               const sKey = oTable.GetCell(iRow, 0);
+               eRow.dataset.key = sKey;
+            }
+         };
+
+         const oUITable = new UITableLite( eSelectUser, oTable, { aColumns: [1,2,3], bHeader: true, bIndices: true, fnCallback: fnSelectUser } );
          oUITable.Render();
 
          // eSelectUser.innerText = oTable.AsJson();
