@@ -77,6 +77,33 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       eParent.appendChild(eButtonDelete);
    }
 
+   /** ------------------------------------------------------------------------
+    * Clears all form input fields within the given parent element
+    */ 
+   function PAGE_DeleteFieldInputs(eParent)
+   {
+      const aFields = eParent.querySelectorAll("[data-field]");
+
+      aFields.forEach((eField) => {
+         eField.value = "";
+      });
+   }
+
+   /** ------------------------------------------------------------------------
+    * Removes action buttons except the "add" button from the button row
+    */ 
+   function PAGE_DeleteButtons(eParent)
+   {
+      const aButtons = eParent.querySelectorAll("#idButtons button");
+
+      aButtons.forEach((eButton) => {
+         if(eButton.dataset.action !== "add")
+         {
+            eButton.remove();  
+         }
+      });
+   }
+
    // Start page initialization -----------------------------------------------
    document.addEventListener('DOMContentLoaded', function() {
       PAGE_Initialize();                                                      // Initialize page
@@ -153,7 +180,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                });
             } break;
             case("update"): {
-               const sUpdate = "UPDATE TPoll SET FName = {FName}, FHeader = {FHeader}, FDescription = {FDescription} WHERE PollK = {PollK}";
+               const sUpdate = "UPDATE TPoll SET FName = {FName}, FHeader = {FHeader}, FDescription = {FDescription} WHERE PollK = x''{=PollK}''";
 
                oFields.PollK = oDocument_g.key_;
                const sValues = JSON.stringify(oFields);
@@ -169,7 +196,24 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                   if( iCount !== 0) { oToast_g.Show("Updaterad!"); }
                   else {oToast_g.Show("Kunde inte uppdatera")}
                });
+            } break;
+            case("delete"): {
+               const sDelete = "DELETE FROM TPoll WHERE PollK = x''{=PollK}''";
 
+               const sValues = JSON.stringify({ PollK: oDocument_g.key_ });
+
+               const sArguments = `query=${sDelete}` + `\n` + `values=${sValues}`;
+
+               gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
+                  let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+
+                  if( iCount !== 0) { 
+                     oToast_g.Show("Bort tagen!"); 
+                     PAGE_DeleteFieldInputs(eContainer);
+                     PAGE_DeleteButtons(eContainer);
+                  }
+                  else {oToast_g.Show("Kunde inte ta bort")}
+               });
             } break;
             default:
                console.error("Unknown action:", sAction);
