@@ -149,8 +149,20 @@ function PAGE_initialize() {
 
    // Initialize document object
    oDocument_g = new CDocument;
-   //let oRecord = new DBRecord({sName: "UserK", bKey: true}, "TUser" );
-   let oRecord = new DBRecord();
+
+   const fnRead = function(sName, oRecord) {
+      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
+      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      if( eField ) { this.SetValue( sName, eField.value ); }
+   };
+
+   const fnWrite = function(sName, oRecord) {
+      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
+      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      if( eField ) { eField.value = this.GetValue(sName); }
+   };
+
+   let oRecord = new DBRecord([], { fnRead, fnWrite });
    oRecord.table = "TUser";
 
    oRecord.AddColumn( aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"} );
@@ -242,16 +254,12 @@ function PAGE_SetListeners() {
          gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
             const aUserResult = JSON.parse( oResult.data.querySelector("result").textContent );
             const oDBRecord = oDocument_g.GetRecord( "TUser" );                                    console.assert( oDBRecord, "oDBRecord is null" );
-            oDBRecord.SetValue( aUserResult );
-            oDBRecord.SetKeyValue( sKey );
-
-            const oValues = oDBRecord.GetAllValues();
-            // Iterate over the values and display them in the UI, find values with data-field attribute and key
-            const eUserForm = document.getElementById('idUser').querySelector('div[data-section="user-form"]');
-
-            // Set values for all data-field inputs in one pass
-            const eInputs = eUserForm.querySelectorAll('[data-field]');
-            for(const eInput of eInputs) { eInput.value = oValues[eInput.dataset.field] || ""; }
+            oDBRecord.ClearValues();
+            if( aUserResult.length > 1) {
+               oDBRecord.SetValue( aUserResult );                              // first row is column names, set values from the result
+               oDBRecord.( sKey );
+               oDBRecord.WriteValues();
+            }
 
             PAGE_Update();
          });
@@ -262,21 +270,12 @@ function PAGE_SetListeners() {
       if(!eTarget.dataset.action) return;                             // If no action is defined, return
       e_.stopPropagation();
       const eContainer = eTarget.closest('[data-section="container"]');
+      const sAction = eTarget.dataset.action;
 
       // ## User table record and action .....................................
       const oDBRecord = oDocument_g.GetRecord( "TUser" );                                          console.assert( oDBRecord, "oDBRecord is null" );
-      const sAction = eTarget.dataset.action;
 
-      // ## Collect values from elements with attribute 'data-field'
-      const aFields = eContainer.querySelectorAll('[data-field]');
-      const oFields = {};
-      aFields.forEach(function(eField) {
-         const sField = eField.dataset.field;
-         const sValue = eField.value;
-         oFields[sField] = sValue;
-      });
-
-      oDBRecord.SetValue(oFields);
+      oDBRecord.ReadValues();
 
       switch(sAction) {
          case "search": {
@@ -290,10 +289,10 @@ function PAGE_SetListeners() {
             });
          } break;
          case "add": {                                                 // send command to wed server
-            // const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
+            oDBRecord.LoadValues();
             const sInsert = "#user-add";
             const sSelect = "SELECT * FROM TUser WHERE UserK = x''{::key}''";
-            const sValues = JSON.stringify(oFields);
+            const sValues = JSON.stringify(oDBRecord.GetAllValues());
             const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}` + "\n" + `query=${sSelect}`;
 
             oToast_g.Show('Skickar värden för att lägga till användare!');
@@ -303,10 +302,11 @@ function PAGE_SetListeners() {
             });
          } break;
          case "update": {                                                  // save command
+            oDBRecord.LoadValues();
             const sUserKey = oDBRecord.GetKeyValue();
             const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FFirstName = {FFirstName}, FLastName = {FLastName}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{=UserK}''";
             oFields["UserK"] = oDBRecord.GetKeyValue();
-            const sValues = JSON.stringify(oFields);
+            const sValues = JSON.stringify(oDBRecord.GetAllValues());
             const sArguments = `query=${sUpdate}` + "\n" + `values=${sValues}`;
 
             oToast_g.Show('Update user ' + oFields.FAlias);

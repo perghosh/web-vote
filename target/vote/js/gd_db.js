@@ -74,12 +74,16 @@ class DBRecord {
       if(aNames.length !== aUnique.length) { throw new Error("Duplicate column names detected"); }
 
       this.sTable = options_.sTable || "";
+      this.fnRead = options_.fnRead || null;
+      this.fnWrite = options_.fnWrite || null;
+
 
       // ## Use Map for O(1) value lookups instead of array ..................
       this.mapValues = new Map();
 
       // ## Cache key columns for performance ................................
       this._aKeyColumns = null;
+
 
       // ## Initialize with provided values if any ...........................
       if(options_.aValues) { options_.aValues.forEach(value_ => this.AddValue(value_)); }
@@ -203,7 +207,45 @@ class DBRecord {
    /** ------------------------------------------------------------------------
     * Clear all values from the record
     */
-   ClearValues() { this.mapValues.clear(); this._aKeyColumns = null; }
+   ClearValues() {
+      // Set all values to null
+      this.mapValues.forEach((value, key) => { this.mapValues.set(key, null); });
+      this.WriteValues();
+      this._aKeyColumns = null;
+   }
+
+
+   /** ------------------------------------------------------------------------
+    * Load values by calling the registered callback for each column
+    *
+    * This method iterates over all columns and calls the registered callback
+    * for each one. The callback is responsible for retrieving the value and
+    * setting it via oRecord.SetValue()
+    *
+    * @throws {Error} If no callback has been registered
+    */
+   ReadValues(fnRead) {
+      fnRead = fnRead || this.fnRead;
+      if( !fnRead ) { throw new Error("No load callback registered."); }
+
+      this.aColumn.forEach( oColumn => { fnRead.call( this, oColumn.sName, oColumn ); });
+   }
+
+   /** ------------------------------------------------------------------------
+    * Write values by calling the registered callback for each column
+    *
+    * This method iterates over all columns and calls the registered callback
+    * for each one. The callback is responsible for writing the value to the
+    * database.
+    *
+    * @throws {Error} If no callback has been registered
+    */
+   WriteValues(fnWrite) {
+      fnWrite = fnWrite || this.fnWrite;
+      if( !fnWrite ) { throw new Error("No write callback registered."); }
+
+      this.aColumn.forEach( oColumn => { fnWrite.call( this, oColumn.sName, oColumn ); });
+   }
 
    /** ------------------------------------------------------------------------
     * Get the key value (works when there's exactly one key column)
@@ -243,7 +285,10 @@ class DBRecord {
 
       if(aKeyColumns.length === 0) { throw new Error("No key columns defined"); }
 
-      return aKeyColumns.some(column => this.mapValues.has(column.sName));
+      return aKeyColumns.some(column => {
+         const value = this.mapValues.get(column.sName);
+         return value != null;                                                 // Checks for both null AND undefined
+      });
    }
 
    /** ------------------------------------------------------------------------
