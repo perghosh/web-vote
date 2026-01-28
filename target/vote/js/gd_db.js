@@ -1,3 +1,45 @@
+
+/** ============================================================================
+ * DBRecord - Database Record Management Class
+ * ============================================================================
+ * 
+ * A lightweight class for managing database records with schema definition,
+ * value storage, and data synchronization capabilities.
+ * 
+ * ## Key Features:
+ * - Schema-based column definitions with type support
+ * - O(1) value lookups using Map storage
+ * - Automatic key column caching for performance
+ * - Flexible value setting (single, multiple, bulk operations)
+ * - Callback-based data sync (ReadValues/WriteValues) for UI binding
+ * 
+ * ## Basic Usage:
+ * ```javascript
+ * const oRecord = new DBRecord([
+ *    { sName: "FAlias", sType: "string", bKey: true },
+ *    { sName: "FFirstName", sType: "string" }
+ * ], { sTable: "TUser" });
+ * 
+ * oRecord.SetValue("FAlias", "user123");
+ * console.log(oRecord.GetValue("FAlias"));
+ * ```
+ * 
+ * ## Public Methods:
+ * - constructor()          - Create record with schema
+ * - AddValue()              - Add value(s) from object/array
+ * - SetValue()              - Set one or many values
+ * - GetValue()              - Get value by column name
+ * - GetAllValues()          - Get all values as object
+ * - ClearValues()           - Clear all values to null
+ * - ReadValues()            - Load values via callback
+ * - WriteValues()           - Write values via callback
+ * - GetKeyValue()           - Get primary key value
+ * - SetKeyValue()           - Set primary key value
+ * - HasKeyValue()           - Check if key has non-null value
+ * - GetColumnNames()        - Get array of column names
+ * - AddColumn()             - Add new column(s) to schema
+ * - AsJson()                - Convert to JSON object
+ */
 class DBRecord {
    static column = class {
       /**
@@ -50,11 +92,14 @@ class DBRecord {
    }
 
    /** -----------------------------------------------------------------------
+    * Create a new DBRecord instance
     * @param {Array|Object|string} columns_ - Column definitions
     * @param {Object|string} [options_={}] - Configuration options or table name
     * @param {string} [options_.sTable] - Table name
     * @param {Array} [options_.aColumn] - Pre-built column array (overrides columns_)
     * @param {Array} [options_.aValues] - Initial values
+    * @param {Function} [options_.fnRead] - Callback for ReadValues: (sName, oColumn) => void
+    * @param {Function} [options_.fnWrite] - Callback for WriteValues: (sName, oColumn) => void
     */
    constructor(columns_ = [], options_ = {}) {
       if( columns_ === undefined || columns_ === null ) columns_ = [];
@@ -89,11 +134,20 @@ class DBRecord {
       if(options_.aValues) { options_.aValues.forEach(value_ => this.AddValue(value_)); }
    }
 
+   /** ------------------------------------------------------------------------
+    * Get the table name
+    * @returns {string} The table name
+    */
    get table() { return this.sTable; }
+
+   /** ------------------------------------------------------------------------
+    * Set the table name
+    * @param {string} value_ - The table name to set
+    */
    set table(value_) { this.sTable = value_; }
 
    /** ------------------------------------------------------------------------
-    * Add value(s) to the record
+    * Add value(s) to the record from {name, value} format
     * @param {Object|Array|*} value_ - Value to add (object with {name, value}, array of such objects, or single value)
     */
    AddValue(value_) {
@@ -131,7 +185,7 @@ class DBRecord {
    }
 
    /** ------------------------------------------------------------------------
-    * Set value(s) for one or more columns
+    * Set one or many values (supports multiple formats)
     * @param {string|Object|Array} name_ - Column name, object with {sName, value}, object with column names as keys, array of column names, or nested array [[columnNames], [values]]
     * @param {*} [value_] - Value to set (if name_ is string) or array of values (if name_ is array of column names)
     *
@@ -205,7 +259,7 @@ class DBRecord {
    }
 
    /** ------------------------------------------------------------------------
-    * Clear all values from the record
+    * Clear all values from the record (sets to null and calls WriteValues)
     */
    ClearValues() {
       // Set all values to null
@@ -216,12 +270,11 @@ class DBRecord {
 
 
    /** ------------------------------------------------------------------------
-    * Load values by calling the registered callback for each column
+    * Load values from external source via callback (e.g., from HTML inputs)
+    * 
+    * Callback receives (sName, oColumn) and should call this.SetValue(sName, value)
     *
-    * This method iterates over all columns and calls the registered callback
-    * for each one. The callback is responsible for retrieving the value and
-    * setting it via oRecord.SetValue()
-    *
+    * @param {Function} [fnRead] - Optional callback to override constructor callback
     * @throws {Error} If no callback has been registered
     */
    ReadValues(fnRead) {
@@ -232,12 +285,11 @@ class DBRecord {
    }
 
    /** ------------------------------------------------------------------------
-    * Write values by calling the registered callback for each column
+    * Write values to external target via callback (e.g., to HTML inputs)
+    * 
+    * Callback receives (sName, oColumn, value) and should update the target
     *
-    * This method iterates over all columns and calls the registered callback
-    * for each one. The callback is responsible for writing the value to the
-    * database.
-    *
+    * @param {Function} [fnWrite] - Optional callback to override constructor callback
     * @throws {Error} If no callback has been registered
     */
    WriteValues(fnWrite) {
@@ -248,7 +300,7 @@ class DBRecord {
    }
 
    /** ------------------------------------------------------------------------
-    * Get the key value (works when there's exactly one key column)
+    * Get the primary key value (requires exactly one key column)
     *
     * Key values are values used as primary keys in the database.
     *
@@ -264,7 +316,7 @@ class DBRecord {
    }
 
    /** ------------------------------------------------------------------------
-    * Set the value of a key column (works when there's exactly one key column)
+    * Set the primary key value (requires exactly one key column)
     * @param {*} key_ - The key value to set
     */
    SetKeyValue(key_) {
@@ -277,8 +329,8 @@ class DBRecord {
    }
 
    /** ------------------------------------------------------------------------
-    * Check if the record has a value for any key column
-    * @returns {boolean} True if at least one key column has a value
+    * Check if the record has a non-null value for any key column
+    * @returns {boolean} True if at least one key column has a non-null value
     */
    HasKeyValue() {
       const aKeyColumns = this._get_key_columns();
@@ -298,7 +350,7 @@ class DBRecord {
    GetColumnNames() { return this.aColumn.map(column => column.sName); }
 
    /** ------------------------------------------------------------------------
-    * Add column(s) to the record
+    * Add new column(s) to the record schema with optional property mapping
     * @param {Object|Array} column_ - Column definition or array of column definitions
     * @param {Object|string} [map_] - Mapping object or string to map source properties to column properties
     *   - If object: { targetProp: sourceProp, ... } e.g., { sLabel: "label", sName: "field" }
@@ -341,10 +393,10 @@ class DBRecord {
    }
 
     /** ------------------------------------------------------------------------
-     * Convert record to JSON-serializable object
-     * @returns {Object} Object with table, columns, and values
-     */
-    ToJSON() {
+    * Convert record to JSON-serializable object (includes schema and values)
+    * @returns {Object} Object with table, columns, and values
+    */
+    AsJson() {
        return {
           sTable: this.sTable,
           aColumn: this.aColumn.map(c_ => ({
