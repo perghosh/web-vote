@@ -17,15 +17,37 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    <link rel="stylesheet" href="css/input-effects.css">
    <script src="js/gd_browser.js"></script>
    <script src="js/gd_ui_toast.js"></script>
+   <script src="js/gd_ui_tablelite.js"></script>
+   <script src="js/gd_data_table.js"></script>
    <style>
-   * { box-sizing: border-box; margin: 0; padding: 0; }
-   body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
-
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
+      .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+      .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+      .container-result tbody tr { border-bottom: 1px solid var(--color-border); }
+      .container-result tbody tr:hover { background: var(--background-light-hover); }
+      .container-result td { cursor: pointer; padding: 5px 8px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .container-result th { padding: 6px 8px; text-align: left; font-weight: 600; color: var(--color-body); border-bottom: 2px solid var(--color-border); }
+      .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
    </style>
 </head>
 <body>
    <div id="idContainer" class="page-container">
       <form id="idForm" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;">
+         <div data-section="search" class="group" style="margin-bottom: 20px; margin-top: 0;">
+            <div class="row">
+                 <div style="flex: 1;">
+                    <label class="floating">
+                       <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
+                       <span>Search polls</span>
+                    </label>
+                 </div>
+                 <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
+              </div>
+         </div>
+
+         <div data-section="select-polls" class="container-result"></div>
+
          <div class="group">
             <label class="floating">
                <input type="text" placeholder=" " data-field="FName">
@@ -167,6 +189,15 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
          const sAction = eTarget.dataset.action;
 
          switch(sAction) {
+            case("search"): {
+               const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR ''%{=header}%'' ORDER BY FName";
+               const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
+               const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+
+               gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult) {
+                  PAGE_ProcessResponse(oResult, "select-polls");
+               });
+            } break;
             case("add"): {
                const sInsert = "INSERT INTO TPoll (FName, FHeader, FDescription) VALUES ({FName}, {FHeader}, {FDescription}) RETURNING PollK AS 'key', 'TPoll' AS 'table'";
                const sValues = JSON.stringify(oFields);
@@ -231,8 +262,10 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
     *
     * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
     */
-   function PAGE_ProcessResponse(oData) {
+   function PAGE_ProcessResponse(oData, sOperation) {
       let sResult = '';
+      let eResults = null;
+
       switch(oData.type) {
          case 'json':
             sResult = JSON.stringify(oData.data, null, 2);
@@ -245,11 +278,23 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                // If it's already a string, use it directly
                sResult = oData.data;
             }*/
-            console.log(oData.data);
+
+            /*console.log(oData.data);
             let sValue = JSON.parse(oData.data.querySelector("result").textContent);
             sResult = sValue.key;
             oDocument_g.key_ = sResult;
+            */
 
+            // If oData.data is an XML Document object, serialize it to string
+            if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+               //sResult = (new XMLSerializer()).serializeToString(oData.data);
+
+               // ## query results element
+               eResults = oData.data.querySelector('results');                   // get results element holding result elements
+            } else {
+               // If it's already a string, use it directly
+               sResult = oData.data;
+            }
 
             break;
          case 'text':
@@ -257,6 +302,37 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             break;
          default:
             console.error("Unknown response type:", oData.type);
+      }
+
+      if(eResults)
+      {
+         if( sOperation === "select-polls")
+         {
+            const eSelect = eResults.querySelector('result[command="select"]');
+            const aPoll = JSON.parse(eSelect.textContent);
+            aPoll.shift();
+
+            const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
+            eSelectPoll.innerHTML = "";
+
+            const oTable = new Table(["id", "name", "header"]);
+
+            // loop array and add rows to table
+            for(const aRow of aPoll) {oTable.Add(aRow);}
+
+            const fnSelectPoll = (sEvent, oParameter) => {
+               if(sEvent === "row")
+               {
+                  const iRow = oParameter.iOriginalIndex;
+                  const eRow = oParameter.eRow;
+                  const sKey = oTable.GetCell(iRow, 0);
+                  eRow.dataset.key = sKey;  
+               }
+            };
+
+            const oUITable = new UITableLite(eSelectPoll, oTable, { iSort: 0, aColumns: [1, 2], bHeader: true, bIndices: true, fnCallback: fnSelectPoll});
+            oUITable.Render();
+         }
       }
 
       alert(sResult);
