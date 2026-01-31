@@ -38,56 +38,14 @@ data-section="edit-user-command" - Container for the command buttons used to edi
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            align-items: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container-result {
-            margin-top: 10px;
-            overflow-x: auto;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .container-result table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            table-layout: fixed;
-        }
-
-        .container-result thead {
-            background: var(--background-light);
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-        .container-result th {
-            padding: 6px 8px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--color-body);
-            border-bottom: 2px solid var(--color-border);
-        }
-
+        body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
+        .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+        .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
         .container-result tbody tr { border-bottom: 1px solid var(--color-border); }
         .container-result tbody tr:hover { background: var(--background-light-hover); }
-
-        .container-result td {
-           cursor: pointer;
-            padding: 5px 8px;
-            color: var(--color-muted);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+        .container-result td { cursor: pointer; padding: 5px 8px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .container-result th { padding: 6px 8px; text-align: left; font-weight: 600; color: var(--color-body); border-bottom: 2px solid var(--color-border); }
+        .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
     </style>
 </head>
 <body>
@@ -187,6 +145,23 @@ function PAGE_initialize() {
    // ## Start idle timer - call PAGE_OnIdle() once per second
    CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
 
+   //gd.SendToServer("", "!sys/meta/db/fields//?name=user-add").then(function(oResult) {
+   gd.SendToServer("", "!sys/meta/db/fields//sys/meta/query/exists?name=user-add&table=TUser&field=FAlias,FFirstName").then(function(oResult) {
+      const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
+      if( sQueryId ) { oToast_g.Show('Query user-add exists in server, no need to add it again');  }
+      else {
+         const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FFirstName}, {FLastName}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
+         const sArguments = `query=${sInsert}` + "\n" + `name=user-add`
+         gd.SendToServer("", "!sys/meta/query/add?format=jinja&type=insert", sArguments).then(function(oResult) {
+            const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
+            oToast_g.Show('Query user-add added to server, id:' + sQueryId);
+         });
+      }
+   });
+
+
+   return;
+
    gd.SendToServer("", "!sys/meta/query/exists?name=user-add").then(function(oResult) {
       const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
       if( sQueryId ) { oToast_g.Show('Query user-add exists in server, no need to add it again');  }
@@ -257,7 +232,7 @@ function PAGE_SetListeners() {
             oDBRecord.ClearValues();
             if( aUserResult.length > 1) {
                oDBRecord.SetValue( aUserResult );                              // first row is column names, set values from the result
-               oDBRecord.( sKey );
+               oDBRecord.SetKeyValue( sKey );
                oDBRecord.WriteValues();
             }
 
