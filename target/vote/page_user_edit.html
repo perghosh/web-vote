@@ -264,7 +264,6 @@ function PAGE_SetListeners() {
             });
          } break;
          case "add": {                                                 // send command to wed server
-            oDBRecord.LoadValues();
             const sInsert = "#user-add";
             const sSelect = "SELECT * FROM TUser WHERE UserK = x''{::key}''";
             const sValues = JSON.stringify(oDBRecord.GetAllValues());
@@ -277,14 +276,12 @@ function PAGE_SetListeners() {
             });
          } break;
          case "update": {                                                  // save command
-            oDBRecord.LoadValues();
             const sUserKey = oDBRecord.GetKeyValue();
             const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FFirstName = {FFirstName}, FLastName = {FLastName}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{=UserK}''";
-            oFields["UserK"] = oDBRecord.GetKeyValue();
             const sValues = JSON.stringify(oDBRecord.GetAllValues());
             const sArguments = `query=${sUpdate}` + "\n" + `values=${sValues}`;
 
-            oToast_g.Show('Update user ' + oFields.FAlias);
+            oToast_g.Show('Update user ' + oDBRecord.GetValue("FAlias") );
 
             gd.SendToServer("", "!db/update?echo=user", sArguments).then(function(oResult) {
                const iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
