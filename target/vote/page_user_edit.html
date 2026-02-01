@@ -413,22 +413,24 @@ function PAGE_ProcessResponse(oData, sOperation) {
 function PAGE_Update( sType ) {
    if( sType === undefined || sType === "search" ) {
       const oTable = oDocument_g.GetTable("search");
-      const eSelectUser = document.getElementById("idUser").querySelector('[data-section="select-users"]');
-      eSelectUser.innerHTML = "";
+      if( oTable ) {
+         const eSelectUser = document.getElementById("idUser").querySelector('[data-section="select-users"]');
+         eSelectUser.innerHTML = "";
 
-      // callback used for selecting a user
-      const fnSelectUser = (sEvent, oParameter) => {
-         //console.log( sEvent, oParameter );
-         if( sEvent === "row" ) {
-            const iRow = oParameter.iOriginalIndex;
-            const eRow = oParameter.eRow;
-            const sKey = oTable.GetCell(iRow, 0);
-            eRow.dataset.key = sKey;
-         }
-      };
+         // callback used for selecting a user
+         const fnSelectUser = (sEvent, oParameter) => {
+            //console.log( sEvent, oParameter );
+            if( sEvent === "row" ) {
+               const iRow = oParameter.iOriginalIndex;
+               const eRow = oParameter.eRow;
+               const sKey = oTable.GetCell(iRow, 0);
+               eRow.dataset.key = sKey;
+            }
+         };
 
-      const oUITable = new UITableLite( eSelectUser, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, fnCallback: fnSelectUser } );
-      oUITable.Render();
+         const oUITable = new UITableLite( eSelectUser, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, fnCallback: fnSelectUser } );
+         oUITable.Render();
+      }
    }
 
    // ## Updaate based on DBRecord for TUser holds key value or not
