@@ -302,6 +302,16 @@ function PAGE_SetListeners() {
                   oToast_g.Show('User deleted successfully');
                   oDBRecord.ClearValues();
                   document.getElementById('idUser').querySelectorAll("[data-field]").forEach(eInput => eInput.value = "");
+
+                  let oTable = oDocument_g.GetTable("search");                // get search table
+                  if( oTable ) {                                              // if table exists make sure record in result is deleted
+                     let iDeleted = oTable.Delete( { id: sUserKey } );
+                     if(iDeleted > 0) {
+                        //oToast_g.Show('Deleted ' + iDeleted + ' rows from search table');
+                     }
+                  }
+
+                  PAGE_Update();
                }
                else { oToast_g.Show('Failed to delete user'); }
 
@@ -376,30 +386,20 @@ function PAGE_ProcessResponse(oData, sOperation) {
          const aUser = JSON.parse( eSelect.textContent );
          aUser.shift();                                                         // remove first row from aUser that is columns
 
-         const eSelectUser = document.getElementById("idUser").querySelector('[data-section="select-users"]');
-         eSelectUser.innerHTML = "";
-         //eSelectUser.innerText = eSelect.textContent;
 
-         const oTable = new Table( ["id", "alias", "name", "lastname"] );
+         let oTable = oDocument_g.GetTable("search");
+         if (!oTable) {
+            oTable = new Table( ["id", "alias", "name", "lastname"], {sName: "search"} );
+            oDocument_g.AddTable(oTable);
+         }
+         else {
+            oTable.Clear();
+         }
 
          // loop array and add rows to table
          for (const aRow of aUser) {  oTable.Add( aRow ); }
 
-         // callback used for selecting a user
-         const fnSelectUser = (sEvent, oParameter) => {
-            //console.log( sEvent, oParameter );
-            if( sEvent === "row" ) {
-               const iRow = oParameter.iOriginalIndex;
-               const eRow = oParameter.eRow;
-               const sKey = oTable.GetCell(iRow, 0);
-               eRow.dataset.key = sKey;
-            }
-         };
-
-         const oUITable = new UITableLite( eSelectUser, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, fnCallback: fnSelectUser } );
-         oUITable.Render();
-
-         // eSelectUser.innerText = oTable.AsJson();
+         PAGE_Update("search");
       }
       else {
          console.assert( false, "sOperation is unknown" );
@@ -410,7 +410,27 @@ function PAGE_ProcessResponse(oData, sOperation) {
 /** ---------------------------------------------------------------------------
  * Update UI elements
  */
-function PAGE_Update() {
+function PAGE_Update( sType ) {
+   if( sType === undefined || sType === "search" ) {
+      const oTable = oDocument_g.GetTable("search");
+      const eSelectUser = document.getElementById("idUser").querySelector('[data-section="select-users"]');
+      eSelectUser.innerHTML = "";
+
+      // callback used for selecting a user
+      const fnSelectUser = (sEvent, oParameter) => {
+         //console.log( sEvent, oParameter );
+         if( sEvent === "row" ) {
+            const iRow = oParameter.iOriginalIndex;
+            const eRow = oParameter.eRow;
+            const sKey = oTable.GetCell(iRow, 0);
+            eRow.dataset.key = sKey;
+         }
+      };
+
+      const oUITable = new UITableLite( eSelectUser, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, fnCallback: fnSelectUser } );
+      oUITable.Render();
+   }
+
    // ## Updaate based on DBRecord for TUser holds key value or not
    const oDBRecordUser = oDocument_g.GetRecord( "TUser" );
    const bUserHasKey = oDBRecordUser.HasKeyValue();
@@ -458,21 +478,27 @@ class CDocument {
 
    constructor( oOptions = {} ) {
       this.bModified = false; // Initialize modified flag to false
-      this.aRecords = [];
+      this.aRecords = []; // Initialize records array to empty, holds DBRecord objects
+      this.aTable = []; // Initialize table array to empty, holds Table objects
    }
 
-   // Check if document has been modified ------------------------------
+   // Check if document has been modified -------------------------------------
    IsModified() { return this.bModified; }
-   // Set modified flag to true or false -------------------------------
+   // Set modified flag to true or false --------------------------------------
    SetModified(bModified) { this.bModified = bModified; }
 
-   // Add a record to the document -------------------------------------
-   AddRecord(oRecord) {
-      this.aRecords.push(oRecord);
-   }
+   // Add a record to the document --------------------------------------------
+   AddRecord(oRecord) { this.aRecords.push(oRecord); }
 
+   // Get a record by table name ----------------------------------------------
    GetRecord( sTable ) {
       return this.aRecords.find(oRecord => oRecord.table === sTable);
+   }
+
+   AddTable( oTable ) { this.aTable.push(oTable); }
+
+   GetTable( sTable ) {
+      return this.aTable.find(oTable => oTable.name === sTable);
    }
 }
     </script>

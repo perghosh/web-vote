@@ -74,6 +74,7 @@ class Table {
     * If you pass first value in with the format [] it is column data.
     *
     * @param {Object} options_
+    * @param {string} [options_.sName=""] used to identify the table with name for finding in lists
     * @param {Array<Array>} [options_.aTable=[]]
     * @param {Array<string>} [options_.aColumn=[]]
     */
@@ -94,7 +95,12 @@ class Table {
          this.aTable = options_.aTable || [];
          this.aColumn = options_.aColumn || aColumn;
       }
+
+      this.sName = options_.sName || ""; // Initialize name to empty string if not provided
    }
+
+   // Getter for name property
+   get name() { return this.sName; }
 
    /** -----------------------------------------------------------------------
     * Get column index for name or alias
@@ -167,54 +173,56 @@ class Table {
    }
 
    /** -----------------------------------------------------------------------
-    * Add rows to the table
-    *
-    * Add rows and most flexible way possible. It can handle arrays, objects, and strings.
-    * Adding rows as string needs a splitter, default is ","
-    * If object is passed the key is matched to the column name
-    *
-    * @example
-    * // Add a single row as an array
-    * table.Add(["John", "Doe", 30]);
-    *
-    * // Add multiple rows as an array of arrays
-    * table.Add([["John", "Doe", 30], ["Jane", "Smith", 25]]);
-    *
-    * // Add a single row as an object
-    * table.Add({name: "John", surname: "Doe", age: 30});
-    *
-    * // Add multiple rows as an array of objects
-    * table.Add([{name: "John", surname: "Doe", age: 30}, {name: "Jane", surname: "Smith", age: 25}]);
-    *
-    * // Add a single row as a string with a custom separator
-    * table.Add("John,Doe,30", ",");
-    *
-    * @param {Object |Array | string} table_ - Data to add (string, row array, or array of rows)
-    * @param {string} sSeperator - Optional separator for string input (default: ",")
-    */
-   Add(table_, sSeperator) {
-      let aTable = table_; // array with rows to add
-      if(typeof table_ === "string") {
-         if(!sSeperator) { sSeperator = "," }                                 // default separator is ","
-         aTable = [table_.split(sSeperator)];
-      }
-      else if(Array.isArray(table_) && table_.every(Array.isArray) == false) { aTable = [table_]; } // check for single [] to add
-      else if( Object.prototype.toString.call(table_) === "[object Object]") {
-         // ## generate array with the amount of columns table has
-         const iColumnCount = this.GetColumnCount();
-         aTable = Array(iColumnCount); // Initialize array with undefined values
+       * Add rows to the table
+       *
+       * Add rows and most flexible way possible. It can handle arrays, objects, and strings.
+       * Adding rows as string needs a splitter, default is ","
+       * If object is passed the key is matched to the column name
+       *
+       * @example
+       * // Add a single row as an array
+       * table.Add(["John", "Doe", 30]);
+       *
+       * // Add multiple rows as an array of arrays
+       * table.Add([["John", "Doe", 30], ["Jane", "Smith", 25]]);
+       *
+       * // Add a single row as an object
+       * table.Add({name: "John", surname: "Doe", age: 30});
+       *
+       * // Add multiple rows as an array of objects
+       * table.Add([{name: "John", surname: "Doe", age: 30}, {name: "Jane", surname: "Smith", age: 25}]);
+       *
+       * // Add a single row as a string with a custom separator
+       * table.Add("John,Doe,30", ",");
+       *
+       * @param {Object |Array | string} table_ - Data to add (string, row array, or array of rows)
+       * @param {string} sSeparator - Optional separator for string input (default: ",")
+       */
+      Add(table_, sSeparator) {
+         let aTable = table_; // array with rows to add
 
-         // ## Iterate object, find matching column and set value in array ...
-         for(const [key_, value_] of Object.entries(table_)) {
-            const iColumn = this.GetColumnIndex(key_); // column index for key name
-            if(iColumn !== -1) { aTable[iColumn] = value_; }
+         // ## Handle string input ............................................
+         if( typeof table_ === "string" ) {
+            if( !sSeparator ) { sSeparator = ","; }                            // default separator is ","
+            aTable = [table_.split(sSeparator)];
          }
-         aTable = [aTable];                                                   // Wrap the array in another array to match the expected format
-      }
+         // ## Handle single object input..........................................
+         else if( Object.prototype.toString.call(table_) === "[object Object]" ) {
+            aTable = [this._ObjectToRow(table_)];
+         }
+         // ## Handle array of objects .............................................
+         else if( Array.isArray(table_) && table_.length > 0 && Object.prototype.toString.call(table_[0]) === "[object Object]" ) {
+            aTable = [];
+            for( let i = 0; i < table_.length; i++ ) { aTable.push(this._ObjectToRow(table_[i])); }
+         }
+         // ## Handle single row array (not array of arrays) ..................
+         else if( Array.isArray(table_) && table_.every(Array.isArray) === false ) {
+            aTable = [table_];
+         }
 
-      // ## Add rows to internal table .......................................
-      for(let i = 0; i < aTable.length; i++) { this.aTable.push(aTable[i]); }
-   }
+         // ## Add rows to internal table ....................................
+         for( let i = 0; i < aTable.length; i++ ) { this.aTable.push(aTable[i]); }
+      }
 
    /** -----------------------------------------------------------------------
     * Returns array with table data
@@ -336,6 +344,7 @@ class Table {
       if( oOptions.bIndices ) { return [aData, aIndices]; }
       return aData;
    }
+
    /** -----------------------------------------------------------------------
     * Find rows based on find condition
     * @param {Object|Function} find_ Find condition configuration or callback function
@@ -371,70 +380,85 @@ class Table {
     *    return aRow[1] === 'error' || aRow[3] === 'error';
     * });
     */
-   FindAll(find_) {                                                                                console.assert( typeof find_ === 'function' || (typeof find_ === 'object' && find_ !== null), "FindAll: Invalid find condition. Expected a function or an object.");
+   FindAll(find_) {                                                            console.assert( typeof find_ === 'function' || (typeof find_ === 'object' && find_ !== null), "FindAll: Invalid find condition. Expected a function or an object.");
       const aFind = [];
 
       // ## Handle callback function directly ...................................
       if( typeof find_ === 'function' ) {
          for( let iRow = 0; iRow < this.aTable.length; iRow++ ) {
             const aRow = this.GetRow(iRow);
-            if( find_(aRow, iRow) === true ) {
-               aFind.push(iRow);
-            }
+            if( find_(aRow, iRow) === true ) { aFind.push(iRow); }
          }
          return aFind;
       }
 
-      // ## Handle object-based find conditions ..............................
+      // ## Detect which search mode is active .................................
       const bHasCallback = typeof find_.callback === 'function';
-      const bHasValue = 'value' in find_;
-      const bHasColumn = 'iColumn' in find_;
+      const bHasValue    = 'value' in find_;
+      const bHasColumn   = 'iColumn' in find_;
 
-      // ## Callback-based search ..........................................
+      // ## Callback-based search ..............................................
       if( bHasCallback ) {
          for( let iRow = 0; iRow < this.aTable.length; iRow++ ) {
             const aRow = this.GetRow(iRow);
-            if( find_.callback(aRow, iRow) === true ) {
-               aFind.push(iRow);
-            }
+            if( find_.callback(aRow, iRow) === true ) { aFind.push(iRow); }
          }
          return aFind;
       }
 
-      // ## Value-based search ............................................
+      // ## Value-based search .................................................
       if( bHasValue ) {
-         const aValues = Array.isArray(find_.value) ? find_.value : [find_.value]; // Prepare values array
+         const aValues  = Array.isArray(find_.value) ? find_.value : [find_.value];   // Prepare values array
 
          // Prepare columns array (all columns if not specified)
          let aColumns = [];
-         if( bHasColumn ) {
-            aColumns = Array.isArray(find_.iColumn) ? find_.iColumn : [find_.iColumn];
-         }
-         else {
-            for( let iColumn = 0; iColumn < this.aColumn.length; iColumn++ ) { aColumns.push(iColumn); }
-         }
+         if( bHasColumn ) { aColumns = Array.isArray(find_.iColumn) ? find_.iColumn : [find_.iColumn]; }
+         else             { for( let i = 0; i < this.aColumn.length; i++ ) { aColumns.push(i); } }
 
-         // ### Search through rows ..........................................
+         // ### Search through rows ..............................................
          for( let iRow = 0; iRow < this.aTable.length; iRow++ ) {
             const aRow = this.GetRow(iRow);
-            let bMatch = false; // No match yet
+            let bMatch = false;
 
             // #### Check if any column matches any value
             for( let i = 0; i < aColumns.length; i++ ) {
-               const iColumn = aColumns[i];
-               const vCell = aRow[iColumn];
+               const vCell = aRow[aColumns[i]];
 
                for( let j = 0; j < aValues.length; j++ ) {
-                  const vValue = aValues[j];
-
-                  if( vCell == vValue ) { bMatch = true; break; }             // Compare values (handle type coercion for loose matching)
+                  if( vCell == aValues[j] ) { bMatch = true; break; }         // Loose equality for type coercion
                }
                if( bMatch ) break;
             }
 
             if( bMatch ) { aFind.push(iRow); }                                // keep found row index
          }
-      } // if( bHasValue ) {
+         return aFind;
+      }
+
+      // ## Column name-value pairs search .....................................
+      // Remaining keys are treated as { columnName: value } pairs.
+      // All pairs must match for a row to be included (AND logic).
+      // Returns empty if no valid column names are found in find_.
+      const aColumnValuePairs = [];
+      for( const sKey in find_ ) {
+         const iColumn = this.GetColumnIndex(sKey);
+         if( iColumn >= 0 ) { aColumnValuePairs.push({ iColumn: iColumn, value: find_[sKey] }); }
+      }
+
+      if( aColumnValuePairs.length === 0 ) { return aFind; }                  // No valid columns found, return empty
+
+      // ### Search through rows ................................................
+      for( let iRow = 0; iRow < this.aTable.length; iRow++ ) {
+         const aRow = this.GetRow(iRow);
+         let bMatch = true;
+
+         // #### Check if row matches all column-value pairs
+         for( let i = 0; i < aColumnValuePairs.length; i++ ) {
+            if( aRow[aColumnValuePairs[i].iColumn] != aColumnValuePairs[i].value ) { bMatch = false; break; }
+         }
+
+         if( bMatch ) { aFind.push(iRow); }
+      }// for( iRow
 
       return aFind;
    }
@@ -665,21 +689,6 @@ class Table {
    }
 
    /** -----------------------------------------------------------------------
-    * Get cell value
-    * Internal method to get cell value, no checks for valid column or row
-    * @param {number} iRow index for row
-    * @param {number} iColumn index for column
-    */
-   _GetCellValue(iRow, iColumn) {
-      let value_ = this.aTable[iRow][iColumn]; // Get raw cell value from cell position
-      if(Array.isArray(value_)) { value_ = value_[0];  }                      // if column is array, return first element
-
-      return value_;
-   }
-
-
-
-   /** -----------------------------------------------------------------------
     * Set cell value
     * @param {number} iRow
     * @param {number|string} column_ index or name for column values is set to
@@ -693,14 +702,6 @@ class Table {
       this._SetCellValue(iRow, iColumn, value_);
       return true;
    }
-
-   /** -----------------------------------------------------------------------
-    * Internal method to set cell value, no checks for valid column or row
-    * @param {number} iRow index for row
-    * @param {number} iColumn index for column
-    * @param {any} value_ value set to cell
-    */
-   _SetCellValue(iRow, iColumn, value_) { this.aTable[iRow][iColumn] = value_; }
 
    /** -----------------------------------------------------------------------
     * Get row data
@@ -736,18 +737,69 @@ class Table {
    /** -----------------------------------------------------------------------
     * Deletes one or more rows from the table.
     *
-    * @param {number} iPosition - The starting index from which rows will be deleted
-    * @param {number} iLength   - Number of rows to delete (defaults to 1)
+    * The method accepts multiple input types to specify which rows to delete:
+    * - Number: Delete rows starting at this index (with optional count)
+    * - Array of numbers: Delete specific rows by index
+    * - Object with callback: Delete rows matching callback function
+    * - Object with value/iColumn: Delete rows with matching value(s) in column(s)
+    * - Object with column name-value pairs: Delete rows matching specified column values
+    *
+    * Examples:
+    * // Delete single row at index 5
+    * table.Delete(5);
+    *
+    * // Delete 3 rows starting at index 2
+    * table.Delete(2, 3);
+    *
+    * // Delete specific rows by index
+    * table.Delete([1, 5, 9]);
+    *
+    * // Delete using callback function
+    * table.Delete({ callback: (row, index) => row[0] === 'active' });
+    *
+    * // Delete rows where column 0 equals 'test'
+    * table.Delete({ value: 'test', iColumn: 0 });
+    *
+    * // Delete rows where column 0 or 1 equals 'test'
+    * table.Delete({ value: 'test', iColumn: [0, 1] });
+    *
+    * // Delete rows where 'id' column equals '123'
+    * table.Delete({ id: '123' });
+    *
+    * // Delete rows where 'id' equals '123' AND 'status' equals 'active'
+    * table.Delete({ id: '123', status: 'active' });
+    *
+    * @param {number|Array<number>|object} position_ - Starting position index, array of indices, or search criteria object
+    * @param {number} iLength - Number of rows to delete when position_ is a number (defaults to 1)
+    * @returns {number} Number of rows deleted
     */
-   Delete(iPosition, iLength) {
-      const iRows = this.aTable.length;
-      const iMaxLength = iRows - iPosition;
+   Delete(position_, iLength) {
+      let iPosition;
+      let aRow;
+      if (typeof position_ === 'number') { iPosition = position_; }
+      else if (Array.isArray(position_)) { aRow = position_; }
+      else if (typeof position_ === 'object') {
+         aRow = this.FindAll(position_);
+      }
+      else { iPosition = 0; }
 
-      if(!iLength || iLength === 0) { iLength = 1; }
+      if( Array.isArray( aRow )) {
+         // Sort indices in descending order to avoid index shift issues when deleting multiple rows
+         aRow.sort((a_, b_) => b_ - a_);
+         aRow.forEach( row_ => this.aTable.splice(row_, 1));
+         return aRow.length;
+      }
+      else {
+         const iRows = this.aTable.length;
+         const iMaxLength = iRows - iPosition;
 
-      iLength = Math.min(iLength, iMaxLength);
+         if(!iLength || iLength === 0) { iLength = 1; }
 
-      this.aTable.splice(iPosition, iLength);
+         iLength = Math.min(iLength, iMaxLength);
+
+         this.aTable.splice(iPosition, iLength);
+         return iLength;
+      }
    }
 
    // Clears all rows from the table. ----------------------------------------
@@ -824,5 +876,46 @@ class Table {
       this.aColumn = aColumns;
       return this.aColumn;
    }
+
+   /** -----------------------------------------------------------------------
+    * Get cell value
+    * Internal method to get cell value, no checks for valid column or row
+    * @param {number} iRow index for row
+    * @param {number} iColumn index for column
+    */
+   _GetCellValue(iRow, iColumn) {
+      let value_ = this.aTable[iRow][iColumn]; // Get raw cell value from cell position
+      if(Array.isArray(value_)) { value_ = value_[0];  }                      // if column is array, return first element
+
+      return value_;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Convert an object to a row array by matching keys to column names.
+    * Unmatched columns are set to null.
+    *
+    * @param {Object} object_ - Object with keys matching column names
+    * @returns {Array} Row array aligned to column definitions
+    */
+   _ObjectToRow( object_ ) {
+      const iColumnCount = this.GetColumnCount();
+      const aRow = new Array(iColumnCount).fill(null);                         // Initialize with null for all columns
+
+      // ## Iterate object, find matching column and set value in array .........
+      for( const [sKey, v_] of Object.entries(object_) ) {
+         const iColumn = this.GetColumnIndex(sKey);                            // column index for key name
+         if( iColumn !== -1 ) { aRow[iColumn] = v_; }
+      }
+
+      return aRow;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Internal method to set cell value, no checks for valid column or row
+    * @param {number} iRow index for row
+    * @param {number} iColumn index for column
+    * @param {any} value_ value set to cell
+    */
+   _SetCellValue(iRow, iColumn, value_) { this.aTable[iRow][iColumn] = value_; }
 
 }
