@@ -1,4 +1,9 @@
 <!--
+## User Edit Page (test)
+
+Importanbt data attributes are data-action, data-section. These are both used for
+command and simplify navigation in page.
+
 PAGE_ Method documentation:
 =========================
 
@@ -9,15 +14,17 @@ PAGE_Update - Update UI elements
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_ProcessResponse - Processes the response from the server and updates the UI accordingly
 
-data-section documentation
-=========================
+data-section documentation ====================================================
 
 data-section="container" - Container for the page content, can also be used to contain other elements within the page.
 data-section="select-users" - Container for the user selection
 data-section="edit-user-command" - Container for the command buttons used to edit user information
+data-section="user-search" - Container for the user search functionality
 
-@TODO [tag: TUser, search] [description: search and select user]
+data-action documentation =====================================================
 
+data-action="user-search" - Command for search for users based on a search term
+data-action="user-clear-active" - Command for clearing user selection
 -->
 
 
@@ -53,24 +60,25 @@ data-section="edit-user-command" - Container for the command buttons used to edi
 
         <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;" novalidate>
            <!-- Search Bar -->
-           <div data-section="search" class="group" style="margin-bottom: 20px; margin-top: 0;">
+           <div data-section="user-search" class="group" style="margin-bottom: 20px; margin-top: 0;">
               <div class="row">
                  <div style="flex: 1;">
                     <label class="floating">
-                       <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
+                       <input type="text" placeholder=" " id="idSearchInput" data-field-type="user-search">
                        <span>Search users</span>
                     </label>
                  </div>
-                 <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
+                 <button class="button" data-action="user-search" style="margin-left: 10px;">Search</button>
               </div>
            </div>
 
            <div data-section="select-users" class="container-result"></div>
            <div data-section="user-form"></div>
            <div class="row" data-section="edit-user-command" style="justify-content: flex-end;">
-               <button class="button" data-action="add">Save as new user</button>
-               <button class="button" style="visibility: hidden;" data-action="update" data-idle="user_key">Update</button>
-               <button class="button" style="visibility: hidden;" data-action="delete" data-idle="user_key">Delete</button>
+               <button class="button" data-action="user-clear-active" data-table="TUser">Clear</button>
+               <button class="button" data-action="add" data-table="TUser">Save as new</button>
+               <button class="button" style="visibility: hidden;" data-action="update" data-idle="user_key" data-table="TUser">Update</button>
+               <button class="button" style="visibility: hidden;" data-action="delete" data-idle="user_key" data-table="TUser">Delete</button>
            </div>
         </form>
 
@@ -253,9 +261,9 @@ function PAGE_SetListeners() {
       oDBRecord.ReadValues();
 
       switch(sAction) {
-         case "search": {
+         case "user-search": {
             const sSelect = "SELECT hex(UserK) id, FAlias alias, FFirstName name, FLastName lastname FROM TUser WHERE FAlias LIKE ''%{=name}%'' OR FFirstName LIKE ''%{=name}%'' OR FLastName LIKE ''%{=name}%'' ORDER BY FAlias";
-            const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
+            const sSearchValue = eContainer.querySelector('[data-field-type="user-search"]').value;
             const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
 
             oToast_g.Show('Skickar sökning!');
@@ -289,7 +297,7 @@ function PAGE_SetListeners() {
                else { oToast_g.Show('Failed to update user'); }
             });
          } break;
-         case "delete": {                                                   // delete command
+         case "delete": {                                                     // delete command
             // Get key for active user that is found in DBRecord
             const sUserKey = oDBRecord.GetKeyValue();
             const sArguments = `query=DELETE FROM TUser WHERE UserK = x''{=UserK}''` + "\n" + `values=${JSON.stringify({UserK: sUserKey})}`;
@@ -303,7 +311,7 @@ function PAGE_SetListeners() {
                   oDBRecord.ClearValues();
                   document.getElementById('idUser').querySelectorAll("[data-field]").forEach(eInput => eInput.value = "");
 
-                  let oTable = oDocument_g.GetTable("search");                // get search table
+                  let oTable = oDocument_g.GetTable("user-search");                // get search-users table
                   if( oTable ) {                                              // if table exists make sure record in result is deleted
                      let iDeleted = oTable.Delete( { id: sUserKey } );
                      if(iDeleted > 0) {
@@ -317,6 +325,11 @@ function PAGE_SetListeners() {
 
                PAGE_Update();
             });
+         } break;
+         case "user-clear-active": {                                                 // clear users will empty form values for user edit
+            oDBRecord.ClearValues();
+            oDBRecord.WriteValues();
+            PAGE_Update();
          } break;
          default:
             console.error("Unknown action:", sAction);
@@ -387,9 +400,9 @@ function PAGE_ProcessResponse(oData, sOperation) {
          aUser.shift();                                                         // remove first row from aUser that is columns
 
 
-         let oTable = oDocument_g.GetTable("search");
+         let oTable = oDocument_g.GetTable("user-search");
          if (!oTable) {
-            oTable = new Table( ["id", "alias", "name", "lastname"], {sName: "search"} );
+            oTable = new Table( ["id", "alias", "name", "lastname"], {sName: "user-search"} );
             oDocument_g.AddTable(oTable);
          }
          else {
@@ -399,7 +412,7 @@ function PAGE_ProcessResponse(oData, sOperation) {
          // loop array and add rows to table
          for (const aRow of aUser) {  oTable.Add( aRow ); }
 
-         PAGE_Update("search");
+         PAGE_Update("user-search");
       }
       else {
          console.assert( false, "sOperation is unknown" );
@@ -411,8 +424,8 @@ function PAGE_ProcessResponse(oData, sOperation) {
  * Update UI elements
  */
 function PAGE_Update( sType ) {
-   if( sType === undefined || sType === "search" ) {
-      const oTable = oDocument_g.GetTable("search");
+   if( sType === undefined || sType === "user-search" ) {
+      const oTable = oDocument_g.GetTable("user-search");
       if( oTable ) {
          const eSelectUser = document.getElementById("idUser").querySelector('[data-section="select-users"]');
          eSelectUser.innerHTML = "";
