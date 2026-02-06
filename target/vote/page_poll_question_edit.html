@@ -9,6 +9,7 @@ PAGE_ Method documentation:
 
 PAGE_Initialize - Main initialization function that sets up the page, creates draggable elements and configures listeners
 PAGE_SetListeners - Configures event listeners for page interactions, handling actions like send and save
+PAGE_RenderForm - Render UI elements for record
 PAGE_Update - Update UI elements
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_ProcessResponse - Processes the response from the server and updates the UI accordingly
@@ -60,8 +61,74 @@ document.addEventListener('DOMContentLoaded', function() {
 function PAGE_initialize() {
    oDocument_g = new CDocument({});
 
+   const ePollActive = oDocument_g.GetElement("poll-active");
+   const eQuestionList = oDocument_g.GetElement("question-list");
+
    // ## Start idle timer - call PAGE_OnIdle() once per second
    CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+
+   const fnRead = function(sName, oRecord) {
+      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
+      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      if( eField ) { this.SetValue( sName, eField.value ); }
+   };
+
+   const fnWrite = function(sName, oRecord) {
+      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
+      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      if( eField ) { eField.value = this.GetValue(sName); }
+   };
+
+   let oRecord = new DBRecord([], { fnRead, fnWrite });
+   oRecord.table = "TPollQuestion";
+   oRecord.AddColumn( aFieldQuestion, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"} );
+   oDocument_g.AddRecord(oRecord);
+
+   const eContainerQuestion = document.createElement('div');
+   eContainerQuestion.dataset.section = "form";
+   eContainerQuestion.classList.add('container-form');
+   PAGE_RenderForm(eContainerQuestion, aFieldQuestion);
+
+
+   eQuestionList.appendChild(eContainerQuestion);
+
+}
+
+/**
+ *
+ */
+function PAGE_RenderForm( eContainer, aFields ) {
+   aFields.forEach(oField => {
+      if( !oField.label ) return;
+
+      const div = document.createElement('div');
+      div.className = 'group';
+      div.style.marginTop = '20px';
+
+      const label = document.createElement('label');
+      label.className = 'floating';
+
+      let sTagName = "input";
+      let sType = oField.type;
+      if( sType === "text" ) { sTagName = "textarea"; }
+      const eInput = document.createElement(sTagName);
+      if( sType === "text" ) { eInput.rows = 3; }
+      else { eInput.type = oField.input || 'text'; }
+      eInput.placeholder = ' ';
+      eInput.required = oField.required;
+      eInput.dataset.field = oField.field;
+
+      // generate random value
+      //eInput.value = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+      const eSpan = document.createElement('span');
+      eSpan.textContent = oField.label;
+
+      label.appendChild(eInput);
+      label.appendChild(eSpan);
+      div.appendChild(label);
+      eContainer.appendChild(div);
+   });
 }
 
 /** --------------------------------------------------------------------- @API [tag: onidle]
@@ -88,6 +155,8 @@ class CDocument {
    constructor( oOptions = {} ) {
       this.bModified = false; // Initialize modified flag to false
       this.oElement = {};     // Cache for DOM elements
+      this.aRecords = [];    // Initialize records array to empty, holds DBRecord objects
+      this.aTable = []; // Initialize table array to empty, holds Table objects
    }
 
    // Check if document has been modified ------------------------------
@@ -100,7 +169,30 @@ class CDocument {
       if(!this.oElement[sName]) { this.oElement[sName] = document.querySelector(`[data-section="${sName}"]`); }
       return this.oElement[sName];
    }
+
+   // Add a record to the document --------------------------------------------
+   AddRecord(oRecord) { this.aRecords.push(oRecord); }
+
+   // Get a record by table name ----------------------------------------------
+   GetRecord( sTable ) {
+      return this.aRecords.find(oRecord => oRecord.table === sTable);
+   }
+
+   AddTable( oTable ) { this.aTable.push(oTable); }
+
+   GetTable( sTable ) {
+      return this.aTable.find(oTable => oTable.name === sTable);
+   }
+
 }
+
+const aFieldQuestion = [
+   { field: "PollQuestionK", type: "string", key: true },
+   { label: "Name", description: "Name for question", field: "FName", type: "string", required: true },
+   { label: "Label", description: "Label", field: "FLabel", type: "string", required: true },
+   { label: "Description", description: "Explanation for question", field: "FDescription", type: "text", required: true }
+];
+
 
 
    </script>
