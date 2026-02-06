@@ -1,0 +1,108 @@
+<!--
+## Edit poll questions and answers for each question.
+
+Importanbt data attributes are data-action, data-section. These are both used for
+command and simplify navigation in page.
+
+PAGE_ Method documentation:
+=========================
+
+PAGE_Initialize - Main initialization function that sets up the page, creates draggable elements and configures listeners
+PAGE_SetListeners - Configures event listeners for page interactions, handling actions like send and save
+PAGE_Update - Update UI elements
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+PAGE_ProcessResponse - Processes the response from the server and updates the UI accordingly
+
+data-section documentation ====================================================
+
+data-section="page" - Section for the page content.
+data-section="poll-active" -  Section for the active poll.
+data-section="question-list" - Container for the question list, questions are placed as a list where you can expand and see the answers.
+data-section="answer-list" - Container for the answer list, answers are placed as a list where you can expand and see the details.
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/variables-corporate-blue.css">
+    <link rel="stylesheet" href="css/poll.css">
+    <link rel="stylesheet" href="css/elements.css">
+    <link rel="stylesheet" href="css/input-effects.css">
+    <script src="js/gd_ui_toast.js"></script>
+    <script src="js/gd_ui_tablelite.js"></script>
+    <script src="js/gd_data_table.js"></script>
+    <script src="js/gd_db.js"></script>
+    <script src="js/gd_browser.js"></script>
+    <title>Login - Web Vote</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+    </style>
+</head>
+<body class="page-box">
+   <div data-section="page">
+      <div data-section="poll-active"></div>
+      <div data-section="question-list"></div>
+   </div>
+
+   <script>
+   'use strict';
+
+let oDocument_g;
+
+// ## Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+   PAGE_initialize();
+});
+
+function PAGE_initialize() {
+   oDocument_g = new CDocument({});
+
+   // ## Start idle timer - call PAGE_OnIdle() once per second
+   CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+}
+
+/** --------------------------------------------------------------------- @API [tag: onidle]
+ * Handles idle state by updating UI elements and checking for changes
+ */
+const PAGE_OnIdle = (function() {
+  var bLastModified = false;
+
+  return function() {
+     const bModified = oDocument_g.IsModified();
+
+     if( bModified !== bLastModified ) {
+
+        bLastModified = bModified;
+     }
+  }
+})();
+
+
+class CDocument {
+
+   static iIdleTimerId_s = null; // Global timer ID for idle callback
+
+   constructor( oOptions = {} ) {
+      this.bModified = false; // Initialize modified flag to false
+      this.oElement = {};     // Cache for DOM elements
+   }
+
+   // Check if document has been modified ------------------------------
+   IsModified() { return this.bModified; }
+   // Set modified flag to true or false -------------------------------
+   SetModified(bModified) { this.bModified = bModified; }
+
+   // Get DOM element by name ------------------------------------------
+   GetElement(sName) {
+      if(!this.oElement[sName]) { this.oElement[sName] = document.querySelector(`[data-section="${sName}"]`); }
+      return this.oElement[sName];
+   }
+}
+
+
+   </script>
+</body>
+</html>

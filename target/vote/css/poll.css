@@ -1,0 +1,3 @@
+body { background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%); display: flex; font-family: 'Inter', system-ui, sans-serif; justify-content: center; margin: 0; min-height: 100vh; padding: 20px; }
+.page-box { color: #ffffff; }
+[data-section="page"] { border: 10px dashed #fff; border-radius: 15px; max-height: calc(100vh - 40px); max-width: calc(100vw - 40px); overflow-y: auto; padding: 20px; width: 100%; }

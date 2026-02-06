@@ -217,7 +217,7 @@ CREATE TABLE TPollQuestion (
    ,StateC INTEGER          -- State of question
    ,FName VARCHAR(500)
    ,FLabel VARCHAR(100)     -- Label may be used to inform voter about something, maybe hint about the comments
-   ,FDescription VARCHAR(1000)
+   ,FDescription VARCHAR(2000)
    ,FWeight INTEGER         -- Poll question weight, if different answers is weighted
    ,FOrder INTEGER          -- order question in poll
    ,CONSTRAINT FK_TPollQuestion_PollK FOREIGN KEY (PollK) REFERENCES TPoll(PollK) ON DELETE CASCADE
