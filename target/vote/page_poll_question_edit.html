@@ -55,6 +55,7 @@ let oDocument_g;
 
 // ## Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
+   PAGE_SetListeners();
    PAGE_initialize();
 });
 
@@ -64,18 +65,23 @@ function PAGE_initialize() {
    const ePollActive = oDocument_g.GetElement("poll-active");
    const eQuestionList = oDocument_g.GetElement("question-list");
 
-   // ## Start idle timer - call PAGE_OnIdle() once per second
+   // ## Start idle timer - call PAGE_OnIdle() once per second ................
    CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
 
+   // ## Prepare base url .....................................................
+   const sBaseUrl = gd.GetBaseUrl();
+   gd.SetBaseUrl(sBaseUrl);
+
+
    const fnRead = function(sName, oRecord) {
-      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
-      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      const sTable = this.table;
+      const eField = oDocument_g.GetElement("question-list").querySelector(`[data-field="${sName}"]`);
       if( eField ) { this.SetValue( sName, eField.value ); }
    };
 
    const fnWrite = function(sName, oRecord) {
-      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
-      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      const sTable = this.table;
+      const eField = oDocument_g.GetElement("question-list").querySelector(`[data-field="${sName}"]`);
       if( eField ) { eField.value = this.GetValue(sName); }
    };
 
@@ -85,16 +91,53 @@ function PAGE_initialize() {
    oDocument_g.AddRecord(oRecord);
 
    const eContainerQuestion = document.createElement('div');
+   eContainerQuestion.dataset.table = "TPollQuestion";
    eContainerQuestion.dataset.section = "form";
    eContainerQuestion.classList.add('container-form');
    PAGE_RenderForm(eContainerQuestion, aFieldQuestion);
-
+   PAGE_RenderCommands(eContainerQuestion, aButtonQuestionCommands, 'TPollQuestion');
 
    eQuestionList.appendChild(eContainerQuestion);
 
 }
 
-/**
+function PAGE_SetListeners() {
+   const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
+   ePage.addEventListener("click", function(e_) {
+      const eTarget = e_.target;
+      if(!eTarget.dataset.action) return;                                      // If no action is defined, return
+      const sAction = eTarget.dataset.action;
+      debugger;
+
+      // find closest dataset with table attribute
+      const eClosest = eTarget.closest('[data-table]');
+      const sTable = eClosest.dataset.table;                                                       console.assert( sTable );
+      const oDBRecord = oDocument_g.GetRecord( sTable );                                           console.assert( oDBRecord, "oDBRecord is null" );
+
+      oDBRecord.ReadValues();
+      console.log( oDBRecord.AsJson() );
+
+      switch( sAction ) {
+         case 'insert': {
+            const oRecord = { table: sTable, values: oDBRecord.GetAllValues() };
+            const sRecord = JSON.stringify(oRecord);
+            const sArguments = `record=${sRecord}`;
+            gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
+               PAGE_ProcessResponse(oResult, "question");
+            });
+
+         } break;
+         case 'delete':
+            oDBRecord.Delete();
+            PAGE_RenderList(eQuestionList, 'TPollQuestion');
+            break;
+         default:
+            console.error(`Unknown action: ${sAction}`);
+      }
+   });
+}
+
+/** ---------------------------------------------------------------------------
  *
  */
 function PAGE_RenderForm( eContainer, aFields ) {
@@ -152,6 +195,32 @@ function PAGE_RenderForm( eContainer, aFields ) {
       eLabel.appendChild(eSpan);
       eDivRow.appendChild(eLabel);
    });
+}
+
+/** ---------------------------------------------------------------------------
+ * Render command buttons at bottom of form using metadata array
+ * @param {HTMLElement} eContainer - Container to add buttons to
+ * @param {Array} aButtons - Array of button metadata objects
+ * @param {string} sTable - Table name for record operations
+ */
+function PAGE_RenderCommands( eContainer, aButtons, sTable ) {
+   // ## Create command row .................................................
+   const eCommandRow = document.createElement('div');
+   eCommandRow.className = 'row right';
+   eCommandRow.style.marginTop = '24px';
+   eCommandRow.style.borderTop = '1px solid var(--color-border)';
+   eCommandRow.style.paddingTop = '20px';
+
+   // ## Render buttons from metadata array ....................................
+   aButtons.forEach(oButton => {
+      const eButton = document.createElement('button');
+      eButton.className = oButton.className || 'button';
+      eButton.textContent = oButton.label;
+      eButton.dataset.action = oButton.action;
+      eCommandRow.appendChild(eButton);
+   });
+
+   eContainer.appendChild(eCommandRow);
 }
 
 /** --------------------------------------------------------------------- @API [tag: onidle]
@@ -214,6 +283,15 @@ const aFieldQuestion = [
    { label: "Name", description: "Name for question", field: "FName", type: "string", required: true, cols:3, span: 2 },
    { label: "Label", description: "Label", field: "FLabel", type: "string", required: false, cols: true },
    { label: "Description", description: "Explanation for question", field: "FDescription", type: "text", required: false }
+];
+
+// Button command metadata array for question form
+const aButtonQuestionCommands = [
+   { label: "Add", action: "insert", className: "button button-success" },
+   { label: "Update", action: "Update", className: "button button-warning" },
+   { label: "Delete", action: "Delete", className: "button button-danger" },
+   { label: "Save", action: "Save", className: "button" },
+   { label: "Cancel", action: "Cancel", className: "button button-secondary" }
 ];
 
 

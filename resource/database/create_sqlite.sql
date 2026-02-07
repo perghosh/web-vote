@@ -245,3 +245,20 @@ CREATE TABLE TPollAnswer (
 );
 CREATE INDEX IC_TPollAnswer_PollK ON TPollAnswer (PollK);
 CREATE INDEX I_TPollAnswer_PollQuestionK ON TPollAnswer (PollQuestionK);
+
+
+-- Insert table numbers for all tables in the script
+-- Starting at 1000, incrementing by 10 for each table
+
+INSERT INTO table_number (number, name, description) VALUES (10, 'table_number', 'Stores table numbers for system tables');
+INSERT INTO table_number (number, name, description) VALUES (101, 'TGroup', 'Group codes table');
+INSERT INTO table_number (number, name, description) VALUES (102, 'TBaseCode', 'Base codes for common code meanings');
+INSERT INTO table_number (number, name, description) VALUES (103, 'TCode', 'Lookup codes for fields in other tables');
+INSERT INTO table_number (number, name, description) VALUES (200, 'TContainer', 'Groups users and items to a Container entity');
+INSERT INTO table_number (number, name, description) VALUES (300, 'TUser', 'User information table');
+INSERT INTO table_number (number, name, description) VALUES (1060, 'TPoll', 'Main poll table');
+INSERT INTO table_number (number, name, description) VALUES (1070, 'TPollSection', 'Poll sections for organizing questions');
+INSERT INTO table_number (number, name, description) VALUES (1080, 'TPollComment', 'Comments on polls');
+INSERT INTO table_number (number, name, description) VALUES (1090, 'TPollLimit', 'Poll limits and rules');
+INSERT INTO table_number (number, name, description) VALUES (1100, 'TPollQuestion', 'Poll questions table');
+INSERT INTO table_number (number, name, description) VALUES (1110, 'TPollAnswer', 'Poll answers table');
