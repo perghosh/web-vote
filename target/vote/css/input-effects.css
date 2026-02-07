@@ -4,12 +4,17 @@
 .container-form .row:last-child { margin-bottom: 0; } /* to align last item to bottom */
 .container-form .rows { margin-bottom: 16px; }
 
-.container-form .fill {flex: 1;} /* makes select fill available width */
-.container-form .half { flex: 1; max-width: 50%; }
-.container-form .third { flex: 1; max-width: 33.33%; }
-.container-form .quarter { flex: 1; max-width: 25%; }
+.container-form .fill    { flex: 1 1 0; }
+.container-form .half    { flex: 0 0 50%; }
+.container-form .third   { flex: 0 0 33.333%; }
+.container-form .quarter { flex: 0 0 25%; }
 
 .container-form .right { justify-content: flex-end; }
+
+.container-form .grid-row {  display: grid;  gap: 12px;  margin-bottom: 16px; }
+.container-form .row.cols-2 {  grid-template-columns: repeat(2, 1fr);}
+.container-form .row.cols-3 {  grid-template-columns: repeat(3, 1fr); }
+.container-form .row.cols-4 {  grid-template-columns: repeat(4, 1fr);}
 
 .container-form .button { background-color: var(--background-primary); border-radius: 4px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; }
 
@@ -26,6 +31,10 @@
 
 /* Textarea Styling */
 .container-form .floating textarea { background: var(--background-input); border: 2px solid var(--color-border); border-radius: 6px; color: var(--color-text); display: block; font-family: inherit; font-size: 1rem; min-height: 100px; padding: 14px 12px; padding-top: 24px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; }
+
+/*
+.container-form .floating :is(input, textarea) {  background: var(--background-input);  border: 2px solid var(--color-border);  border-radius: 6px;  color: var(--color-text);  font-size: 1rem;  width: 100%;  transition: border-color 0.2s, box-shadow 0.2s;}
+*/
 
 /* The floating label text - base state */
 .container-form .floating span { background-color: var(--background-input); color: var(--color-muted); font-weight: normal; left: 12px; padding: 0 4px; pointer-events: none; position: absolute; top: 50%; transform: translateY(-50%); transition: 0.2s ease all; white-space: nowrap; }
@@ -56,4 +65,13 @@
    .container-form .floating span {
       transition: 0.2s ease all;
    }
+}
+
+@media (max-width: 640px) {
+  .container-form .grid-row { grid-template-columns: 1fr !important; }
+
+  /* if using flex */
+  .container-form .half,
+  .container-form .third,
+  .container-form .quarter { flex: 1 1 100%; }
 }
