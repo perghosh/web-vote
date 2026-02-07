@@ -18,6 +18,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    <script src="js/gd_browser.js"></script>
    <script src="js/gd_ui_toast.js"></script>
    <script src="js/gd_ui_tablelite.js"></script>
+   <script src="js/gd_db.js"></script>
    <script src="js/gd_data_table.js"></script>
    <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,26 +49,29 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
          <div data-section="select-polls" class="container-result"></div>
 
-         <div class="group">
-            <label class="floating">
-               <input type="text" placeholder=" " data-field="FName">
-               <span>Name</span>
-            </label>
-         </div>
+         <div data-section="poll-form">
+            <div class="group">
+               <label class="floating">
+                  <input type="text" placeholder=" " data-field="FName">
+                  <span>Name</span>
+               </label>
+            </div>
 
-         <div class="group" style="margin-top: 20px;">
-            <label class="floating">
-                <input type="text" placeholder=" " data-field="FHeader">
-                <span>Header</span>
-            </label>
-         </div>
+            <div class="group" style="margin-top: 20px;">
+               <label class="floating">
+                  <input type="text" placeholder=" " data-field="FHeader">
+                  <span>Header</span>
+               </label>
+            </div>
 
-         <div class="group">
-            <label class="floating">
-               <textarea placeholder=" " data-field="FDescription"></textarea>
-               <span>Description</span>
-            </label>
+            <div class="group">
+               <label class="floating">
+                  <textarea placeholder=" " data-field="FDescription"></textarea>
+                  <span>Description</span>
+               </label>
+            </div>
          </div>
+        
 
          <div class="row" id="idButtons">
             <button class="button" data-action="add">Add</button>
@@ -131,11 +135,40 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       PAGE_Initialize();                                                      // Initialize page
    });
 
+   const aEditField = [
+      { field: "PollK", type: "string", key: true},
+      { field: "Name", description: "Name for poll in system", field: "FName", type: "string", required: true},
+      { field: "Header", description: "Header for poll in system", field: "FHeader", type: "string", required: true},
+      { field: "Description", description: "Description for poll in system", field: "FDescription", type: "string", required: true},
+   ]
+
    /** --------------------------------------------------------------------- @API [tag: initialize]
     * Main initialization function that initializes the page
     */
    function PAGE_Initialize() {
       oDocument_g = new CDocument({});
+
+      const fnRead = function(sName, oRecord)
+      {
+         const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
+         const eField = ePollform.querySelector(`[data-field="${sName}"]`);
+         if( eField ) { this.SetValue(sName, eField.value); }
+      };
+
+      const fnWrite = function(sName, oRecord)
+      {
+         const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
+         const eField = ePollform.querySelector(`[data-field="${sName}"]`);
+         if( eField ) { this.GetValue(sName, eField.value); }  
+      };
+
+      let oRecord = new DBRecord([], { fnRead, fnWrite });
+      oRecord.table = "TPoll";
+      console.log(oRecord);
+
+      oRecord.AddColumn(aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"}) 
+
+      oDocument_g.AddRecord(oRecord);
 
       oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
 
@@ -171,6 +204,31 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
       eContainer.addEventListener("click", (e_) => {
          const eTarget = e_.target;
+
+         if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key)
+         {
+            e_.stopPropagation();
+            const sKey = eTarget.parentNode.dataset.key;
+            const sSelect = "SELECT FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
+            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;  
+
+            gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
+            {
+               const aPollResult = JSON.parse( oResult.data.querySelector("result").textContent );
+               const oDBRecord = oDocument_g.GetRecord( "TPoll" );
+               oDBRecord.ClearValues();
+
+                              console.log(aPollResult);
+               if( aPollResult.length > 1)
+               {
+                  oDBRecord.SetValue( aPollResult );
+                  console.log(oDBRecord.SetKeyValue);
+                  oDBRecord.SetKeyValue( sKey );
+                  oDBRecord.WriteValues();  
+               }
+            });
+            return;
+         }
 
          if(!eTarget.dataset.action) return;
          e_.stopPropagation();
@@ -347,6 +405,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
       constructor( oOptions = {} ) {
          this.bModified = false; // Initialize modified flag to false
+         this.aRecords = [];
+         this.aTable = [];
          this.key_ = null;
       }
 
@@ -354,6 +414,20 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       IsModified() { return this.bModified; }
       // Set modified flag to true or false -------------------------------
       SetModified(bModified) { this.bModified = bModified; }
+
+      AddRecord(oRecord) { this.aRecords.push(oRecord); }
+
+      GetRecord( sTable )
+      {
+         return this.aRecords.find(oRecord => oRecord.table === sTable);
+      }
+
+      AddTable( oTable ) { this.aTable.push(oTable); }
+
+      GetTable( sTable )
+      {
+         return this.aTable.find(oTable => oTable.name === sTable);
+      }
 
    }
 
