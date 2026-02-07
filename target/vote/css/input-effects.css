@@ -12,9 +12,14 @@
 .container-form .right { justify-content: flex-end; }
 
 .container-form .grid-row {  display: grid;  gap: 12px;  margin-bottom: 16px; }
-.container-form .row.cols-2 {  grid-template-columns: repeat(2, 1fr);}
-.container-form .row.cols-3 {  grid-template-columns: repeat(3, 1fr); }
-.container-form .row.cols-4 {  grid-template-columns: repeat(4, 1fr);}
+.container-form .cols-2 {  grid-template-columns: repeat(2, 1fr);}
+.container-form .cols-3 {  grid-template-columns: repeat(3, 1fr); }
+.container-form .cols-4 {  grid-template-columns: repeat(4, 1fr);}
+
+.container-form .col-span-2 { grid-column: span 2; }
+.container-form .col-span-3 { grid-column: span 3; }
+.container-form .col-span-4 { grid-column: span 4; }
+
 
 .container-form .button { background-color: var(--background-primary); border-radius: 4px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; }
 
