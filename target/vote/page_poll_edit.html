@@ -89,6 +89,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
    function CreateButtons(eParent)
    {
+      PAGE_DeleteButtons(eParent);
+
       const eButtonUpdate = document.createElement("button");
       eButtonUpdate.className = "button";
       eButtonUpdate.dataset.action = "update";
@@ -137,9 +139,9 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
    const aEditField = [
       { field: "PollK", type: "string", key: true},
-      { field: "Name", description: "Name for poll in system", field: "FName", type: "string", required: true},
-      { field: "Header", description: "Header for poll in system", field: "FHeader", type: "string", required: true},
-      { field: "Description", description: "Description for poll in system", field: "FDescription", type: "string", required: true},
+      { label: "Name", description: "Name for poll in system", field: "FName", type: "string", required: true},
+      { label: "Header", description: "Header for poll in system", field: "FHeader", type: "string", required: true},
+      { label: "Description", description: "Description for poll in system", field: "FDescription", type: "string", required: true},
    ]
 
    /** --------------------------------------------------------------------- @API [tag: initialize]
@@ -159,7 +161,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       {
          const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
          const eField = ePollform.querySelector(`[data-field="${sName}"]`);
-         if( eField ) { this.GetValue(sName, eField.value); }  
+         if( eField ) { eField.value = this.GetValue(sName); }  
       };
 
       let oRecord = new DBRecord([], { fnRead, fnWrite });
@@ -176,6 +178,49 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
 
       PAGE_SetListeners();
+   }
+
+
+   /** ---------------------------------------------------------------------------
+    * Update UI elements
+    */
+   function PAGE_Update( sType)  {
+      if( sType === undefined || sType === "search" )
+      {
+         const oTable = oDocument_g.GetTable("search");  
+         if(oTable)
+         {
+            const eSelectPoll = document.getElementById("idPoll").querySelector('[data-section="select-polls"]');
+            eSelectPoll.innerHTML = "";
+            
+            const fnSelectPoll = (sEvent, oParameter) => {
+               if(sEvent === "row")
+               {
+                  const iRow = oParameter.iOriginalIndex;
+                  const eRow = oParameter.eRow;
+                  const sKey = oTable.GetCell(iRow, 0);
+                  eRow.dataset.key = sKey;  
+               }
+            };
+
+            const oUITable = new UITableLite( eSelectPoll, oTable, { iSort: 0, aColumns: [1,2], bHeader: true, bIndices, fnCallback: fnSelectPoll} );
+            oUITable.Render();
+         }
+      }
+
+      const oDBRecordPoll = oDocument_g.GetRecord("TPoll");
+      const bPollHasKey = oDBRecordPoll.HasKeyValue();
+
+      const ePoll = document.getElementById("idUser");
+
+      if(bPollHasKey === true)
+      {
+         CreateButtons(document.querySelector("#idButtons"));
+      }
+      else
+      {
+         PAGE_DeleteButtons(document.querySelector("#idButtons"));
+      }
    }
 
     /** --------------------------------------------------------------------- @API [tag: onidle]
@@ -209,7 +254,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
          {
             e_.stopPropagation();
             const sKey = eTarget.parentNode.dataset.key;
-            const sSelect = "SELECT FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
+            const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
             const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;  
 
             gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
@@ -224,8 +269,12 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                   oDBRecord.SetValue( aPollResult );
                   console.log(oDBRecord.SetKeyValue);
                   oDBRecord.SetKeyValue( sKey );
+                  oDocument_g.key_ = sKey;
+
                   oDBRecord.WriteValues();  
                }
+            
+               PAGE_Update();
             });
             return;
          }
@@ -392,8 +441,6 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             oUITable.Render();
          }
       }
-
-      alert(sResult);
    }
 
 
