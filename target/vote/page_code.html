@@ -1,0 +1,191 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+
+PAGE_Initialize - Initialize the page
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+<method name> - <description>
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="css/variables-green.css">
+   <link rel="stylesheet" href="css/elements.css">
+   <link rel="stylesheet" href="css/input-effects.css">
+   <script src="js/gd_browser.js"></script>
+   <script src="js/gd_ui_toast.js"></script>
+   <script src="js/gd_ui_tablelite.js"></script>
+   <script src="js/gd_db.js"></script>
+   <script src="js/gd_data_table.js"></script>
+   <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
+      .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+      .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+      .container-result tbody tr { border-bottom: 1px solid var(--color-border); }
+      .container-result tbody tr:hover { background: var(--background-light-hover); }
+      .container-result td { cursor: pointer; padding: 5px 8px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .container-result th { padding: 6px 8px; text-align: left; font-weight: 600; color: var(--color-body); border-bottom: 2px solid var(--color-border); }
+      .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
+   </style>
+</head>
+<body>
+   <div id="idContainer">
+      <div data-section="table-list" class="container-result"></div>
+   </div>
+
+   <script>
+   let oDocument_g;
+
+   /** --------------------------------------------------------------------- @API [tag: initialize]
+    * Main initialization function that initializes the page
+    */
+    function PAGE_Initialize() {
+        oDocument_g = new CDocument({});
+
+        // ## Start idle timer - call PAGE_OnIdle() once per second
+        CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+
+
+        const sSelect = "SELECT GroupK id, FName name FROM TGroup"; //"SELECT GroupK AS id, FName AS name FROM TGroup ORDER BY FName";
+        //const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
+        const sArguments = `query=${sSelect}`; //+ "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+
+        gd.SendToServer("", "!db/select", sArguments).then(function(oResult) {
+            console.log(oResult);
+            PAGE_ProcessResponse(oResult);
+        });
+    }
+
+    /** --------------------------------------------------------------------- @API [tag: onidle]
+     * Handles idle state by updating UI elements and checking for changes
+     */
+    const PAGE_OnIdle = (function() {
+      var bLastModified = false;
+
+      return function() {
+         const bModified = oDocument_g.IsModified();
+
+         if( bModified !== bLastModified ) {
+
+            // TODO: Update UI elements based on modified status
+
+            bLastModified = bModified;
+         }
+      }
+   })();
+
+   // Start page initialization -----------------------------------------------
+   document.addEventListener('DOMContentLoaded', function() {
+      PAGE_Initialize();                                                      // Initialize page
+   });
+
+
+   // List table from database
+   function PAGE_List(eResults)
+   {
+        const eSelect = eResults.querySelector('result[command="select"]');                         console.log(eSelect.textContent);
+        const aPoll = JSON.parse(eSelect.textContent);                                              console.log(aPoll);
+        aPoll.shift();
+
+        const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="table-list"]');
+        eSelectPoll.innerHTML = "";
+
+        const oTable = new Table(["id", "name"]);
+
+        // loop array and add rows to table
+        for(const aRow of aPoll) {oTable.Add(aRow);}
+
+        const fnSelectPoll = (sEvent, oParameter) => {
+            if(sEvent === "row")
+            {
+                const iRow = oParameter.iOriginalIndex;
+                const eRow = oParameter.eRow;
+                const sKey = oTable.GetCell(iRow, 0);
+                eRow.dataset.key = sKey;  
+            }
+        };
+
+        const oUITable = new UITableLite(eSelectPoll, oTable, { iSort: 0, aColumns: [1], bHeader: true, bIndices: true, fnCallback: fnSelectPoll});
+        oUITable.Render();
+   }
+
+   /** ---------------------------------------------------------------------
+    * Handle response data from server and display it in the container
+    *
+    * Response data format is { type: <format>, data: <data> } and type can be any of
+    * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
+    *
+    * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+    */
+    function PAGE_ProcessResponse(oData, sOperation) {
+        let sResult = '';
+        let eResults = null;
+
+        switch(oData.type) {
+            case 'json':
+                sResult = JSON.stringify(oData.data, null, 2);
+                break;
+            case 'xml':
+            // If oData.data is an XML Document object, serialize it to string
+            /*if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+                sResult = (new XMLSerializer()).serializeToString(oData.data);
+            } else {
+                // If it's already a string, use it directly
+                sResult = oData.data;
+            }*/
+
+            /*console.log(oData.data);
+            let sValue = JSON.parse(oData.data.querySelector("result").textContent);
+            sResult = sValue.key;
+            oDocument_g.key_ = sResult;
+            */
+
+            // If oData.data is an XML Document object, serialize it to string
+            if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+                //sResult = (new XMLSerializer()).serializeToString(oData.data);
+
+                // ## query results element
+                eResults = oData.data.querySelector('results');                   // get results element holding result elements
+            } else {
+                // If it's already a string, use it directly
+                sResult = oData.data;
+            }
+
+            break;
+            case 'text':
+                sResult = oData.data;
+                break;
+            default:
+                console.error("Unknown response type:", oData.type);
+        }
+
+        if(eResults)
+        {
+            PAGE_List(eResults);
+        }
+    }
+
+
+   // TODO: CDocumnt is used to manage data, this needs to be implemented
+
+   class CDocument {
+
+      static iIdleTimerId_s = null; // Global timer ID for idle callback
+
+      constructor( oOptions = {} ) {
+         this.bModified = false; // Initialize modified flag to false
+      }
+
+      // Check if document has been modified ------------------------------
+      IsModified() { return this.bModified; }
+      // Set modified flag to true or false -------------------------------
+      SetModified(bModified) { this.bModified = bModified; }
+   }
+
+   </script>
+</body>
+</html>
