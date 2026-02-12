@@ -262,3 +262,5 @@ INSERT INTO table_number (number, name, description) VALUES (1080, 'TPollComment
 INSERT INTO table_number (number, name, description) VALUES (1090, 'TPollLimit', 'Poll limits and rules');
 INSERT INTO table_number (number, name, description) VALUES (1100, 'TPollQuestion', 'Poll questions table');
 INSERT INTO table_number (number, name, description) VALUES (1110, 'TPollAnswer', 'Poll answers table');
+
+INSERT INTO TContainer ( ContainerK, FName ) VALUES( 1, "user" )

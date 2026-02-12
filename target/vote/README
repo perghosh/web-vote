@@ -1,3 +1,4 @@
 ## Files
-- `page_user_edit.html`: Edit user profile page.
--
+- `page_user_edit.html`: Edit user profile page. Add and remove users.
+- `page_poll_edit.html`: Edit poll details. Add and remove polls.
+- `page_poll_question_edit.html`: Edit poll question details. Add and remove questions and answers for each question connected to the poll.

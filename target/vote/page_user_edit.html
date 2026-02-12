@@ -132,6 +132,7 @@ function PAGE_initialize() {
    oRecord.table = "TUser";
 
    oRecord.AddColumn( aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"} );
+   oRecord.AddColumn({ sName: "ContainerK", sType: "number", bFKey: true, default: 1}); // add key for users
 
 
    oDocument_g.AddRecord(oRecord);
@@ -155,22 +156,6 @@ function PAGE_initialize() {
 
    //gd.SendToServer("", "!sys/meta/db/fields//?name=user-add").then(function(oResult) {
    gd.SendToServer("", "!sys/meta/db/fields//sys/meta/query/exists?name=user-add&table=TUser&field=FAlias,FFirstName").then(function(oResult) {
-      const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
-      if( sQueryId ) { oToast_g.Show('Query user-add exists in server, no need to add it again');  }
-      else {
-         const sInsert = "INSERT INTO TUser (ContainerK, FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName) VALUES (1,{FAlias}, {FFirstName}, {FLastName}, {FMail}, {FPassword}, {FDisplayName}, {FLoginName}) RETURNING UserK AS 'key', 'TUser' AS 'table'";
-         const sArguments = `query=${sInsert}` + "\n" + `name=user-add`
-         gd.SendToServer("", "!sys/meta/query/add?format=jinja&type=insert", sArguments).then(function(oResult) {
-            const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
-            oToast_g.Show('Query user-add added to server, id:' + sQueryId);
-         });
-      }
-   });
-
-
-   return;
-
-   gd.SendToServer("", "!sys/meta/query/exists?name=user-add").then(function(oResult) {
       const sQueryId = JSON.parse(oResult.data.querySelector("result").textContent).id;
       if( sQueryId ) { oToast_g.Show('Query user-add exists in server, no need to add it again');  }
       else {
@@ -272,6 +257,16 @@ function PAGE_SetListeners() {
             });
          } break;
          case "add": {                                                 // send command to wed server
+
+            const sValues = JSON.stringify(oDBRecord.GetFilledValues());
+            const sJson = `{ "table": "TUser", "values": ${sValues}, "returning": "UserK" }`;
+            const sArguments = `record=${sJson}`;
+            gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
+               PAGE_ProcessResponse(oResult, "user");
+            });
+
+
+            /*
             const sInsert = "#user-add";
             const sSelect = "SELECT * FROM TUser WHERE UserK = x''{::key}''";
             const sValues = JSON.stringify(oDBRecord.GetAllValues());
@@ -282,6 +277,7 @@ function PAGE_SetListeners() {
             gd.SendToServer("", "!db/insert/ask?echo=user", sArguments).then(function(oResult) {
                PAGE_ProcessResponse(oResult, "user");
             });
+            */
          } break;
          case "update": {                                                  // save command
             const sUserKey = oDBRecord.GetKeyValue();
