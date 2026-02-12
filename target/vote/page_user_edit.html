@@ -132,6 +132,7 @@ function PAGE_initialize() {
    oRecord.table = "TUser";
 
    oRecord.AddColumn( aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"} );
+   oRecord.AddColumn({ sName: "ContainerK", sType: "number", bFKey: true, default: 1}); // add key for users
 
 
    oDocument_g.AddRecord(oRecord);
@@ -257,8 +258,8 @@ function PAGE_SetListeners() {
          } break;
          case "add": {                                                 // send command to wed server
 
-            const sValues = JSON.stringify(oDBRecord.GetAllValues());
-            const sJson = `{ "table": "TUser", "values": ${sValues}, "return": "UserK" }`;
+            const sValues = JSON.stringify(oDBRecord.GetFilledValues());
+            const sJson = `{ "table": "TUser", "values": ${sValues}, "returning": "UserK" }`;
             const sArguments = `record=${sJson}`;
             gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
                PAGE_ProcessResponse(oResult, "user");

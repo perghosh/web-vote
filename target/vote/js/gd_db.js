@@ -2,34 +2,35 @@
 /** ============================================================================
  * DBRecord - Database Record Management Class
  * ============================================================================
- * 
+ *
  * A lightweight class for managing database records with schema definition,
  * value storage, and data synchronization capabilities.
- * 
+ *
  * ## Key Features:
  * - Schema-based column definitions with type support
  * - O(1) value lookups using Map storage
  * - Automatic key column caching for performance
  * - Flexible value setting (single, multiple, bulk operations)
  * - Callback-based data sync (ReadValues/WriteValues) for UI binding
- * 
+ *
  * ## Basic Usage:
  * ```javascript
  * const oRecord = new DBRecord([
  *    { sName: "FAlias", sType: "string", bKey: true },
  *    { sName: "FFirstName", sType: "string" }
  * ], { sTable: "TUser" });
- * 
+ *
  * oRecord.SetValue("FAlias", "user123");
  * console.log(oRecord.GetValue("FAlias"));
  * ```
- * 
+ *
  * ## Public Methods:
  * - constructor()          - Create record with schema
  * - AddValue()              - Add value(s) from object/array
  * - SetValue()              - Set one or many values
  * - GetValue()              - Get value by column name
  * - GetAllValues()          - Get all values as object
+ * - GetFilledValues()       - Get all values as object, excluding empty values
  * - ClearValues()           - Clear all values to null
  * - ReadValues()            - Load values via callback
  * - WriteValues()           - Write values via callback
@@ -51,6 +52,7 @@ class DBRecord {
        * @param {number} [options_.iSpecificType=0]
        * @param {number} [options_.bKey=false] - Whether the column is a primary key.
        * @param {number} [options_.bFKey=false] - Whether the column is a foreign key.
+       * @param {number} [options_.bRequired=false] - Whether the column is required.
        * @param {string} [options_.sLabel=""] - The label of the column, which is displayed to the user.
        * @param {string} [options_.sDescription=""] - The description of the column, which provides additional information about the column.
        * @param {string|RegExp|null} [options_.pattern=null] - The pattern to validate the column value.
@@ -62,7 +64,7 @@ class DBRecord {
          if(typeof options_ === "string") { options_ = { sName: options_ }; }
          if(typeof options_ !== "object") { throw new Error("Invalid argument"); }
 
-         const oOptions = Object.assign({ sName: "", sAlias: "", sType: "string", iState: 0, iSpecificType: 0 }, options_);
+         const oOptions = Object.assign({ sName: "", sAlias: "", sType: "string", iState: 0, iSpecificType: 0, bRequired: false }, options_);
 
          this.sName = oOptions.sName || "";
          this.sAlias = oOptions.sAlias || this.sName;
@@ -71,6 +73,7 @@ class DBRecord {
          this.iSpecificType = oOptions.iSpecificType || 0;
          this.bKey = oOptions.bKey || false;
          this.bFKey = oOptions.bFKey || false;
+         this.bRequired = oOptions.bRequired || false;
          this.sLabel = oOptions.sLabel || "";
          this.sDescription = oOptions.sDescription || "";
          this.pattern_ = oOptions.pattern || null;
@@ -85,6 +88,7 @@ class DBRecord {
       is_aligned_right() { return (this.iState & 8) === 8; }
       is_key() { return this.bKey; }
       is_foreign_key() { return this.bFKey; }
+      is_required() { return this.bRequired; }
 
       get name() { return this.sName; }
       get alias() { return this.sAlias; }
@@ -246,7 +250,17 @@ class DBRecord {
     * @param {string} sName - Column name
     * @returns {*} The value or undefined if not found
     */
-   GetValue(sName) { return this.mapValues.get(sName); }
+   GetValue(sName) {
+      const oColumn = this._get_column(sName);
+      const value_ = this.mapValues.get(sName);
+
+      // Return default value if not set and column has a default
+      if ((value_ === undefined || value_ === null) && oColumn && oColumn.default !== undefined && oColumn.default !== null) {
+         return oColumn.default;
+      }
+
+      return value_;
+   }
 
    /** ------------------------------------------------------------------------
     * Get all values as an object
@@ -255,6 +269,38 @@ class DBRecord {
    GetAllValues() {
       const oResult = {};
       this.mapValues.forEach((value, key) => { oResult[key] = value; });
+      return oResult;
+   }
+
+   /** ------------------------------------------------------------------------
+    * Get filled values as an object (skips empty values unless required)
+    * @returns {Object} Object with column names as keys
+    */
+   GetFilledValues() {
+      const oResult = {};
+
+      // ## Helper function to check if a value is empty ......................
+      const isEmpty = (value) => {
+         if (value === null || value === undefined) return true;
+         if (typeof value === "string" && value === "") return true;
+         if (Array.isArray(value) && value.length === 0) return true;
+         if (typeof value === "object" && Object.keys(value).length === 0) return true;
+         return false;
+      };
+
+      // ## Iterate through columns to check required flag ....................
+      this.aColumn.forEach((column) => {
+         const sName = column.name;
+         const vValue = this.mapValues.get(sName);
+
+         // Skip if empty and not required
+         if (isEmpty(vValue) && !column.is_required()) {
+            return;
+         }
+
+         oResult[sName] = vValue;
+      });
+
       return oResult;
    }
 
@@ -271,7 +317,7 @@ class DBRecord {
 
    /** ------------------------------------------------------------------------
     * Load values from external source via callback (e.g., from HTML inputs)
-    * 
+    *
     * Callback receives (sName, oColumn) and should call this.SetValue(sName, value)
     *
     * @param {Function} [fnRead] - Optional callback to override constructor callback
@@ -286,7 +332,7 @@ class DBRecord {
 
    /** ------------------------------------------------------------------------
     * Write values to external target via callback (e.g., to HTML inputs)
-    * 
+    *
     * Callback receives (sName, oColumn, value) and should update the target
     *
     * @param {Function} [fnWrite] - Optional callback to override constructor callback
