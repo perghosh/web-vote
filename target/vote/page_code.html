@@ -57,17 +57,13 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 </head>
 <body>
     <div id="idContainer" >
-        
-
-
-
         <form id="idForm" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;">
             <div class="dropdown">
                 <button class="button">Open</button>
                 <div data-section="table-list" class="dropdown-content"></div>
             </div>
 
-            <div data-section="poll-form">
+            <div data-section="code-form">
                 <div class="group">
                 <label class="floating">
                     <input type="text" placeholder=" " data-field="FName">
@@ -96,11 +92,19 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    <script>
    let oDocument_g;
 
+   const aEditField = [
+      { field: "GroupK", type: "string", key: true},
+      { label: "Name", description: "Name for group in system", field: "FName", type: "string", required: true},
+      { label: "Description", description: "Description for group in system", field: "FDescription", type: "string", required: true},
+   ]
+
    /** --------------------------------------------------------------------- @API [tag: initialize]
     * Main initialization function that initializes the page
     */
     function PAGE_Initialize() {
         oDocument_g = new CDocument({});
+
+
 
         // ## Start idle timer - call PAGE_OnIdle() once per second
         CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
@@ -114,6 +118,50 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             console.log(oResult);
             PAGE_ProcessResponse(oResult);
         });
+
+        const fnRead = function(sName, oRecord)
+        {
+            const eCodeform = document.querySelector('#idForm div[data-section="code-form"]');
+            const eField = eCodeform.querySelector(`[data-field="${sName}"]`);
+            if( eField ) { this.SetValue(sName, eField.value); }
+        };
+
+        const fnWrite = function(sName, oRecord)
+        {
+            const eCodeform = document.querySelector('#idForm div[data-section="code-form"]');
+            const eField = eCodeform.querySelector(`[data-field="${sName}"]`);
+            if( eField ) { eField.value = this.GetValue(sName); }  
+        };
+
+        let oRecord = new DBRecord([], { fnRead, fnWrite });
+        oRecord.table = "TGroup";
+        console.log(oRecord);
+
+        oRecord.AddColumn(aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"}) 
+
+        oDocument_g.AddRecord(oRecord);
+
+        PAGE_SetListeners();
+    }
+
+    /** ---------------------------------------------------------------------------
+    * Update UI elements
+    */
+    function PAGE_Update( sType )  {
+
+        const oDBRecordGroup = oDocument_g.GetRecord("TGroup");
+        const bGroupHasKey = oDBRecordGroup.HasKeyValue();
+
+        //const eGroup = document.getElementById("idUser");
+
+        if(bGroupHasKey === true)
+        {
+            CreateButtons(document.querySelector("#idButtons"));
+        }
+        else
+        {
+            PAGE_DeleteButtons(document.querySelector("#idButtons"));
+        }
     }
 
     /** --------------------------------------------------------------------- @API [tag: onidle]
@@ -140,22 +188,181 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    });
 
 
+      /** --------------------------------------------------------------------- @API [tag: event, command]
+   * Configure page listeners, handle page specific events
+   */
+   function PAGE_SetListeners() {
+      const eContainer = document.querySelector("#idContainer");
+
+      eContainer.addEventListener("click", (e_) => {
+         const eTarget = e_.target;
+
+         if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key)
+         {
+            e_.stopPropagation();
+            const sKey = eTarget.parentNode.dataset.key;
+            const sSelect = "SELECT GroupK, FName, FDescription FROM TGroup WHERE GroupK = x{GroupK}";
+            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ GroupK: sKey })}`;  
+
+            gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
+            {
+                const aGroupResult = JSON.parse( oResult.data.querySelector("result").textContent );
+                const oDBRecord = oDocument_g.GetRecord( "TGroup" );
+                oDBRecord.ClearValues();
+
+                    console.log(aGroupResult);
+                if( aGroupResult.length >= 2)
+                {
+                    
+
+                    oDBRecord.SetValue( aGroupResult );
+                    console.log(oDBRecord.SetKeyValue);
+                    oDBRecord.SetKeyValue( sKey );
+                    oDocument_g.key_ = sKey;
+
+                    oDBRecord.WriteValues();  
+                }
+                
+                PAGE_Update();
+                });
+                return;
+         }
+
+         if(!eTarget.dataset.action) return;
+         e_.stopPropagation();
+
+         const aFields = eContainer.querySelectorAll("[data-field]");
+         const oFields = {};
+
+         aFields.forEach((eField) => {
+            const sField = eField.dataset.field;
+            const sValue = eField.value;
+            oFields[sField] = sValue;
+         });
+
+         console.log(oFields);
+
+         const sAction = eTarget.dataset.action;
+
+         switch(sAction) {
+            case("add"): {
+               const sInsert = "INSERT INTO TGroup (FName, FDescription) VALUES ({FName}, {FDescription}) RETURNING GroupK AS 'key', 'TGroup' AS 'table'";
+               const sValues = JSON.stringify(oFields);
+
+               const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}`;
+
+               gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
+                  PAGE_ProcessResponse(oResult);
+                  CreateButtons(document.querySelector("#idButtons"));
+                  oToast_g.Show("Skapad!")
+               });
+            } break;
+            case("update"): {
+               const sUpdate = "UPDATE TGroup SET FName = {FName}, FDescription = {FDescription} WHERE GroupK = x''{=GroupK}''";
+
+               oFields.GroupK = oDocument_g.key_;
+               const sValues = JSON.stringify(oFields);
+
+               const sArguments = `query=${sUpdate}` + `\n` + `values=${sValues}`;
+
+               
+               gd.SendToServer("", "!db/update?echo=user", sArguments).then(function(oResult) {
+                  //PAGE_ProcessResponse(oResult);
+                  //CreateButtons(document.querySelector("#idButtons"));
+                  let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+
+                  if( iCount !== 0) { oToast_g.Show("Updaterad!"); }
+                  else {oToast_g.Show("Kunde inte uppdatera")}
+               });
+            } break;
+            case("delete"): {
+               const sDelete = "DELETE FROM TGroup WHERE GroupK = x''{=GroupK}''";
+
+               const sValues = JSON.stringify({ GroupK: oDocument_g.key_ });
+
+               const sArguments = `query=${sDelete}` + `\n` + `values=${sValues}`;
+
+               gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
+                  let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+
+                  if( iCount !== 0) { 
+                     oToast_g.Show("Bort tagen!"); 
+                     PAGE_DeleteFieldInputs(eContainer);
+                     PAGE_DeleteButtons(eContainer);
+                  }
+                  else {oToast_g.Show("Kunde inte ta bort")}
+               });
+            } break;
+            default:
+               console.error("Unknown action:", sAction);
+         }
+
+      });
+
+   }
+
+   // Create buttons for form
+    function PAGE_CreateButtons(eParent)
+    {
+        PAGE_DeleteButtons(eParent);
+
+        const eButtonUpdate = document.createElement("button");
+        eButtonUpdate.className = "button";
+        eButtonUpdate.dataset.action = "update";
+        eButtonUpdate.innerHTML = "Update";
+
+        const eButtonDelete = document.createElement("button");
+        eButtonDelete.className = "button";
+        eButtonDelete.dataset.action = "delete";
+        eButtonDelete.innerHTML = "Delete";
+
+        eParent.appendChild(eButtonUpdate);
+        eParent.appendChild(eButtonDelete);
+    }    
+
+    /** ------------------------------------------------------------------------
+    * Clears all form input fields within the given parent element
+    */ 
+    function PAGE_DeleteFieldInputs(eParent)
+    {
+        const aFields = eParent.querySelectorAll("[data-field]");
+
+        aFields.forEach((eField) => {
+            eField.value = "";
+        });
+    }
+
+    /** ------------------------------------------------------------------------
+    * Removes action buttons except the "add" button from the button row
+    */ 
+    function PAGE_DeleteButtons(eParent)
+    {
+        const aButtons = eParent.querySelectorAll("#idButtons button");
+
+        aButtons.forEach((eButton) => {
+            if(eButton.dataset.action !== "add")
+            {
+                eButton.remove();  
+            }
+        });
+    }
+
    // List table from database
    function PAGE_List(eResults)
    {
         const eSelect = eResults.querySelector('result[command="select"]');                         console.log(eSelect.textContent);
-        const aPoll = JSON.parse(eSelect.textContent);                                              console.log(aPoll);
-        aPoll.shift();
+        const aCode = JSON.parse(eSelect.textContent);                                              console.log(aCode);
+        aCode.shift();
 
-        const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="table-list"]');
-        eSelectPoll.innerHTML = "";
+        const eSelectCode = document.getElementById("idContainer").querySelector('[data-section="table-list"]');
+        eSelectCode.innerHTML = "";
 
         const oTable = new Table(["id", "name"]);
 
         // loop array and add rows to table
-        for(const aRow of aPoll) {oTable.Add(aRow);}
+        for(const aRow of aCode) {oTable.Add(aRow);}
 
-        const fnSelectPoll = (sEvent, oParameter) => {
+        const fnSelectCode = (sEvent, oParameter) => {
             if(sEvent === "row")
             {
                 const iRow = oParameter.iOriginalIndex;
@@ -165,7 +372,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             }
         };
 
-        const oUITable = new UITableLite(eSelectPoll, oTable, { iSort: 0, aColumns: [1], bHeader: true, bIndices: true, fnCallback: fnSelectPoll});
+        const oUITable = new UITableLite(eSelectCode, oTable, { iSort: 0, aColumns: [1], bHeader: true, bIndices: true, fnCallback: fnSelectCode});
         oUITable.Render();
    }
 
@@ -228,19 +435,36 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
    // TODO: CDocumnt is used to manage data, this needs to be implemented
 
-   class CDocument {
+    class CDocument {
 
-      static iIdleTimerId_s = null; // Global timer ID for idle callback
+        static iIdleTimerId_s = null; // Global timer ID for idle callback
 
-      constructor( oOptions = {} ) {
-         this.bModified = false; // Initialize modified flag to false
-      }
+        constructor( oOptions = {} ) {
+            this.bModified = false; // Initialize modified flag to false
+            this.aRecords = [];
+            this.aTable = [];
+            this.key_ = null;
+        }
 
-      // Check if document has been modified ------------------------------
-      IsModified() { return this.bModified; }
-      // Set modified flag to true or false -------------------------------
-      SetModified(bModified) { this.bModified = bModified; }
-   }
+        // Check if document has been modified ------------------------------
+        IsModified() { return this.bModified; }
+        // Set modified flag to true or false -------------------------------
+        SetModified(bModified) { this.bModified = bModified; }
+
+        AddRecord(oRecord) { this.aRecords.push(oRecord); }
+
+        GetRecord( sTable )
+        {
+            return this.aRecords.find(oRecord => oRecord.table === sTable);
+        }
+
+        AddTable( oTable ) { this.aTable.push(oTable); }
+
+        GetTable( sTable )
+        {
+            return this.aTable.find(oTable => oTable.name === sTable);
+        }
+    }
 
    </script>
 </body>
