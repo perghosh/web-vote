@@ -79,7 +79,7 @@ class DBRecord {
          this.pattern_ = oOptions.pattern || null;
          this.aMatch = oOptions.aMatch || null;
          this.sError = oOptions.sError || "";
-         this.default = oOptions.default || null;
+         this.default_ = oOptions.default || null;
       }
 
       is_string() { return this.sType === "string"; }
@@ -93,6 +93,7 @@ class DBRecord {
       get name() { return this.sName; }
       get alias() { return this.sAlias; }
       get type() { return this.sType; }
+      get default() { return this.default_; }
    }
 
    /** -----------------------------------------------------------------------
@@ -280,7 +281,7 @@ class DBRecord {
       const oResult = {};
 
       // ## Helper function to check if a value is empty ......................
-      const isEmpty = (value) => {
+      const empty_ = (value) => {
          if (value === null || value === undefined) return true;
          if (typeof value === "string" && value === "") return true;
          if (Array.isArray(value) && value.length === 0) return true;
@@ -291,12 +292,11 @@ class DBRecord {
       // ## Iterate through columns to check required flag ....................
       this.aColumn.forEach((column) => {
          const sName = column.name;
-         const vValue = this.mapValues.get(sName);
+         let vValue = this.mapValues.get(sName);
 
-         // Skip if empty and not required
-         if (isEmpty(vValue) && !column.is_required()) {
-            return;
-         }
+         if( empty_(vValue) && !empty_(column.default) ) { vValue = column.default; } // Set default value if empty and has default
+
+         if(empty_(vValue) && !column.is_required()) { return; }               // Skip if empty and not required
 
          oResult[sName] = vValue;
       });
