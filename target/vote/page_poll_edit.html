@@ -190,7 +190,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
          const oTable = oDocument_g.GetTable("search");  
          if(oTable)
          {
-            const eSelectPoll = document.getElementById("idPoll").querySelector('[data-section="select-polls"]');
+            const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
             eSelectPoll.innerHTML = "";
             
             const fnSelectPoll = (sEvent, oParameter) => {
@@ -203,7 +203,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                }
             };
 
-            const oUITable = new UITableLite( eSelectPoll, oTable, { iSort: 0, aColumns: [1,2], bHeader: true, bIndices, fnCallback: fnSelectPoll} );
+            const oUITable = new UITableLite( eSelectPoll, oTable, { iSort: 0, aColumns: [1,2], bHeader: true, bIndices: true, fnCallback: fnSelectPoll} );
             oUITable.Render();
          }
       }
@@ -211,7 +211,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       const oDBRecordPoll = oDocument_g.GetRecord("TPoll");
       const bPollHasKey = oDBRecordPoll.HasKeyValue();
 
-      const ePoll = document.getElementById("idUser");
+      const ePoll = document.getElementById("idForm");
 
       if(bPollHasKey === true)
       {
@@ -295,6 +295,11 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
          const sAction = eTarget.dataset.action;
 
+         // ## User table record and action .....................................
+         const oDBRecord = oDocument_g.GetRecord( "TPoll" );                                          console.assert( oDBRecord, "oDBRecord is null" );
+
+         oDBRecord.ReadValues();
+
          switch(sAction) {
             case("search"): {
                const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR ''%{=header}%'' ORDER BY FName";
@@ -306,12 +311,15 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                });
             } break;
             case("add"): {
-               const sInsert = "INSERT INTO TPoll (FName, FHeader, FDescription) VALUES ({FName}, {FHeader}, {FDescription}) RETURNING PollK AS 'key', 'TPoll' AS 'table'";
-               const sValues = JSON.stringify(oFields);
+               //const sInsert = "INSERT INTO TPoll (FName, FHeader, FDescription) VALUES ({FName}, {FHeader}, {FDescription}) RETURNING PollK AS 'key', 'TPoll' AS 'table'";
 
-               const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}`;
 
-               gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
+               const sValues = JSON.stringify(oDBRecord.GetFilledValues());
+               const sJson = `{ "table": "TPoll", "values": ${sValues}, "returning": "PollK" }`;
+
+               const sArguments = `record=${sJson}`;
+
+               gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult);
                   CreateButtons(document.querySelector("#idButtons"));
                   oToast_g.Show("Skapad!")

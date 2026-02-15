@@ -104,7 +104,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
     function PAGE_Initialize() {
         oDocument_g = new CDocument({});
 
-
+      oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
 
         // ## Start idle timer - call PAGE_OnIdle() once per second
         CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
@@ -156,7 +156,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
         if(bGroupHasKey === true)
         {
-            CreateButtons(document.querySelector("#idButtons"));
+            PAGE_CreateButtons(document.querySelector("#idButtons"));
         }
         else
         {
@@ -200,8 +200,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
          if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key)
          {
             e_.stopPropagation();
-            const sKey = eTarget.parentNode.dataset.key;
-            const sSelect = "SELECT GroupK, FName, FDescription FROM TGroup WHERE GroupK = x{GroupK}";
+            const sKey = eTarget.parentNode.dataset.key;                                                               console.log(sKey);
+            const sSelect = "SELECT GroupK, FName, FDescription FROM TGroup WHERE GroupK = {=GroupK}";
             const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ GroupK: sKey })}`;  
 
             gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
@@ -211,7 +211,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                 oDBRecord.ClearValues();
 
                     console.log(aGroupResult);
-                if( aGroupResult.length >= 2)
+                if( aGroupResult.length > 1)
                 {
                     
 
@@ -252,13 +252,28 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}`;
 
                gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
-                  PAGE_ProcessResponse(oResult);
-                  CreateButtons(document.querySelector("#idButtons"));
+                  // Extract the returned key from insert result
+                  const oInsertResult = JSON.parse(oResult.data.querySelector("result").textContent);
+                  const sNewKey = oInsertResult.key;
+                  
+                  // Set the key in document and DBRecord
+                  oDocument_g.key_ = sNewKey;
+                  const oDBRecord = oDocument_g.GetRecord("TGroup");
+                  oDBRecord.SetKeyValue(sNewKey);
+                  
+                  // Refresh the list to show the new item
+                  const sSelect = "SELECT GroupK id, FName name FROM TGroup";
+                  const sListArgs = `query=${sSelect}`;
+                  gd.SendToServer("", "!db/select", sListArgs).then(function(oListResult) {
+                     PAGE_ProcessResponse(oListResult);
+                  });
+                  
+                  PAGE_CreateButtons(document.querySelector("#idButtons"));
                   oToast_g.Show("Skapad!")
                });
             } break;
             case("update"): {
-               const sUpdate = "UPDATE TGroup SET FName = {FName}, FDescription = {FDescription} WHERE GroupK = x''{=GroupK}''";
+               const sUpdate = "UPDATE TGroup SET FName = {FName}, FDescription = {FDescription} WHERE GroupK = {GroupK}";
 
                oFields.GroupK = oDocument_g.key_;
                const sValues = JSON.stringify(oFields);
@@ -276,7 +291,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                });
             } break;
             case("delete"): {
-               const sDelete = "DELETE FROM TGroup WHERE GroupK = x''{=GroupK}''";
+               const sDelete = "DELETE FROM TGroup WHERE GroupK = {=GroupK}";
 
                const sValues = JSON.stringify({ GroupK: oDocument_g.key_ });
 
