@@ -25,6 +25,9 @@ data-action documentation =====================================================
 
 data-action="user-search" - Command for search for users based on a search term
 data-action="user-clear-active" - Command for clearing user selection
+data-action="user-add" - Command for adding a new user
+data-action="user-update" - Command for updating a user
+
 -->
 
 
@@ -266,14 +269,23 @@ function PAGE_SetListeners() {
             });
          } break;
          case "user-update": {                                                  // save command
+            const sValues = JSON.stringify(oDBRecord.GetAllValues());
+            const key = oDBRecord.GetKeyValue();
+            const sWhere = `{"UserK": "${key}"}`;
+            const sJson = `{ "table": "TUser", "values": ${sValues}, "where": ${sWhere} }`;
+            const sArguments = `record=${sJson}`;
+
+            /*
+
             const sUserKey = oDBRecord.GetKeyValue();
             const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FFirstName = {FFirstName}, FLastName = {FLastName}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{=UserK}''";
             const sValues = JSON.stringify(oDBRecord.GetAllValues());
             const sArguments = `query=${sUpdate}` + "\n" + `values=${sValues}`;
 
             oToast_g.Show('Update user ' + oDBRecord.GetValue("FAlias") );
+            */
 
-            gd.SendToServer("", "!db/update?echo=user", sArguments).then(function(oResult) {
+            gd.SendToServer("", "!db/update?", sArguments).then(function(oResult) {
                const iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
                if(iCount !== 0) { oToast_g.Show('User updated successfully'); }
                else { oToast_g.Show('Failed to update user'); }
@@ -370,12 +382,13 @@ function PAGE_ProcessResponse(oData, sOperation) {
          else { oDBRecord.SetKeyValue( oUser.key ); }
 
          const aAsk = eResults.querySelectorAll('result[command="ask"]');
+         if( aAsk.length !== 0 ) {
+            // parse content to json object
+            const oContent = JSON.parse(aAsk[0].textContent);
 
-         // parse content to json object
-         const oContent = JSON.parse(aAsk[0].textContent);
-
-         const sMessage = "Användare skapad med alias: " + oContent.FAlias;
-         oToast_g.Show(sMessage, {sType: "info", minWidth: "600px"});
+            const sMessage = "Användare skapad med alias: " + oContent.FAlias;
+            oToast_g.Show(sMessage, {sType: "info", minWidth: "600px"});
+         }
          PAGE_Update();
       }
       else if( sOperation === "select-users" ) {
