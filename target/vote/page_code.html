@@ -93,7 +93,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    let oDocument_g;
 
    const aEditField = [
-      { field: "GroupK", type: "string", key: true},
+      { field: "CodeGroupK", type: "string", key: true},
       { label: "Name", description: "Name for group in system", field: "FName", type: "string", required: true},
       { label: "Description", description: "Description for group in system", field: "FDescription", type: "string", required: true},
    ]
@@ -104,13 +104,13 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
     function PAGE_Initialize() {
         oDocument_g = new CDocument({});
 
-
+      oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
 
         // ## Start idle timer - call PAGE_OnIdle() once per second
         CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
 
 
-        const sSelect = "SELECT GroupK id, FName name FROM TGroup"; //"SELECT GroupK AS id, FName AS name FROM TGroup ORDER BY FName";
+        const sSelect = "SELECT CodeGroupK id, FName name FROM TCodeGroup"; //"SELECT CodeGroupK AS id, FName AS name FROM TCodeGroup ORDER BY FName";
         //const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
         const sArguments = `query=${sSelect}`; //+ "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
 
@@ -134,7 +134,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
         };
 
         let oRecord = new DBRecord([], { fnRead, fnWrite });
-        oRecord.table = "TGroup";
+        oRecord.table = "TCodeGroup";
         console.log(oRecord);
 
         oRecord.AddColumn(aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"}) 
@@ -149,14 +149,14 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
     */
     function PAGE_Update( sType )  {
 
-        const oDBRecordGroup = oDocument_g.GetRecord("TGroup");
+        const oDBRecordGroup = oDocument_g.GetRecord("TCodeGroup");
         const bGroupHasKey = oDBRecordGroup.HasKeyValue();
 
         //const eGroup = document.getElementById("idUser");
 
         if(bGroupHasKey === true)
         {
-            CreateButtons(document.querySelector("#idButtons"));
+            PAGE_CreateButtons(document.querySelector("#idButtons"));
         }
         else
         {
@@ -200,18 +200,18 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
          if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key)
          {
             e_.stopPropagation();
-            const sKey = eTarget.parentNode.dataset.key;
-            const sSelect = "SELECT GroupK, FName, FDescription FROM TGroup WHERE GroupK = x{GroupK}";
-            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ GroupK: sKey })}`;  
+            const sKey = eTarget.parentNode.dataset.key;                                                               console.log(sKey);
+            const sSelect = "SELECT CodeGroupK, FName, FDescription FROM TCodeGroup WHERE CodeGroupK = {=CodeGroupK}";
+            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ CodeGroupK: sKey })}`;  
 
             gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
             {
                 const aGroupResult = JSON.parse( oResult.data.querySelector("result").textContent );
-                const oDBRecord = oDocument_g.GetRecord( "TGroup" );
+                const oDBRecord = oDocument_g.GetRecord( "TCodeGroup" );
                 oDBRecord.ClearValues();
 
                     console.log(aGroupResult);
-                if( aGroupResult.length >= 2)
+                if( aGroupResult.length > 1)
                 {
                     
 
@@ -246,21 +246,36 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
          switch(sAction) {
             case("add"): {
-               const sInsert = "INSERT INTO TGroup (FName, FDescription) VALUES ({FName}, {FDescription}) RETURNING GroupK AS 'key', 'TGroup' AS 'table'";
+               const sInsert = "INSERT INTO TCodeGroup (FName, FDescription) VALUES ({FName}, {FDescription}) RETURNING CodeGroupK AS 'key', 'TCodeGroup' AS 'table'";
                const sValues = JSON.stringify(oFields);
 
                const sArguments = `query=${sInsert}` + "\n" + `values=${sValues}`;
 
                gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
-                  PAGE_ProcessResponse(oResult);
-                  CreateButtons(document.querySelector("#idButtons"));
+                  // Extract the returned key from insert result
+                  const oInsertResult = JSON.parse(oResult.data.querySelector("result").textContent);
+                  const sNewKey = oInsertResult.key;
+                  
+                  // Set the key in document and DBRecord
+                  oDocument_g.key_ = sNewKey;
+                  const oDBRecord = oDocument_g.GetRecord("TCodeGroup");
+                  oDBRecord.SetKeyValue(sNewKey);
+                  
+                  // Refresh the list to show the new item
+                  const sSelect = "SELECT CodeGroupK id, FName name FROM TCodeGroup";
+                  const sListArgs = `query=${sSelect}`;
+                  gd.SendToServer("", "!db/select", sListArgs).then(function(oListResult) {
+                     PAGE_ProcessResponse(oListResult);
+                  });
+                  
+                  PAGE_CreateButtons(document.querySelector("#idButtons"));
                   oToast_g.Show("Skapad!")
                });
             } break;
             case("update"): {
-               const sUpdate = "UPDATE TGroup SET FName = {FName}, FDescription = {FDescription} WHERE GroupK = x''{=GroupK}''";
+               const sUpdate = "UPDATE TCodeGroup SET FName = {FName}, FDescription = {FDescription} WHERE CodeGroupK = {CodeGroupK}";
 
-               oFields.GroupK = oDocument_g.key_;
+               oFields.CodeGroupK = oDocument_g.key_;
                const sValues = JSON.stringify(oFields);
 
                const sArguments = `query=${sUpdate}` + `\n` + `values=${sValues}`;
@@ -276,9 +291,9 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                });
             } break;
             case("delete"): {
-               const sDelete = "DELETE FROM TGroup WHERE GroupK = x''{=GroupK}''";
+               const sDelete = "DELETE FROM TCodeGroup WHERE CodeGroupK = {=CodeGroupK}";
 
-               const sValues = JSON.stringify({ GroupK: oDocument_g.key_ });
+               const sValues = JSON.stringify({ CodeGroupK: oDocument_g.key_ });
 
                const sArguments = `query=${sDelete}` + `\n` + `values=${sValues}`;
 
