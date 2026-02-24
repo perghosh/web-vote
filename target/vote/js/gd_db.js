@@ -292,6 +292,9 @@ class DBRecord {
       // ## Iterate through columns to check required flag ....................
       this.aColumn.forEach((column) => {
          const sName = column.name;
+         if(column.is_key()) return;                                           // skip key
+
+
          let vValue = this.mapValues.get(sName);
 
          if( empty_(vValue) && !empty_(column.default) ) { vValue = column.default; } // Set default value if empty and has default
