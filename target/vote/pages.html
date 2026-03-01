@@ -1,0 +1,136 @@
+<!--
+## Pages Navigation
+
+This page provides navigation to all available HTML pages in the application.
+
+PAGE_ Method documentation:
+=========================
+
+PAGE_Initialize - Main initialization function that sets up the navigation page
+PAGE_OnIdle - Handles idle state (no changes needed for this static page)
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/variables-corporate-blue.css">
+    <link rel="stylesheet" href="css/elements.css">
+    <link rel="stylesheet" href="css/input-effects.css">
+    <title>Pages Navigation - Web Vote</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
+        .page-container { background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); max-width: 600px; padding: 40px; width: 100%; }
+        .page-header { border-bottom: 2px solid var(--color-border); margin-bottom: 30px; padding-bottom: 15px; }
+        .page-header h1 { color: var(--color-body); font-size: 28px; font-weight: 600; margin: 0; }
+        .page-header p { color: var(--color-muted); font-size: 14px; margin-top: 8px; }
+        .pages-list { display: flex; flex-direction: column; gap: 12px; }
+        .page-link { background: var(--background-light); border: 2px solid var(--color-border); border-radius: 8px; color: var(--color-body); display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; text-decoration: none; transition: all 0.3s ease; }
+        .page-link:hover { background: var(--background-light-hover); border-color: #667eea; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2); transform: translateY(-2px); }
+        .page-link-title { display: flex; flex-direction: column; }
+        .page-link h2 { color: var(--color-body); font-size: 16px; font-weight: 600; margin: 0; }
+        .page-link span { color: var(--color-muted); font-size: 12px; margin-top: 4px; }
+        .page-link-arrow { color: #667eea; font-size: 20px; font-weight: bold; transition: transform 0.3s ease; }
+        .page-link:hover .page-link-arrow { transform: translateX(4px); }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <h1>Pages Navigation</h1>
+            <p>Select a page to navigate to</p>
+        </div>
+
+        <div class="pages-list">
+            <a href="page_login.html" class="page-link">
+                <div class="page-link-title">
+                    <h2>Login Page</h2>
+                    <span>User authentication and login</span>
+                </div>
+                <span class="page-link-arrow">→</span>
+            </a>
+
+            <a href="page_user_edit.html" class="page-link">
+                <div class="page-link-title">
+                    <h2>User Edit Page</h2>
+                    <span>Edit and manage user accounts</span>
+                </div>
+                <span class="page-link-arrow">→</span>
+            </a>
+
+            <a href="page_poll_edit.html" class="page-link">
+                <div class="page-link-title">
+                    <h2>Poll Edit Page</h2>
+                    <span>Create and edit polls</span>
+                </div>
+                <span class="page-link-arrow">→</span>
+            </a>
+
+            <a href="page_poll_question_edit.html" class="page-link">
+                <div class="page-link-title">
+                    <h2>Poll Question Edit Page</h2>
+                    <span>Edit poll questions and options</span>
+                </div>
+                <span class="page-link-arrow">→</span>
+            </a>
+
+            <a href="page_code.html" class="page-link">
+                <div class="page-link-title">
+                    <h2>Code Page</h2>
+                    <span>Code and reference documentation</span>
+                </div>
+                <span class="page-link-arrow">→</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+    let oDocument_g;
+
+    /** --------------------------------------------------------------------- @API [tag: initialize]
+     * Main initialization function that initializes the navigation page
+     */
+    function PAGE_Initialize() {
+        oDocument_g = new CDocument({});
+
+        // ## Start idle timer - call PAGE_OnIdle() once per second
+        CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+    }
+
+    /** --------------------------------------------------------------------- @API [tag: onidle]
+     * Handles idle state (no changes needed for this static page)
+     */
+    const PAGE_OnIdle = (function() {
+        var bLastModified = false;
+
+        return function() {
+            const bModified = oDocument_g.IsModified();
+
+            if (bModified !== bLastModified) {
+                // Navigation page is static - no changes needed
+                bLastModified = bModified;
+            }
+        }
+    })();
+
+    // Start page initialization -----------------------------------------------
+    document.addEventListener('DOMContentLoaded', function() {
+        PAGE_Initialize();
+    });
+
+    class CDocument {
+        static iIdleTimerId_s = null;
+
+        constructor(oOptions = {}) {
+            this.bModified = false;
+        }
+
+        IsModified() { return this.bModified; }
+        SetModified(bModified) { this.bModified = bModified; }
+    }
+    </script>
+</body>
+</html>

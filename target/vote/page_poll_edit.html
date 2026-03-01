@@ -24,6 +24,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
       .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+      .container-result:not(:empty) { margin-bottom: 20px; }
       .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
       .container-result tbody tr { border-bottom: 1px solid var(--color-border); }
       .container-result tbody tr:hover { background: var(--background-light-hover); }
@@ -71,10 +72,12 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                </label>
             </div>
          </div>
-        
+
 
          <div class="row" id="idButtons">
-            <button class="button" data-action="add">Add</button>
+            <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
+            <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll" data-idle="poll_key">Update</button>
+            <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll" data-idle="poll_key">Delete</button>
                                                                               <!--<button class="button" data-action="update">Update</button>
                                                                                  <button class="button" data-action="delete">Delete</button>-->
          </div>
@@ -89,6 +92,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
    function CreateButtons(eParent)
    {
+      /*
       PAGE_DeleteButtons(eParent);
 
       const eButtonUpdate = document.createElement("button");
@@ -103,23 +107,22 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
       eParent.appendChild(eButtonUpdate);
       eParent.appendChild(eButtonDelete);
+      */
    }
 
    /** ------------------------------------------------------------------------
     * Clears all form input fields within the given parent element
-    */ 
+    */
    function PAGE_DeleteFieldInputs(eParent)
    {
       const aFields = eParent.querySelectorAll("[data-field]");
 
-      aFields.forEach((eField) => {
-         eField.value = "";
-      });
+      aFields.forEach((eField) => { eField.value = ""; });
    }
 
    /** ------------------------------------------------------------------------
     * Removes action buttons except the "add" button from the button row
-    */ 
+    */
    function PAGE_DeleteButtons(eParent)
    {
       const aButtons = eParent.querySelectorAll("#idButtons button");
@@ -127,7 +130,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       aButtons.forEach((eButton) => {
          if(eButton.dataset.action !== "add")
          {
-            eButton.remove();  
+            eButton.remove();
          }
       });
    }
@@ -161,16 +164,16 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       {
          const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
          const eField = ePollform.querySelector(`[data-field="${sName}"]`);
-         if( eField ) { eField.value = this.GetValue(sName); }  
+         if( eField ) { eField.value = this.GetValue(sName); }
       };
 
       let oRecord = new DBRecord([], { fnRead, fnWrite });
       oRecord.table = "TPoll";
       console.log(oRecord);
 
-      oRecord.AddColumn(aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"}) 
-
-      oDocument_g.AddRecord(oRecord);
+      // Adds fields from `aEditField` to record
+      oRecord.AddColumn(aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"})
+      oDocument_g.AddRecord(oRecord);                                          // add record to document
 
       oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
 
@@ -187,19 +190,19 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    function PAGE_Update( sType)  {
       if( sType === undefined || sType === "search" )
       {
-         const oTable = oDocument_g.GetTable("search");  
+         const oTable = oDocument_g.GetTable("search");
          if(oTable)
          {
             const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
             eSelectPoll.innerHTML = "";
-            
+
             const fnSelectPoll = (sEvent, oParameter) => {
                if(sEvent === "row")
                {
                   const iRow = oParameter.iOriginalIndex;
                   const eRow = oParameter.eRow;
                   const sKey = oTable.GetCell(iRow, 0);
-                  eRow.dataset.key = sKey;  
+                  eRow.dataset.key = sKey;
                }
             };
 
@@ -212,15 +215,10 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       const bPollHasKey = oDBRecordPoll.HasKeyValue();
 
       const ePoll = document.getElementById("idForm");
+      const aPollButtons = ePoll.querySelectorAll("[data-idle='poll_key']");
 
-      if(bPollHasKey === true)
-      {
-         CreateButtons(document.querySelector("#idButtons"));
-      }
-      else
-      {
-         PAGE_DeleteButtons(document.querySelector("#idButtons"));
-      }
+      const sVisibility = bPollHasKey === true ? "visible" : "hidden";
+      aPollButtons.forEach( eButton => { eButton.style.visibility = sVisibility; });
    }
 
     /** --------------------------------------------------------------------- @API [tag: onidle]
@@ -255,25 +253,23 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             e_.stopPropagation();
             const sKey = eTarget.parentNode.dataset.key;
             const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
-            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;  
+            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
 
             gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
             {
                const aPollResult = JSON.parse( oResult.data.querySelector("result").textContent );
-               const oDBRecord = oDocument_g.GetRecord( "TPoll" );
+               const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
                oDBRecord.ClearValues();
 
-                              console.log(aPollResult);
                if( aPollResult.length > 1)
                {
                   oDBRecord.SetValue( aPollResult );
-                  console.log(oDBRecord.SetKeyValue);
                   oDBRecord.SetKeyValue( sKey );
                   oDocument_g.key_ = sKey;
 
-                  oDBRecord.WriteValues();  
+                  oDBRecord.WriteValues();
                }
-            
+
                PAGE_Update();
             });
             return;
@@ -310,7 +306,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                   PAGE_ProcessResponse(oResult, "select-polls");
                });
             } break;
-            case("add"): {
+            case("poll-add"): {
                //const sInsert = "INSERT INTO TPoll (FName, FHeader, FDescription) VALUES ({FName}, {FHeader}, {FDescription}) RETURNING PollK AS 'key', 'TPoll' AS 'table'";
 
 
@@ -333,7 +329,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
                const sArguments = `query=${sUpdate}` + `\n` + `values=${sValues}`;
 
-               
+
                gd.SendToServer("", "!db/update?echo=user", sArguments).then(function(oResult) {
                   //PAGE_ProcessResponse(oResult);
                   //CreateButtons(document.querySelector("#idButtons"));
@@ -353,10 +349,12 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
                   let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
 
-                  if( iCount !== 0) { 
-                     oToast_g.Show("Bort tagen!"); 
+                  if( iCount !== 0) {
+                     oToast_g.Show("Borttagen!");
                      PAGE_DeleteFieldInputs(eContainer);
-                     PAGE_DeleteButtons(eContainer);
+                     const oDBPollRecord = oDocument_g.GetCell("TPoll");
+                     oDBPollRecord.ClearValues();
+                     PAGE_Update();
                   }
                   else {oToast_g.Show("Kunde inte ta bort")}
                });
@@ -441,7 +439,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                   const iRow = oParameter.iOriginalIndex;
                   const eRow = oParameter.eRow;
                   const sKey = oTable.GetCell(iRow, 0);
-                  eRow.dataset.key = sKey;  
+                  eRow.dataset.key = sKey;
                }
             };
 
@@ -470,10 +468,11 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       // Set modified flag to true or false -------------------------------
       SetModified(bModified) { this.bModified = bModified; }
 
+      // Add a record to the document --------------------------------------------
       AddRecord(oRecord) { this.aRecords.push(oRecord); }
 
-      GetRecord( sTable )
-      {
+      // Get a record by table name ----------------------------------------------
+      GetRecord( sTable ) {
          return this.aRecords.find(oRecord => oRecord.table === sTable);
       }
 

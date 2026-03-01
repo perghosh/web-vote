@@ -439,14 +439,9 @@ function PAGE_Update( sType ) {
    const aUserButtons = eUser.querySelectorAll("[data-idle='user_key']");
 
    if( bUserHasKey === true ) {
-      aUserButtons.forEach( eButton => {
-         eButton.style.visibility = "visible";
-      });
-   } else {
-      aUserButtons.forEach( eButton => {
-         eButton.style.visibility = "hidden";
-      });
+      aUserButtons.forEach( eButton => { eButton.style.visibility = "visible"; });
    }
+   else { aUserButtons.forEach( eButton => { eButton.style.visibility = "hidden"; }); }
 }
 
 
