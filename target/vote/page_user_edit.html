@@ -278,7 +278,7 @@ function PAGE_SetListeners() {
                else { oToast_g.Show('Failed to update user'); }
             });
          } break;
-         case "user-delete": {                                                     // delete command
+         case "user-delete": {                                                 // delete command
             // Get key for active user that is found in DBRecord
             const sUserKey = oDBRecord.GetKeyValue();
             const sArguments = `query=DELETE FROM TUser WHERE UserK = x''{=UserK}''` + "\n" + `values=${JSON.stringify({UserK: sUserKey})}`;
@@ -292,8 +292,8 @@ function PAGE_SetListeners() {
                   oDBRecord.ClearValues();
                   document.getElementById('idUser').querySelectorAll("[data-field]").forEach(eInput => eInput.value = "");
 
-                  let oTable = oDocument_g.GetTable("user-search");                // get search-users table
-                  if( oTable ) {                                              // if table exists make sure record in result is deleted
+                  let oTable = oDocument_g.GetTable("user-search");            // get search-users table
+                  if( oTable ) {                                               // if table exists make sure record in result is deleted
                      let iDeleted = oTable.Delete( { id: sUserKey } );
                      if(iDeleted > 0) {
                         //oToast_g.Show('Deleted ' + iDeleted + ' rows from search table');
@@ -307,7 +307,7 @@ function PAGE_SetListeners() {
                PAGE_Update();
             });
          } break;
-         case "user-clear-active": {                                                 // clear users will empty form values for user edit
+         case "user-clear-active": {                                           // clear users will empty form values for user edit
             oDBRecord.ClearValues();
             oDBRecord.WriteValues();
             PAGE_Update();
@@ -337,7 +337,7 @@ function PAGE_ProcessResponse(oData, sOperation) {
          break;
       case 'xml':
          // If oData.data is an XML Document object, serialize it to string
-         if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+         if(oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
             //sResult = (new XMLSerializer()).serializeToString(oData.data);
 
             // ## query results element
@@ -381,7 +381,7 @@ function PAGE_ProcessResponse(oData, sOperation) {
       else if( sOperation === "select-users" ) {
          const eSelect = eResults.querySelector('result[command="select"]');   // get result from select query finding users
          const aUser = JSON.parse( eSelect.textContent );
-         aUser.shift();                                                         // remove first row from aUser that is columns
+         aUser.shift();                                                        // remove first row from aUser that is columns
 
 
          let oTable = oDocument_g.GetTable("user-search");
@@ -425,7 +425,7 @@ function PAGE_Update( sType ) {
             }
          };
 
-         const oUITable = new UITableLite( eSelectUser, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, fnCallback: fnSelectUser } );
+         const oUITable = new UITableLite( eSelectUser, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, callback: fnSelectUser } );
          oUITable.Render();
       }
    }
@@ -443,10 +443,6 @@ function PAGE_Update( sType ) {
    }
    else { aUserButtons.forEach( eButton => { eButton.style.visibility = "hidden"; }); }
 }
-
-
-
-
 
 /** -------------------------------------------------------------------------- @API [tag: onidle]
  * Handles idle state by updating UI elements and checking for changes

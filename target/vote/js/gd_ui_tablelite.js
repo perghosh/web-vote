@@ -38,7 +38,7 @@
  * @param {boolean} [options_.bIndex=false] - Whether to include row index column.
  * @param {boolean} [options_.bIndices=false] - Whether to retrieve and pass original row indices to callbacks.
  * @param {number} [options_.iSort=0] - Column to sort by (positive=ascending, negative=descending).
- * @param {Function} [options_.fnCallback] - Single callback for all customization: (sCommand, oData) => any.
+ * @param {Function|Object} [options_.aCallback] - Single callback or multiple callbacks for all customization: (sCommand, oData) => any.
  *   Commands:
  *   - "row": Customize row element. oData: { aRow, iIndex, iOriginalIndex, eRow }
  *   - "cell": Customize cell content. oData: { value, iColumn, iRow, iOriginalIndex, eCell }. Return string/HTMLElement to override content.
@@ -70,9 +70,12 @@ class UITableLite {
       // ## Apply options with defaults .......................................
       this.oOptions = Object.assign({
          // null = all columns
-         aColumns: null, bHeader: false, bIndex: false, iSort: 0, fnCallback: null,
+         aColumns: null, bHeader: false, bIndex: false, iSort: 0, aCallback: null,
          oStyle: { table: '', thead: '', tbody: '', tr: '', th: '', td: '' }
       }, options_);
+
+      // Resolve callback function, only the aCallback option is used internally
+      if (options_.callback) { this._add_callback(options_.callback); }
 
       // Merge style options
       if( options_.oStyle ) {
@@ -195,6 +198,18 @@ class UITableLite {
       this.eParent = null;
    }
 
+   /// Add a callback function to the callback array --------------------------
+   _add_callback(callback_) {
+      if(!this.oOptions.aCallback) this.oOptions.aCallback = [];
+
+      if(typeof callback_ === 'function') {
+         this.oOptions.aCallback.push(callback_);
+      }
+      else if(Array.isArray( callback_ ) === true) {
+         this.oOptions.aCallback.push(...callback_);
+      }
+   }
+
    /** -----------------------------------------------------------------------
     * Create thead element with header row.
     * @param {Array} aHeader - Header row data.
@@ -255,7 +270,7 @@ class UITableLite {
             eTr.appendChild(eTd);
          }
 
-         this._get_callback_result("row", { aRow, iIndex: iActualRow, iOriginalIndex, eRow: eTr });
+         this._trigger("row", { aRow, iIndex: iActualRow, iOriginalIndex, eRow: eTr });
 
          eTbody.appendChild(eTr);
       }
@@ -265,47 +280,57 @@ class UITableLite {
 
    /** -----------------------------------------------------------------------
     * Add CSS classes to an element from string or array.
-    * @param {HTMLElement} element_ - The element to add classes to.
+    * @param {HTMLElement} eElement - The element to add classes to.
     * @param {string|Array<string>} classes_ - Classes as string (space-separated) or array.
     * @private
     */
-   _add_classes(element_, classes_) {
+   _add_classes(eElement, classes_) {
       if( !classes_ ) return;                                                 // return early if no classes provided
 
       if( Array.isArray(classes_) ) {
          classes_.forEach(sClass => {
-            if( sClass ) element_.classList.add(sClass);
+            if( sClass ) eElement.classList.add(sClass);
          });
       }
       else if( typeof classes_ === 'string' ) {
          const aClasses = classes_.split(' ').filter(s => s.length > 0);
-         aClasses.forEach(sClass => element_.classList.add(sClass));
+         aClasses.forEach(sClass => eElement.classList.add(sClass));
       }
    }
 
    // Helper to safely call the callback
-   _get_callback_result(command, data) {
-      if(!this.oOptions.fnCallback) return undefined;                         // return early if no callback provided
-      return this.oOptions.fnCallback(command, data);
+   _trigger(command, data) {
+      if(!this.oOptions.aCallback?.length) return undefined;
+
+      let aResults = [];
+      for(const callback of this.oOptions.aCallback) {
+         if(typeof callback === 'function') {
+            const result_ = callback(command, data);
+            if (result_ === false) return false;
+            if(result_ !== undefined) aResults.push(result_);
+         }
+      }
+
+      return aResults.length > 0 ? aResults : undefined;
    }
 
    // Apply custom row classes
    _apply_row_classes(eTr, aRow, iActualRow, iOriginalIndex) {
-      const classes = this._get_callback_result("row_class", { aRow, iIndex: iActualRow, iOriginalIndex });
-      if(classes) this._add_classes(eTr, classes);
+      const aClass = this._trigger("row_class", { aRow, iIndex: iActualRow, iOriginalIndex });
+      if(aClass) this._add_classes(eTr, aClass);
    }
 
    // Apply custom cell classes
    _apply_cell_classes(eTd, value, iColumn, iRow, iOriginalIndex) {
-      const classes = this._get_callback_result("cell_class", { value, iColumn, iRow, iOriginalIndex });
-      if(classes) this._add_classes(eTd, classes);
+      const aClass = this._trigger("cell_class", { value, iColumn, iRow, iOriginalIndex });
+      if(aClass) this._add_classes(eTd, aClass);
    }
 
    // Handle cell content + callback override
    _apply_cell_content(eTd, value, iColumn, iRow, iOriginalIndex) {
       let content = value;
 
-      const result = this._get_callback_result("cell", { value, iColumn, iRow, iOriginalIndex, eCell: eTd });
+      const result = this._trigger("cell", { value, iColumn, iRow, iOriginalIndex, eCell: eTd });
 
       if(result !== undefined && result !== null) { content = result; }
 
