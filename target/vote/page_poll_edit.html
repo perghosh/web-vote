@@ -78,8 +78,10 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
             <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll" data-idle="poll_key">Update</button>
             <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll" data-idle="poll_key">Delete</button>
-                                                                              <!--<button class="button" data-action="update">Update</button>
-                                                                                 <button class="button" data-action="delete">Delete</button>-->
+            <!-- align to right -->
+         </div>
+         <div class="row" style="justify-content: flex-end; flex: 1;">
+            <button class="button" style="visibility: hidden;" data-action="poll-open" data-table="TPoll" data-idle="poll_key">Add poll questions ...</button>
          </div>
 
       </form>
@@ -297,7 +299,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
          oDBRecord.ReadValues();
 
          switch(sAction) {
-            case("search"): {
+            case "search": {
                const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR ''%{=header}%'' ORDER BY FName";
                const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
                const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
@@ -306,7 +308,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                   PAGE_ProcessResponse(oResult, "select-polls");
                });
             } break;
-            case("poll-add"): {
+            case "poll-add": {
                //const sInsert = "INSERT INTO TPoll (FName, FHeader, FDescription) VALUES ({FName}, {FHeader}, {FDescription}) RETURNING PollK AS 'key', 'TPoll' AS 'table'";
 
 
@@ -321,13 +323,35 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                   oToast_g.Show("Skapad!")
                });
             } break;
-            case("update"): {
-               const sUpdate = "UPDATE TPoll SET FName = {FName}, FHeader = {FHeader}, FDescription = {FDescription} WHERE PollK = x''{=PollK}''";
+            case "poll-update": {
+               //const sUpdate = "UPDATE TPoll SET FName = {FName}, FHeader = {FHeader}, FDescription = {FDescription} WHERE PollK = x''{=PollK}''";
 
-               oFields.PollK = oDocument_g.key_;
-               const sValues = JSON.stringify(oFields);
+               //const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+               
 
-               const sArguments = `query=${sUpdate}` + `\n` + `values=${sValues}`;
+               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+               oDBPollRecord.ReadValues();
+               const oArguments = oDBPollRecord.GetRecordAsArguments();
+
+               /*
+               const sValues = JSON.stringify(oDBPollRecord.GetAllValues());
+               const sKey = oDBPollRecord.GetKeyValue();
+               const sWhere = `{"PollK": "${sKey}"}`;
+               const sJson = `{ "table": "TUser", "values": ${sValues}, "where": ${sWhere} }`;
+               const sArguments = `record=${sJson}`;
+               */
+
+               // sArguments = oDBPollRecord.GetRecordAsArguments();
+
+               console.log(sArguments);
+
+
+
+
+               //oFields.PollK = oDocument_g.key_;
+               //const sValues = JSON.stringify(oFields);
+
+               //const sArguments = `query=${sUpdate}` + `\n` + `values=${sValues}`;
 
 
                gd.SendToServer("", "!db/update?echo=user", sArguments).then(function(oResult) {
@@ -339,12 +363,14 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                   else {oToast_g.Show("Kunde inte uppdatera")}
                });
             } break;
-            case("delete"): {
+            case "poll-delete": {
+
+               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+               const sKey = oDBPollRecord.GetKeyValue();
                const sDelete = "DELETE FROM TPoll WHERE PollK = x''{=PollK}''";
-
                const sValues = JSON.stringify({ PollK: oDocument_g.key_ });
-
-               const sArguments = `query=${sDelete}` + `\n` + `values=${sValues}`;
+               const sArguments = `query=${sDelete}` + `\n` + `values=${sKey}`;
+               return;
 
                gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
                   let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
@@ -358,6 +384,12 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                   }
                   else {oToast_g.Show("Kunde inte ta bort")}
                });
+            } break;
+            case "poll-open": {
+               // Open poll questions page, pass selected poll key as parameter
+               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+               const sKey = oDBPollRecord.GetKeyValue();
+               window.location.href = `page_poll_question_edit.html?pollKey=${sPollKey}`;
             } break;
             default:
                console.error("Unknown action:", sAction);
@@ -484,6 +516,25 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       }
 
    }
+
+
+   // ============================================================================
+   // DBRecord custom methods - loaded once, available on all instances
+   // ============================================================================
+
+   DBRecord.extend("GetRecordAsArguments", function(options_ = {}) {
+      const oResult    = {};
+      oResult.table    = this.sTable;
+      oResult.values   = {};
+      this.mapValues.forEach((value, key) => { oResult.values[key] = value; });
+
+      const aKeyColumns = this._get_key_columns();
+      const sKeyName    = aKeyColumns.length > 0 ? aKeyColumns[0].sName : null;
+      const sKeyValue   = sKeyName ? this.GetValue(sKeyName) : null;
+      oResult.where     = `{"${sKeyName}": "${sKeyValue}"}`;
+
+      return oResult;
+   });
 
    </script>
 </body>

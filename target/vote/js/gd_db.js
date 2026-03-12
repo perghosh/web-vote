@@ -553,3 +553,14 @@ class DBRecord {
       return this._aKeyColumns;
    }
 }
+
+// ============================================================================
+// DBRecord.extend - Prototype extension utility
+// ============================================================================
+DBRecord.extend = function(sName, fn) {
+   if(typeof sName !== "string" || !sName) { throw new Error("extend() requires a method name string"); }
+   if(typeof fn !== "function")            { throw new Error("extend() requires a function"); }
+   if(DBRecord.prototype[sName])           { console.warn(`DBRecord.extend: overwriting existing method '${sName}'`); }
+
+   DBRecord.prototype[sName] = fn;
+};
