@@ -370,6 +370,12 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                const sDelete = "DELETE FROM TPoll WHERE PollK = x''{=PollK}''";
                const sValues = JSON.stringify({ PollK: oDocument_g.key_ });
                const sArguments = `query=${sDelete}` + `\n` + `values=${sKey}`;
+
+               let oTable = oDocument_g.GetTable("search");
+               oTable.Delete( { id: sKey } );
+
+               PAGE_Update();
+
                return;
 
                gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
@@ -380,6 +386,10 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                      PAGE_DeleteFieldInputs(eContainer);
                      const oDBPollRecord = oDocument_g.GetCell("TPoll");
                      oDBPollRecord.ClearValues();
+
+   
+
+
                      PAGE_Update();
                   }
                   else {oToast_g.Show("Kunde inte ta bort")}
@@ -460,10 +470,22 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
             eSelectPoll.innerHTML = "";
 
-            const oTable = new Table(["id", "name", "header"]);
+            let oTable = oDocument_g.GetTable("search");
+            if(!oTable)
+            {
+               oTable = new Table(["id", "name", "header"], {sName: "search"} );   
+               oDocument_g.AddTable(oTable);
+            }
+            else
+            {
+               oTable.Clear();
+            }
+            
 
             // loop array and add rows to table
             for(const aRow of aPoll) {oTable.Add(aRow);}
+
+            PAGE_Update("search");
 
             const fnSelectPoll = (sEvent, oParameter) => {
                if(sEvent === "row")
