@@ -86,7 +86,7 @@ class UITableLite {
       this.eTable = null;
    }
 
-   /** -----------------------------------------------------------------------
+   /** ----------------------------------------------------------------------- Render
     * Render the table into the parent container.
     * Creates a new table element and populates it with data from the Table instance.
     * @param {Table} [oTable] - The Table instance to render.
@@ -141,14 +141,14 @@ class UITableLite {
       return this.eTable;
    }
 
-   /** -----------------------------------------------------------------------
+   /** ----------------------------------------------------------------------- Update
     * Update the table content by re-rendering with current data.
     * Useful when the underlying Table data has changed.
     * @returns {HTMLElement} The updated table element.
     */
    Update() { return this.Render(); }
 
-   /** -----------------------------------------------------------------------
+   /** ----------------------------------------------------------------------- SetColumns
     * Set which columns to display and re-render.
     * @param {Array<number|string>} aColumns - Array of column indices or names (null = all columns).
     * @returns {HTMLElement} The updated table element.
@@ -158,7 +158,7 @@ class UITableLite {
       return this.Render();
    }
 
-   /** -----------------------------------------------------------------------
+   /** ----------------------------------------------------------------------- SetSort
     * Set sorting column and re-render.
     * @param {number} iSort - Column index to sort by (positive=asc, negative=desc, 0=none).
     * @returns {HTMLElement} The updated table element.
@@ -168,7 +168,7 @@ class UITableLite {
       return this.Render();
    }
 
-   /** -----------------------------------------------------------------------
+   /** ----------------------------------------------------------------------- ToggleHeader
     * Toggle header visibility and re-render.
     * @param {boolean} bShow - Whether to show header.
     * @returns {HTMLElement} The updated table element.
@@ -178,13 +178,13 @@ class UITableLite {
       return this.Render();
    }
 
-   /** -----------------------------------------------------------------------
+   /** ----------------------------------------------------------------------- GetElement
     * Get the table element.
     * @returns {HTMLElement|null} The table element or null if not rendered.
     */
    GetElement() { return this.eTable; }
 
-   /** -----------------------------------------------------------------------
+   /** ----------------------------------------------------------------------- Destroy
     * Destroy the table and remove it from DOM.
     */
    Destroy() {
@@ -192,7 +192,7 @@ class UITableLite {
          this.eTable.parentNode.removeChild(this.eTable);
       }
 
-      // Clear references
+      // ## Clear references
       this.eTable = null;
       this.table = null;
       this.eParent = null;
@@ -214,7 +214,6 @@ class UITableLite {
     * Create thead element with header row.
     * @param {Array} aHeader - Header row data.
     * @returns {HTMLElement} The thead element.
-    * @private
     */
    _create_thead(aHeader) {
       const eThead = document.createElement('thead');
@@ -244,7 +243,6 @@ class UITableLite {
     * @param {number} iStart - Index to start reading data from.
     * @param {Array<number>|null} aIndices - Array of original row indices (null if not available).
     * @returns {HTMLElement} The tbody element.
-    * @private
     */
    _create_tbody(aData, iStart, aIndices = null) {
       const eTbody = document.createElement('tbody');
@@ -258,14 +256,14 @@ class UITableLite {
          const eTr = document.createElement('tr'); // create table row element
          this._add_classes(eTr, this.oOptions.oStyle.tr);
 
-         this._apply_row_classes(eTr, aRow, iActualRow, iOriginalIndex);
+         this._row_classes(eTr, aRow, iActualRow, iOriginalIndex);
 
          for(let iCol = 0; iCol < aRow.length; iCol++) {
             const eTd = document.createElement('td'); // create table cell element
             this._add_classes(eTd, this.oOptions.oStyle.td);
 
-            this._apply_cell_classes(eTd, aRow[iCol], iCol, iActualRow, iOriginalIndex);
-            this._apply_cell_content(eTd, aRow[iCol], iCol, iActualRow, iOriginalIndex);
+            this._cell_classes(eTd, aRow[iCol], iCol, iActualRow, iOriginalIndex);
+            this._cell_content(eTd, aRow[iCol], iCol, iActualRow, iOriginalIndex);
 
             eTr.appendChild(eTd);
          }
@@ -282,15 +280,12 @@ class UITableLite {
     * Add CSS classes to an element from string or array.
     * @param {HTMLElement} eElement - The element to add classes to.
     * @param {string|Array<string>} classes_ - Classes as string (space-separated) or array.
-    * @private
     */
    _add_classes(eElement, classes_) {
       if( !classes_ ) return;                                                 // return early if no classes provided
 
       if( Array.isArray(classes_) ) {
-         classes_.forEach(sClass => {
-            if( sClass ) eElement.classList.add(sClass);
-         });
+         classes_.forEach(sClass => { if( sClass ) eElement.classList.add(sClass); });
       }
       else if( typeof classes_ === 'string' ) {
          const aClasses = classes_.split(' ').filter(s => s.length > 0);
@@ -299,13 +294,13 @@ class UITableLite {
    }
 
    // Helper to safely call the callback
-   _trigger(command, data) {
+   _trigger(sCommand, data) {
       if(!this.oOptions.aCallback?.length) return undefined;
 
       let aResults = [];
       for(const callback of this.oOptions.aCallback) {
          if(typeof callback === 'function') {
-            const result_ = callback(command, data);
+            const result_ = callback(sCommand, data);
             if (result_ === false) return false;
             if(result_ !== undefined) aResults.push(result_);
          }
@@ -315,19 +310,19 @@ class UITableLite {
    }
 
    // Apply custom row classes
-   _apply_row_classes(eTr, aRow, iActualRow, iOriginalIndex) {
+   _row_classes(eTr, aRow, iActualRow, iOriginalIndex) {
       const aClass = this._trigger("row_class", { aRow, iIndex: iActualRow, iOriginalIndex });
       if(aClass) this._add_classes(eTr, aClass);
    }
 
    // Apply custom cell classes
-   _apply_cell_classes(eTd, value, iColumn, iRow, iOriginalIndex) {
+   _cell_classes(eTd, value, iColumn, iRow, iOriginalIndex) {
       const aClass = this._trigger("cell_class", { value, iColumn, iRow, iOriginalIndex });
       if(aClass) this._add_classes(eTd, aClass);
    }
 
    // Handle cell content + callback override
-   _apply_cell_content(eTd, value, iColumn, iRow, iOriginalIndex) {
+   _cell_content(eTd, value, iColumn, iRow, iOriginalIndex) {
       let content = value;
 
       const result = this._trigger("cell", { value, iColumn, iRow, iOriginalIndex, eCell: eTd });
