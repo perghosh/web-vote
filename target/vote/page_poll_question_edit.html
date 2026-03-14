@@ -55,12 +55,43 @@ let oDocument_g;
 
 // ## Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-   PAGE_SetListeners();
    PAGE_initialize();
+   PAGE_SetListeners();
 });
 
 function PAGE_initialize() {
+   const fnRead = function(sName, oRecord) {
+      //const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
+      //const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      if( eField ) { this.SetValue( sName, eField.value ); }
+   };
+
+   const fnWrite = function(sName, oRecord) {
+      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
+      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      if( eField ) { eField.value = this.GetValue(sName); }
+   };
+
+
    oDocument_g = new CDocument({});
+
+   let oRecord = new DBRecord([], { fnRead, fnWrite });
+   oRecord.table = "TUser";
+
+
+   // ## Get poll key from url parameters .........................................
+   const oUrlParams = new URLSearchParams(window.location.search);
+   const sPollKey = oUrlParams.get("key");                                                         console.assert(sPollKey && sPollKey.length === 32, "sPollKey is null or wrong format");
+
+   // ## Get poll data from server using poll key .................................
+   const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
+   const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+
+
+/*   
+
+
+
 
    const ePollActive = oDocument_g.GetElement("poll-active");
    const eQuestionList = oDocument_g.GetElement("question-list");
@@ -98,7 +129,7 @@ function PAGE_initialize() {
    PAGE_RenderCommands(eContainerQuestion, aButtonQuestionCommands, 'TPollQuestion');
 
    eQuestionList.appendChild(eContainerQuestion);
-
+*/
 }
 
 function PAGE_SetListeners() {

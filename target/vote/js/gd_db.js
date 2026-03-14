@@ -127,16 +127,10 @@ class DBRecord {
       this.fnRead = options_.fnRead || null;
       this.fnWrite = options_.fnWrite || null;
 
-
-      // ## Use Map for O(1) value lookups instead of array ..................
-      this.mapValues = new Map();
-
-      // ## Cache key columns for performance ................................
-      this._aKeyColumns = null;
-
-
-      // ## Initialize with provided values if any ...........................
+      this.mapValues = new Map(); // Use Map for O(1) lookups by column name
       if(options_.aValues) { options_.aValues.forEach(value_ => this.AddValue(value_)); }
+
+      this._aKeyColumns = null;  // Cache for key columns, initialized on demand
    }
 
    /** ------------------------------------------------------------------------
@@ -172,21 +166,6 @@ class DBRecord {
          // ## Plain object with key-value pairs
          Object.keys(value_).forEach(key => this._set_value_internal(key, value_[key]));
       }
-   }
-
-   /** ------------------------------------------------------------------------
-    * Set a single value by column name
-    * @param {string|Object} name_ - Column name or object with {sName, value}
-    * @param {*} [value_] - Value to set (if name_ is string)
-    */
-   SetValue(name_, value_) {
-      let sName = name_.constructor === Object ? name_.sName : name_;
-      let vValue = name_.constructor === Object ? name_.value : value_;
-
-      const oColumn = this._get_column(sName);
-      if(!oColumn) { throw new Error(`Column '${sName}' not found`); }
-
-      this._set_value_internal(sName, vValue);
    }
 
    /** ------------------------------------------------------------------------
@@ -564,3 +543,311 @@ DBRecord.extend = function(sName, fn) {
 
    DBRecord.prototype[sName] = fn;
 };
+
+
+/** ============================================================================
+ * DBRecordContainer
+ * ============================================================================
+ *
+ * Extends DBRecord with container-based element discovery and DOM sync.
+ * Use this in place of DBRecord whenever a form or container is involved.
+ * DBRecord itself remains pure — no DOM references live there.
+ *
+ * ## Key Concepts:
+ * - One container element is bound at a time (form, div, fieldset, etc.)
+ * - Elements are discovered via a configurable strategy chain
+ * - Manual bindings (Bind()) survive re-scans and take priority
+ * - ReadValues / WriteValues work the same as DBRecord but target DOM elements
+ *
+ * ## Usage:
+ * ```javascript
+ * const oRecord = new DBRecordContainer(
+ *    [{ sName: "FFirstName", sType: "string" }],
+ *    { sTable: "TUser", oContainer: document.getElementById("user_form") }
+ * );
+ *
+ * oRecord.WriteValues();   // record → DOM
+ * oRecord.ReadValues();    // DOM → record
+ * ```
+ *
+ * ## Public methods added over DBRecord:
+ * - BindContainer(element, options)  - Bind container and run initial scan
+ * - UnbindContainer()                - Remove container and auto-discovered bindings
+ * - ScanContainer()                  - Re-run element discovery
+ * - GetContainer()                   - Get the bound container element
+ * - Bind(sName, element, options)    - Manually bind a specific element
+ * - Unbind(sName)                    - Remove a specific element binding
+ * - HasElement(sName)                - Check if element is bound for column
+ * - GetElement(sName)                - Get bound element for column
+ */
+class DBRecordContainer extends DBRecord {
+
+   /** -----------------------------------------------------------------------
+    * @param {Array|Object|string} columns_         - Column definitions (same as DBRecord)
+    * @param {Object}              [options_={}]    - All DBRecord options, plus:
+    * @param {Element}             [options_.oContainer]   - Container element to bind immediately
+    * @param {Function[]}          [options_.aStrategies]  - Query strategy chain (replaces defaults)
+    * @param {Function}            [options_.fnQuery]      - Single strategy appended after defaults
+    */
+   constructor(columns_ = [], options_ = {}) {
+      super(columns_, options_);
+
+      this.mapElements  = new Map();  // sName → { element, fnGet, fnSet, _manual }
+      this.container_  = null;       // { element, aStrategies }
+
+      // ## Bind container immediately if provided in options .................
+      if(options_.container instanceof Element) {
+         this.BindContainer(options_.container, options_);
+      }
+   }
+
+   // ==========================================================================
+   // Strategy chain
+   // ==========================================================================
+
+   /** Default query strategies — tried in order, first match wins */
+   static aStrategiesDefault = [
+      (e_, column) => e_.querySelector(`[data-field="${column.sName}"]`),
+      (e_, column) => e_.querySelector(`[data-columnumn="${column.sName}"]`),
+      (e_, column) => e_.querySelector(`[name="${column.sName}"]`),
+      (e_, column) => e_.querySelector(`#${column.sName}`),
+      (e_, column) => e_.querySelector(`[id$="_${column.sName}"]`),
+   ];
+
+   // ==========================================================================
+   // Container binding
+   // ==========================================================================
+
+   /** -----------------------------------------------------------------------
+    * Bind a container element and auto-discover child elements per column.
+    * Runs an initial scan immediately. Manual bindings are never overwritten.
+    *
+    * @param {Element}    container_           - Container to scan within
+    * @param {Object}     [options_={}]
+    * @param {Function[]} [options_.aStrategies]  - Replaces default strategy chain
+    * @param {Function}   [options_.fnQuery]      - Appended after default strategies
+    * @param {boolean}    [options_.bRescan=false] - If true, re-scan already discovered columns
+    *
+    * @returns {this} For chaining
+    */
+   BindContainer(container_, options_ = {}) {
+      if(!(container_ instanceof Element)) { throw new Error("BindContainer: Invalid container element"); }
+
+      let aStrategies = options_.aStrategies || DBRecordContainer.aStrategiesDefault;
+      if(typeof options_.fnQuery === "function") {
+         aStrategies = [...aStrategies, options_.fnQuery];
+      }
+
+      this.container_ = { element: container_, aStrategies, bRescan: options_.bRescan || false };
+
+      this.ScanContainer();
+      return this;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Remove the container binding and all auto-discovered element bindings.
+    * Manual bindings set via Bind() are preserved.
+    * @returns {this}
+    */
+   UnbindContainer() {
+      if(this.mapElements) {
+         this.mapElements.forEach((binding, sName) => {
+            if(binding._auto) { this.mapElements.delete(sName); }
+         });
+      }
+      this.container_ = null;
+      return this;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Re-run element discovery against the bound container.
+    * Useful when the DOM changes after the initial BindContainer() call.
+    *
+    * @returns {this}
+    * @throws {Error} If no container has been bound
+    */
+   ScanContainer() {
+      if(!this.container_) { throw new Error("ScanContainer: No container bound. Call BindContainer() first."); }
+
+      const { element: oContainer, aStrategies, bRescan } = this.container_;
+
+      let fnLockedStrategy = this.container_.fnLockedStrategy || null;  // Persist lock across re-scans
+
+      this.aColumn.forEach(oColumn => {
+         const sName    = oColumn.sName;
+         const existing = this.mapElements.get(sName);
+
+         if(existing?._manual)           { return; }   // Never overwrite manual bindings
+         if(existing?._auto && !bRescan) { return; }   // Skip already discovered unless rescanning
+
+         // ## Try locked strategy first if one has been established ............
+         if(fnLockedStrategy) {
+            try {
+               const oFound = fnLockedStrategy(oContainer, oColumn);
+               if(oFound instanceof Element) {
+                  this.mapElements.set(sName, { element: oFound, fnGet: null, fnSet: null, _auto: true });
+                  return;                              // Done — locked strategy worked
+               }
+            }
+            catch(e) { console.warn(`ScanContainer: Locked strategy threw for column '${sName}':`, e); }
+         }
+
+         // ## No lock yet, or locked strategy missed — run full chain ..........
+         for(const fnStrategy of aStrategies) {
+            try {
+               const oFound = fnStrategy(oContainer, oColumn);
+               if(oFound instanceof Element) {
+                  this.mapElements.set(sName, { element: oFound, fnGet: null, fnSet: null, _auto: true });
+
+                  // ## Lock onto first winning strategy if not already locked ..
+                  if(!fnLockedStrategy) {
+                     fnLockedStrategy = fnStrategy;
+                     this.container_.fnLockedStrategy = fnStrategy;  // Persist for re-scans
+                     console.debug(`ScanContainer: Strategy locked on index ${aStrategies.indexOf(fnStrategy)} for column '${sName}'`);
+                  }
+
+                  break;
+               }
+            }
+            catch(e) { console.warn(`ScanContainer: Strategy threw for column '${sName}':`, e); }
+         }
+      });
+
+      return this;
+   }
+
+   /** Returns the currently locked strategy function, or null if not yet established */
+   GetLockedStrategy() { return this.container_?.fnLockedStrategy ?? null; }
+
+   /** Clear the locked strategy so the next ScanContainer() re-detects it */
+   ResetLockedStrategy() {
+      if(this.container_) { this.container_.fnLockedStrategy = null; }
+      return this;
+   }
+
+   /** -----------------------------------------------------------------------
+    * @returns {Element|null} The bound container element
+    */
+   GetContainer() { return this.container_?.element ?? null; }
+
+   // ==========================================================================
+   // Manual element binding
+   // ==========================================================================
+
+   /** -----------------------------------------------------------------------
+    * Manually bind a specific element to a column.
+    * Manual bindings take priority over container discovery and survive ScanContainer().
+    *
+    * @param {string}   sName          - Column name
+    * @param {Element}  element_       - Element to bind
+    * @param {Object}   [options_={}]
+    * @param {Function} [options_.fnGet] - Custom getter: (element) => value
+    * @param {Function} [options_.fnSet] - Custom setter: (element, value) => void
+    *
+    * @returns {this} For chaining
+    */
+   Bind(sName, element_, options_ = {}) {
+      if(!this._get_column(sName))           { throw new Error(`Bind: Column '${sName}' not found`); }
+      if(!(element_ instanceof Element))     { throw new Error(`Bind: Invalid element for '${sName}'`); }
+
+      this.mapElements.set(sName, {
+         element: element_,
+         fnGet:   options_.fnGet || null,
+         fnSet:   options_.fnSet || null,
+         _manual: true
+      });
+      return this;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Remove a specific element binding (manual or auto-discovered).
+    * @param {string} sName - Column name
+    * @returns {this}
+    */
+   Unbind(sName) {
+      this.mapElements.delete(sName);
+      return this;
+   }
+
+   /** @returns {boolean} Whether a column has a bound element */
+   HasElement(sName) { return this.mapElements.has(sName); }
+
+   /** @returns {Element|null} The bound element for a column */
+   GetElement(sName) { return this.mapElements.get(sName)?.element ?? null; }
+
+   // ==========================================================================
+   // Override ReadValues / WriteValues to target DOM elements
+   // ==========================================================================
+
+   /** -----------------------------------------------------------------------
+    * Pull values from bound elements into the record.
+    * Columns without a bound element fall back to fnRead callback (DBRecord behavior).
+    *
+    * @param {Function} [fnRead] - Fallback callback for unbound columns
+    * @returns {this}
+    */
+   ReadValues(fnRead) {
+      fnRead = fnRead || this.fnRead;
+
+      this.aColumn.forEach(oColumn => {
+         const sName   = oColumn.sName;
+         const binding = this.mapElements.get(sName);
+
+         if(binding) { this._set_value_internal(sName, this._read_element(binding)); }
+         else if(fnRead) { fnRead.call(this, sName, oColumn); }
+      });
+
+      return this;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Push record values out to bound elements.
+    * Columns without a bound element fall back to fnWrite callback (DBRecord behavior).
+    *
+    * @param {Function} [fnWrite] - Fallback callback for unbound columns
+    * @returns {this}
+    */
+   WriteValues(fnWrite) {
+      fnWrite = fnWrite || this.fnWrite;
+
+      this.aColumn.forEach(oColumn => {
+         const sName   = oColumn.sName;
+         const binding = this.mapElements.get(sName);
+         const value   = this.mapValues.get(sName) ?? null;
+
+         if(binding) { this._write_element(binding, value); }
+         else if(fnWrite) { fnWrite.call(this, sName, oColumn); }
+      });
+
+      return this;
+   }
+
+   // ==========================================================================
+   // Private element I/O
+   // ==========================================================================
+
+   _read_element(binding) {
+      if(binding.fnGet) { return binding.fnGet(binding.element); }
+
+      const el    = binding.element;
+      const sTag  = el.tagName.toLowerCase();
+      const sType = (el.type || "").toLowerCase();
+
+      if(sTag === "input" && (sType === "checkbox" || sType === "radio")) { return el.checked; }
+      if(sTag === "input" || sTag === "textarea" || sTag === "select")    { return el.value; }
+      return el.textContent;
+   }
+
+   _write_element(binding, value) {
+      if(binding.fnSet) { binding.fnSet(binding.element, value); return; }
+
+      const el    = binding.element;
+      const v     = value ?? "";
+      const sTag  = el.tagName.toLowerCase();
+      const sType = (el.type || "").toLowerCase();
+
+      if(sTag === "input" && (sType === "checkbox" || sType === "radio")) { el.checked = !!value; return; }
+      if(sTag === "input" || sTag === "textarea" || sTag === "select")    { el.value = v; return; }
+      el.textContent = v;
+   }
+}

@@ -1,9 +1,17 @@
 <!--
 PAGE_ Method Documentation:
 =========================
-
 PAGE_Initialize - Initialize the page
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+PAGE_Update -  Update UI elements based on the given type
+PAGE_SetListeners - Configure page listeners, handle page specific events  
+PAGE_ProcessResponse - Handle response data from server and display it in the container
+
+Objects:
+CDocument - Manages data and state of the page, including records and tables
+DBRecord - Represents a database record, with methods to read/write values and get arguments for server
+UITableLite - A lightweight table UI component for displaying data in a table format
+
 <method name> - <description>
 -->
 
@@ -189,7 +197,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    /** ---------------------------------------------------------------------------
     * Update UI elements
     */
-   function PAGE_Update( sType)  {
+   function PAGE_Update( sType ) {
       if( sType === undefined || sType === "search" )
       {
          const oTable = oDocument_g.GetTable("search");
@@ -208,7 +216,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                }
             };
 
-            const oUITable = new UITableLite( eSelectPoll, oTable, { iSort: 0, aColumns: [1,2], bHeader: true, bIndices: true, fnCallback: fnSelectPoll} );
+            const oUITable = new UITableLite( eSelectPoll, oTable, { iSort: 0, aColumns: [1,2], bHeader: true, bIndices: true, callback: fnSelectPoll} );
             oUITable.Render();
          }
       }
@@ -327,7 +335,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                //const sUpdate = "UPDATE TPoll SET FName = {FName}, FHeader = {FHeader}, FDescription = {FDescription} WHERE PollK = x''{=PollK}''";
 
                //const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-               
+
 
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
                oDBPollRecord.ReadValues();
@@ -387,7 +395,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                      const oDBPollRecord = oDocument_g.GetCell("TPoll");
                      oDBPollRecord.ClearValues();
 
-   
+
 
 
                      PAGE_Update();
@@ -398,8 +406,9 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             case "poll-open": {
                // Open poll questions page, pass selected poll key as parameter
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-               const sKey = oDBPollRecord.GetKeyValue();
-               window.location.href = `page_poll_question_edit.html?pollKey=${sPollKey}`;
+                  const sPollKey = oDBPollRecord.GetKeyValue();               console.assert(sPollKey, "sPollKey is null or empty");
+
+                  window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
             } break;
             default:
                console.error("Unknown action:", sAction);
@@ -473,14 +482,14 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             let oTable = oDocument_g.GetTable("search");
             if(!oTable)
             {
-               oTable = new Table(["id", "name", "header"], {sName: "search"} );   
+               oTable = new Table(["id", "name", "header"], {sName: "search"} );
                oDocument_g.AddTable(oTable);
             }
             else
             {
                oTable.Clear();
             }
-            
+
 
             // loop array and add rows to table
             for(const aRow of aPoll) {oTable.Add(aRow);}
@@ -497,8 +506,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                }
             };
 
-            const oUITable = new UITableLite(eSelectPoll, oTable, { iSort: 0, aColumns: [1, 2], bHeader: true, bIndices: true, fnCallback: fnSelectPoll});
-            oUITable.Render();
+            //const oUITable = new UITableLite(eSelectPoll, oTable, { iSort: 0, aColumns: [1, 2], bHeader: true, bIndices: true, fnCallback: fnSelectPoll});
+            //oUITable.Render();
          }
       }
    }
