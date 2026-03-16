@@ -21,6 +21,11 @@ data-section="poll-active" -  Section for the active poll.
 data-section="question-list" - Container for the question list, questions are placed as a list where you can expand and see the answers.
 data-section="answer-list" - Container for the answer list, answers are placed as a list where you can expand and see the details.
 
+Tables columns used ===========================================================
+TPoll: PollK, FName, FHeader, FDescription
+TPollQuestion: PollQuestionK, FName, FLabel, FDescription
+TPollAnswer: PollAnswerK, PollQuestionK, FName, FLabel, FDescription
+
 -->
 
 <!DOCTYPE html>
@@ -42,14 +47,27 @@ data-section="answer-list" - Container for the answer list, answers are placed a
         * { box-sizing: border-box; margin: 0; padding: 0; }
     </style>
 </head>
-<body class="page-box">
-   <div data-section="page">
-      <div data-section="poll-active"></div>
-      <div data-section="question-list"></div>
-   </div>
+<body>
+   <div data-section="page" class="container page">
+      <h1>Edit Poll Questions</h1>
 
+      <div data-section="poll-active">
+         <h2>Active Poll</h2>
+         <!-- Active poll details will be rendered here -->
+      </div>
+
+      <div data-section="question-list">
+         <h2>Questions</h2>
+         <!-- Question list will be rendered here -->
+      </div>
+
+      <div data-section="answer-list">
+         <h2>Answers</h2>
+         <!-- Answer list will be rendered here -->
+      </div>
+   </div>
    <script>
-   'use strict';
+'use strict';
 
 let oDocument_g;
 
@@ -72,23 +90,34 @@ function PAGE_initialize() {
       if( eField ) { eField.value = this.GetValue(sName); }
    };
 
-
    oDocument_g = new CDocument({});
 
-   let oRecord = new DBRecord([], { fnRead, fnWrite });
-   oRecord.table = "TUser";
+   // ## Create record containers for poll, question and answer tables ........
 
+   let oRCPoll = new DBRecordContainer(["FName,Name,string;FHeader,Header,string;FDescription,Description,string"], { fnRead, fnWrite });
+   oRCPoll.table = "TPoll";                                                    // set table to table name
+/*
+   let oRCQuestion = new DBRecordContainer([], { fnRead, fnWrite });
+   oRCQuestion.table = "TPollQuestion"; //
+
+   let oRCAnswer = new DBRecordContainer([], { fnRead, fnWrite });
+   oRCAnswer.table = "TPollAnswer";
+*/
+   /*
+   let oRecord = new DBRecordContainer<context>([], { fnRead, fnWrite });
+   oRecord.table = "TUser";
+   */
 
    // ## Get poll key from url parameters .........................................
-   const oUrlParams = new URLSearchParams(window.location.search);
-   const sPollKey = oUrlParams.get("key");                                                         console.assert(sPollKey && sPollKey.length === 32, "sPollKey is null or wrong format");
+   //const oUrlParams = new URLSearchParams(window.location.search);
+   //const sPollKey = oUrlParams.get("key");                                                         console.assert(sPollKey && sPollKey.length === 32, "sPollKey is null or wrong format");
 
    // ## Get poll data from server using poll key .................................
-   const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
-   const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+   //const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
+   //const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
 
 
-/*   
+/*
 
 
 
@@ -306,7 +335,6 @@ class CDocument {
    GetTable( sTable ) {
       return this.aTable.find(oTable => oTable.name === sTable);
    }
-
 }
 
 const aFieldQuestion = [
@@ -325,7 +353,185 @@ const aButtonQuestionCommands = [
    { label: "Cancel", action: "Cancel", className: "button button-secondary" }
 ];
 
+   /*
+   let oRecord = new DBRecordContainer<context>([], { fnRead, fnWrite });
+   oRecord.table = "TUser";
+   */
 
+
+   // ## Get poll key from url parameters .........................................
+   const oUrlParams = new URLSearchParams(window.location.search);
+   const sPollKey = oUrlParams.get("key");                                                         console.assert(sPollKey && sPollKey.length === 32, "sPollKey is null or wrong format");
+
+   // ## Get poll data from server using poll key .................................
+   const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
+   const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+
+
+/*
+
+
+
+
+   const ePollActive = oDocument_g.GetElement("poll-active");
+   const eQuestionList = oDocument_g.GetElement("question-list");
+
+   // ## Start idle timer - call PAGE_OnIdle() once per second ................
+   CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+
+   // ## Prepare base url .....................................................
+   const sBaseUrl = gd.GetBaseUrl();
+   gd.SetBaseUrl(sBaseUrl);
+
+
+   const fnRead = function(sName, oRecord) {
+      const sTable = this.table;
+      const eField = oDocument_g.GetElement("question-list").querySelector(`[data-field="${sName}"]`);
+      if( eField ) { this.SetValue( sName, eField.value ); }
+   };
+
+   const fnWrite = function(sName, oRecord) {
+      const sTable = this.table;
+      const eField = oDocument_g.GetElement("question-list").querySelector(`[data-field="${sName}"]`);
+      if( eField ) { eField.value = this.GetValue(sName); }
+   };
+
+   let oRecord = new DBRecord([], { fnRead, fnWrite });
+   oRecord.table = "TPollQuestion";
+   oRecord.AddColumn( aFieldQuestion, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"} );
+   oDocument_g.AddRecord(oRecord);
+
+   const eContainerQuestion = document.createElement('div');
+   eContainerQuestion.dataset.table = "TPollQuestion";
+   eContainerQuestion.dataset.section = "form";
+   eContainerQuestion.classList.add('container-form');
+   PAGE_RenderForm(eContainerQuestion, aFieldQuestion);
+   PAGE_RenderCommands(eContainerQuestion, aButtonQuestionCommands, 'TPollQuestion');
+
+   eQuestionList.appendChild(eContainerQuestion);
+*/
+
+function PAGE_SetListeners() {
+   const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
+   ePage.addEventListener("click", function(e_) {
+      const eTarget = e_.target;
+      if(!eTarget.dataset.action) return;                                      // If no action is defined, return
+      const sAction = eTarget.dataset.action;
+      debugger;
+
+      // find closest dataset with table attribute
+      const eClosest = eTarget.closest('[data-table]');
+      const sTable = eClosest.dataset.table;                                                       console.assert( sTable );
+      const oDBRecord = oDocument_g.GetRecord( sTable );                                           console.assert( oDBRecord, "oDBRecord is null" );
+
+      oDBRecord.ReadValues();
+      console.log( oDBRecord.AsJson() );
+
+      switch( sAction ) {
+         case 'insert': {
+            const oRecord = { table: sTable, values: oDBRecord.GetAllValues() };
+            const sRecord = JSON.stringify(oRecord);
+            const sArguments = `record=${sRecord}`;
+            gd.SendToServer("", "!db/insert?echo=user", sArguments).then(function(oResult) {
+               PAGE_ProcessResponse(oResult, "question");
+            });
+
+         } break;
+         case 'delete':
+            oDBRecord.Delete();
+            PAGE_RenderList(eQuestionList, 'TPollQuestion');
+            break;
+         default:
+            console.error(`Unknown action: ${sAction}`);
+      }
+   });
+}
+
+/** ---------------------------------------------------------------------------
+ *
+ */
+function PAGE_RenderForm( eContainer, aFields ) {
+   // ## Prepare fields to set where new row is created .......................
+   let bCols = false;
+   aFields.forEach(oField => {
+      if( !oField.label ) return;
+      if( !oField.cols || bCols === false ) { oField.bRow = true; }
+
+      if( oField.cols ) { bCols = true }
+      else { bCols = false }
+   });
+
+   // print fields
+   console.log(aFields);
+
+   aFields.forEach(oField => {
+      if( !oField.label ) return;
+
+      // ## Prepare row for field .............................................
+      let eDivRow;
+      if(oField.bRow) {
+         eDivRow = document.createElement('div');
+         eDivRow.className = 'grid-row';
+         if(oField.cols) { eDivRow.classList.add(`cols-${oField.cols}`); }
+         eDivRow.style.marginTop = '20px';
+         eContainer.appendChild(eDivRow);
+      }
+      else { eDivRow = eContainer.lastElementChild; }
+
+      // ## Prepare label for field ...........................................
+      const eLabel = document.createElement('label');
+      eLabel.className = 'floating';
+
+      // ### Add span class if span is defined
+      if( oField.span ) { eLabel.classList.add(`col-span-${oField.span}`); }
+
+
+
+      let sTagName = "input";
+      let sType = oField.type;
+      if( sType === "text" ) { sTagName = "textarea"; }
+      const eInput = document.createElement(sTagName);
+      if( sType === "text" ) { eInput.rows = 3; }
+      else { eInput.type = oField.input || 'text'; }
+      eInput.placeholder = ' ';
+      eInput.required = oField.required;
+      eInput.dataset.field = oField.field;
+
+      // ## Prepare label for field ...........................................
+      const eSpan = document.createElement('span');
+      eSpan.textContent = oField.label;
+
+      eLabel.appendChild(eInput);
+      eLabel.appendChild(eSpan);
+      eDivRow.appendChild(eLabel);
+   });
+}
+
+/** ---------------------------------------------------------------------------
+ * Render command buttons at bottom of form using metadata array
+ * @param {HTMLElement} eContainer - Container to add buttons to
+ * @param {Array} aButtons - Array of button metadata objects
+ * @param {string} sTable - Table name for record operations
+ */
+function PAGE_RenderCommands( eContainer, aButtons, sTable ) {
+   // ## Create command row .................................................
+   const eCommandRow = document.createElement('div');
+   eCommandRow.className = 'row right';
+   eCommandRow.style.marginTop = '24px';
+   eCommandRow.style.borderTop = '1px solid var(--color-border)';
+   eCommandRow.style.paddingTop = '20px';
+
+   // ## Render buttons from metadata array ....................................
+   aButtons.forEach(oButton => {
+      const eButton = document.createElement('button');
+      eButton.className = oButton.className || 'button';
+      eButton.textContent = oButton.label;
+      eButton.dataset.action = oButton.action;
+      eCommandRow.appendChild(eButton);
+   });
+
+   eContainer.appendChild(eCommandRow);
+}
 
    </script>
 </body>

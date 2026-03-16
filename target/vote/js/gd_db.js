@@ -68,7 +68,7 @@ class DBRecord {
 
          this.sName = oOptions.sName || "";
          this.sAlias = oOptions.sAlias || this.sName;
-         this.sType = oOptions.sType || "unknown";
+         this.sType = oOptions.sType || "unknown"; // e.g., "string", "number", "date", "boolean", "array", "object", "enum", "custom"
          this.iState = oOptions.iState || 0; // e.g., 0: none, 1: sorted asc, 2: sorted desc, 4: aligned middle, 8: aligned right
          this.iSpecificType = oOptions.iSpecificType || 0;
          this.bKey = oOptions.bKey || false;
@@ -94,7 +94,23 @@ class DBRecord {
       get alias() { return this.sAlias; }
       get type() { return this.sType; }
       get default() { return this.default_; }
+
+      set( sColumn, sSplitter = "," ) { 
+         const aParts = sColumn.split(sSplitter).map(s => s.trim());
+         this.sName = aParts[0] || "";
+         this.sAlias = aParts[1] || this.sName;
+         this.sType = aParts[2] || "string";
+      }
+
+      validate() {
+         if(typeof this.sName !== "string") { throw new Error("Invalid column name"); }
+         // check valid types
+         if( this.sType && !["string", "number", "date", "boolean", "array", "object", "enum", "custom"].includes(this.sType) ) {
+            throw new Error(`Invalid column type: ${this.sType}`);
+         }
+      }
    }
+
 
    /** -----------------------------------------------------------------------
     * Create a new DBRecord instance
@@ -108,7 +124,22 @@ class DBRecord {
     */
    constructor(columns_ = [], options_ = {}) {
       if( columns_ === undefined || columns_ === null ) columns_ = [];
-      if(typeof columns_ === "string") { columns_ = columns_.split(","); }
+      if(typeof columns_ === "string") { 
+         // ## Support both comma and semicolon delimiters for column names in string format
+         if(columns_.includes(";")) {
+            // name, alias, type
+            columns_ = columns_.split(";").map(s => s.trim()).filter(s => s); // Split by semicolon, trim whitespace, and remove empty entries
+
+            // ## Now split each column definition into name, alias, and type
+            columns_ = columns_.map(sColumn => {
+               const aParts = sColumn.split(",").map(s => s.trim());
+               return { sName: aParts[0], sAlias: aParts[1] || aParts[0], sType: aParts[2] || "string" };
+            });
+
+         }
+         else { columns_ = columns_.split(","); }
+
+      }
       else if(columns_.constructor === Object) { columns_ = [columns_]; }
       if(!Array.isArray(columns_)) { throw new Error("Invalid argument: columns must be array, object, or string"); }
 
@@ -633,10 +664,8 @@ class DBRecordContainer extends DBRecord {
    BindContainer(container_, options_ = {}) {
       if(!(container_ instanceof Element)) { throw new Error("BindContainer: Invalid container element"); }
 
-      let aStrategies = options_.aStrategies || DBRecordContainer.aStrategiesDefault;
-      if(typeof options_.fnQuery === "function") {
-         aStrategies = [...aStrategies, options_.fnQuery];
-      }
+      let aStrategies = options_.aStrategies || DBRecordContainer.aStrategiesDefault; // Use provided strategies or defaults to access elements in container
+      if(typeof options_.fnQuery === "function") { aStrategies = [...aStrategies, options_.fnQuery]; } // Append single strategy if provided}
 
       this.container_ = { element: container_, aStrategies, bRescan: options_.bRescan || false };
 
