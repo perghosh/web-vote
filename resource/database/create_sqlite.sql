@@ -156,8 +156,8 @@ CREATE INDEX I_TUser_FDisplayName ON TUser(FDisplayName);
 
 
 CREATE TABLE TPoll (
-   PollK BLOB PRIMARY KEY DEFAULT (randomblob(16)),
-   PollGroupK INTEGER       -- main poll group that poll is connected to if any
+   PollK BLOB PRIMARY KEY DEFAULT (randomblob(16))
+   ,PollGroupK BLOB         -- main poll group that poll is connected to if any
    ,ParentK BLOB            -- if poll is connected to any other table compare to normal connection
    ,table_number INTEGER    -- Table number for describing what table TPoll belongs to
    ,SuperK BLOB             -- owner Poll when used in hierarchical structure
@@ -270,6 +270,16 @@ CREATE TABLE TPollAnswer (
 );
 CREATE INDEX IC_TPollAnswer_PollK ON TPollAnswer (PollK);
 CREATE INDEX I_TPollAnswer_PollQuestionK ON TPollAnswer (PollQuestionK);
+
+CREATE TABLE "TSystemStatement" (
+    "SystemStatementK" INTEGER PRIMARY KEY AUTOINCREMENT
+    ,"FName" VARCHAR(200) NOT NULL
+    ,"FDescription" VARCHAR(250)
+    ,"FStatement" TEXT
+    ,"FType" INTEGER
+    ,"FTable" VARCHAR(200)
+);
+
 
 
 -- Insert table numbers for all tables in the script

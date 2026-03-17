@@ -14,6 +14,8 @@ PAGE_Update - Update UI elements
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_ProcessResponse - Processes the response from the server and updates the UI accordingly
 
+RECORD_GetPoll - Get poll data from server using poll key
+
 data-section documentation ====================================================
 
 data-section="page" - Section for the page content.
@@ -41,6 +43,7 @@ TPollAnswer: PollAnswerK, PollQuestionK, FName, FLabel, FDescription
     <script src="js/gd_ui_tablelite.js"></script>
     <script src="js/gd_data_table.js"></script>
     <script src="js/gd_db.js"></script>
+    <script src="js/gd_mapper.js"></script>
     <script src="js/gd_browser.js"></script>
     <title>Login - Web Vote</title>
     <style>
@@ -48,28 +51,36 @@ TPollAnswer: PollAnswerK, PollQuestionK, FName, FLabel, FDescription
     </style>
 </head>
 <body>
-   <div data-section="page" class="container page">
-      <h1>Edit Poll Questions</h1>
-
-      <div data-section="poll-active">
-         <h2>Active Poll</h2>
-         <!-- Active poll details will be rendered here -->
-      </div>
-
-      <div data-section="question-list">
-         <h2>Questions</h2>
-         <!-- Question list will be rendered here -->
-      </div>
-
-      <div data-section="answer-list">
-         <h2>Answers</h2>
-         <!-- Answer list will be rendered here -->
+   <div id="idPage" class="page-container container page" data-section="page">
+      <div id="idPoll" class="container-form" >
+         <div data-section="record" data-table="TPoll">
+            <h2>Poll Details</h2>
+            <div class="form-group form-row form-row--aside-left">
+               <label class="floating">
+                  <input type="text" placeholder=" " data-field="FName" required>
+                  <span>Name</span>
+               </label>
+               <label class="floating">
+                  <input type="text" placeholder=" " data-field="FHeader" required>
+                  <span>Header</span>
+               </label>
+            </div>
+            <div class="form-group">
+               <label class="floating">
+                  <textarea placeholder=" " data-field="FDescription" rows="3"></textarea>
+                  <span>Description</span>
+               </label>
+            </div>
+         </div>
       </div>
    </div>
+   <!-- 
+
+   -->
    <script>
 'use strict';
 
-let oDocument_g;
+let oDocument_g; // Global document object
 
 // ## Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
@@ -90,75 +101,37 @@ function PAGE_initialize() {
       if( eField ) { eField.value = this.GetValue(sName); }
    };
 
-   oDocument_g = new CDocument({});
+   oDocument_g = new CDocument({});                                           // Create new document
 
    // ## Create record containers for poll, question and answer tables ........
 
    let oRCPoll = new DBRecordContainer(["FName,Name,string;FHeader,Header,string;FDescription,Description,string"], { fnRead, fnWrite });
    oRCPoll.table = "TPoll";                                                    // set table to table name
-/*
-   let oRCQuestion = new DBRecordContainer([], { fnRead, fnWrite });
-   oRCQuestion.table = "TPollQuestion"; //
+   oDocument_g.AddRecord(oRCPoll);                                                        // add record to document
 
-   let oRCAnswer = new DBRecordContainer([], { fnRead, fnWrite });
-   oRCAnswer.table = "TPollAnswer";
-*/
-   /*
-   let oRecord = new DBRecordContainer<context>([], { fnRead, fnWrite });
-   oRecord.table = "TUser";
-   */
+   // TPollQuestion
+   let oRCPollQuestion = new DBRecordContainer(["FName,Name,string;FLabel,Header,string;FDescription,Description,string"], { fnRead, fnWrite });
+   oRCPollQuestion.table = "TPollQuestion";
+   oDocument_g.AddRecord(oRCPollQuestion);
 
-   // ## Get poll key from url parameters .........................................
-   //const oUrlParams = new URLSearchParams(window.location.search);
-   //const sPollKey = oUrlParams.get("key");                                                         console.assert(sPollKey && sPollKey.length === 32, "sPollKey is null or wrong format");
+   // TPollAnswer
+   let oRCPollAnswer = new DBRecordContainer(["FName,Name,string;FLabel,Header,string;FDescription,Description,string"], { fnRead, fnWrite });
+   oRCPollAnswer.table = "TPollAnswer";
+   oDocument_g.AddRecord(oRCPollAnswer);
 
-   // ## Get poll data from server using poll key .................................
-   //const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
-   //const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+   let sPollKey = null; // Get poll key from url parameters if available, otherwise use null to fetch first poll
 
-
-/*
-
-
-
-
-   const ePollActive = oDocument_g.GetElement("poll-active");
-   const eQuestionList = oDocument_g.GetElement("question-list");
-
-   // ## Start idle timer - call PAGE_OnIdle() once per second ................
-   CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
-
-   // ## Prepare base url .....................................................
-   const sBaseUrl = gd.GetBaseUrl();
-   gd.SetBaseUrl(sBaseUrl);
+   RECORD_GetPoll( sPollKey ).then(function(oPoll) {
+      oRCPoll.SetValues(oPoll);
+      oDocument_g.AddRecord(oRCPoll);
+      PAGE_RenderForm( oDocument_g.GetElement("record"), aFieldQuestion );
+      PAGE_RenderCommands( oDocument_g.GetElement("record"), aButtonQuestionCommands, 'TPoll' );
+   }).catch(function(error) {
+      console.error("Error fetching poll data:", error);
+      //gd.ShowToast("Error fetching poll data: " + error.message, { type: "error" });
+   });
 
 
-   const fnRead = function(sName, oRecord) {
-      const sTable = this.table;
-      const eField = oDocument_g.GetElement("question-list").querySelector(`[data-field="${sName}"]`);
-      if( eField ) { this.SetValue( sName, eField.value ); }
-   };
-
-   const fnWrite = function(sName, oRecord) {
-      const sTable = this.table;
-      const eField = oDocument_g.GetElement("question-list").querySelector(`[data-field="${sName}"]`);
-      if( eField ) { eField.value = this.GetValue(sName); }
-   };
-
-   let oRecord = new DBRecord([], { fnRead, fnWrite });
-   oRecord.table = "TPollQuestion";
-   oRecord.AddColumn( aFieldQuestion, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"} );
-   oDocument_g.AddRecord(oRecord);
-
-   const eContainerQuestion = document.createElement('div');
-   eContainerQuestion.dataset.table = "TPollQuestion";
-   eContainerQuestion.dataset.section = "form";
-   eContainerQuestion.classList.add('container-form');
-   PAGE_RenderForm(eContainerQuestion, aFieldQuestion);
-   PAGE_RenderCommands(eContainerQuestion, aButtonQuestionCommands, 'TPollQuestion');
-
-   eQuestionList.appendChild(eContainerQuestion);
-*/
 }
 
 function PAGE_SetListeners() {
@@ -359,6 +332,7 @@ const aButtonQuestionCommands = [
    */
 
 
+   /*
    // ## Get poll key from url parameters .........................................
    const oUrlParams = new URLSearchParams(window.location.search);
    const sPollKey = oUrlParams.get("key");                                                         console.assert(sPollKey && sPollKey.length === 32, "sPollKey is null or wrong format");
@@ -366,50 +340,7 @@ const aButtonQuestionCommands = [
    // ## Get poll data from server using poll key .................................
    const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
    const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
-
-
-/*
-
-
-
-
-   const ePollActive = oDocument_g.GetElement("poll-active");
-   const eQuestionList = oDocument_g.GetElement("question-list");
-
-   // ## Start idle timer - call PAGE_OnIdle() once per second ................
-   CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
-
-   // ## Prepare base url .....................................................
-   const sBaseUrl = gd.GetBaseUrl();
-   gd.SetBaseUrl(sBaseUrl);
-
-
-   const fnRead = function(sName, oRecord) {
-      const sTable = this.table;
-      const eField = oDocument_g.GetElement("question-list").querySelector(`[data-field="${sName}"]`);
-      if( eField ) { this.SetValue( sName, eField.value ); }
-   };
-
-   const fnWrite = function(sName, oRecord) {
-      const sTable = this.table;
-      const eField = oDocument_g.GetElement("question-list").querySelector(`[data-field="${sName}"]`);
-      if( eField ) { eField.value = this.GetValue(sName); }
-   };
-
-   let oRecord = new DBRecord([], { fnRead, fnWrite });
-   oRecord.table = "TPollQuestion";
-   oRecord.AddColumn( aFieldQuestion, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"} );
-   oDocument_g.AddRecord(oRecord);
-
-   const eContainerQuestion = document.createElement('div');
-   eContainerQuestion.dataset.table = "TPollQuestion";
-   eContainerQuestion.dataset.section = "form";
-   eContainerQuestion.classList.add('container-form');
-   PAGE_RenderForm(eContainerQuestion, aFieldQuestion);
-   PAGE_RenderCommands(eContainerQuestion, aButtonQuestionCommands, 'TPollQuestion');
-
-   eQuestionList.appendChild(eContainerQuestion);
-*/
+   */
 
 function PAGE_SetListeners() {
    const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
@@ -531,6 +462,32 @@ function PAGE_RenderCommands( eContainer, aButtons, sTable ) {
    });
 
    eContainer.appendChild(eCommandRow);
+}
+
+function RECORD_GetPoll( sPollKey ) {
+   //if( !sPollKey || sPollKey.length !== 32 ) { return Promise.reject(new Error("Invalid poll key")); }
+
+   if( sPollKey === null )
+   {
+      // Get first key from TPoll table and use that as default
+      const sSelectFirst = "SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1";
+      return gd.SendToServer("", "!db/select", `query=${sSelectFirst}`).then(function(oResult) {
+         const value_ = gd_mapper.XML_GetFirstValue(oResult);
+
+         if( value_ === null || value_ === undefined ) { throw new Error(`Error fetching first poll key`); }
+         if( oResult.data.length === 0 ) { throw new Error("No polls found in database"); }
+         return RECORD_GetPoll(value_); // Recursive call with first poll key
+      });
+   }
+
+
+   const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM  TPoll WHERE PollK = x{PollK}";
+   const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sPollKey })}`;
+   return gd.SendToServer("", "!db/select", sArguments).then(function(oResult) {
+      const sStatus = oResult.status;
+      if( sStatus !== "success" ) { throw new Error(`Error fetching poll data: ${oResult.message}`); }
+      return oResult.data[0]; // Assuming PollK is unique and returns a single record
+   });   
 }
 
    </script>
