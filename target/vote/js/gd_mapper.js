@@ -17,7 +17,7 @@ var gd_mapper = gd_mapper || {};
 
       let aResultNodes;
       if( typeof xml_ === "string" ) {
-            // ## Parse XML string and select result node
+         // ## Parse XML string and select result node
          const sXmlString = String(xml_); // Ensure the input is treated as a string
          const oParser = new DOMParser(); // Create a DOMParser to parse the XML string
          const oXmlDoc = oParser.parseFromString(sXmlString, "application/xml"); // Parse the XML string into a document
@@ -28,16 +28,17 @@ var gd_mapper = gd_mapper || {};
          const oXmlDoc = xml_; // Use the provided XML Document
          aResultNodes = oXmlDoc.querySelectorAll(sNode); // Select all nodes matching the specified name (default "result")
       }
+      else { throw new Error("Invalid XML input"); }
 
-      let oResultNode = null;
-      if( aResultNodes.length === 1 ) { oResultNode = aResultNodes[0]; }
-      else if( aResultNodes.length > 1 ) { oResultNode = oXmlDoc.querySelector(sNode + "[command='select']"); }
+      let oNode = null;
+      if( aResultNodes.length === 1 ) { oNode = aResultNodes[0]; }
+      else if( aResultNodes.length > 1 ) { oNode = oXmlDoc.querySelector(sNode + "[command='select']"); }
 
-      if( !oResultNode ) { throw new Error("No result node with command='select' found"); }
+      if( !oNode ) { throw new Error("No result node with command='select' found"); }
 
       // ## Extract CDATA content and parse JSON
 
-      const sCData = oResultNode.textContent; // Extract CDATA content from the selected node
+      const sCData = oNode.textContent; // Extract CDATA content from the selected node, result is placed in cdata
       let aData; // Initialize variable to hold parsed JSON data
       try { aData = JSON.parse(sCData); }
       catch( oError ) { throw new Error("CDATA is not valid JSON: " + oError.message); }
@@ -48,6 +49,45 @@ var gd_mapper = gd_mapper || {};
       const value_ = aData[1][0]; // Extract the first value from the second row
 
       return value_;
+   };
+
+
+   /** ----------------------------------------------------------------------- XML_GetFirstArray
+    * Extract array of values from first result node. Throws if no matching node or invalid CDATA structure.
+    *
+    * @param {string|Document} xml_ - XML string or Document with result nodes containing CDATA JSON
+    * @returns {Array} Array of values from first result node, or empty array if no valid data found
+    */   
+   oNS.XML_GetFirstArray = function(xml_ , sNode = "result") {
+      if( typeof xml_ === "object" ) { xml_ = xml_.data; }  
+      let aResultNodes;
+      if( typeof xml_ === "string" ) {
+         // ## Parse XML string and select result node
+         const sXmlString = String(xml_);
+         const oParser = new DOMParser();
+         const oXmlDoc = oParser.parseFromString(sXmlString, "application/xml");
+         aResultNodes = oXmlDoc.querySelectorAll(sNode);
+      }
+      else if( xml_ instanceof Document ) {
+         const oXmlDoc = xml_;
+         aResultNodes = oXmlDoc.querySelectorAll(sNode);
+      }
+      else { throw new Error("Invalid XML input"); }
+
+      let oNode = null;
+      if( aResultNodes.length === 1 ) { oNode = aResultNodes[0]; }
+      else if( aResultNodes.length > 1 ) { oNode = oXmlDoc.querySelector(sNode + "[command='select']"); }
+
+      if( !oNode ) { throw new Error("No result node with command='select' found"); }
+
+      const sCData = oNode.textContent; // Extract CDATA content from the selected node, result is placed in cdata
+      let aData; // Initialize variable to hold parsed JSON data
+      try { aData = JSON.parse(sCData); }
+      catch( oError ) { throw new Error("CDATA is not valid JSON: " + oError.message); }
+
+      if( !Array.isArray(aData) ) { throw new Error("CDATA does not have expected array structure"); }
+
+      return aData;
    };
 
 
