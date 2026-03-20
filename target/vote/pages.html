@@ -19,6 +19,8 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
     <link rel="stylesheet" href="css/variables-corporate-blue.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
+    <script src="js/gd_browser.js"></script>
+    <script src="js/gd_mapper.js"></script>
     <title>Pages Navigation - Web Vote</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -84,6 +86,12 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
                 </div>
                 <span class="page-link-arrow">→</span>
             </a>
+            <span class="page-link" data-command="load-sql">
+               <div class="page-link-title">
+                  <h2>Load</h2>
+                  <span>Load SQL queries</h2>
+               </div>
+            </span>
         </div>
     </div>
 
@@ -116,9 +124,10 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
         }
     })();
 
-    // Start page initialization -----------------------------------------------
+    // Start page initialization ----------------------------------------------
     document.addEventListener('DOMContentLoaded', function() {
         PAGE_Initialize();
+        SERVER_LoadSqlQueries();
     });
 
     class CDocument {
@@ -130,6 +139,39 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
 
         IsModified() { return this.bModified; }
         SetModified(bModified) { this.bModified = bModified; }
+    }
+
+    // Check if queries exists in webserver, if not load them -----------------
+    function SERVER_LoadSqlQueries() {
+       gd.SendToServer("", "!sys/meta/query/count", "").then( function(oResponse) {
+          const iCount = gd_mapper.XML_GetFirstValue(oResponse).count;
+          if( iCount === 0 ) {                                                 // no queries means that we need to load them
+             SERVER_AddSqlQuery();
+          }
+       });
+    }
+
+   //
+   function SERVER_AddSqlQuery() {
+      const aQuery = [
+         {name: "vote-get_first", format: "raw", type: "select", statement: "SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1", "description": "Get first user (for development and testing purposes)"},
+         {name: "vote-get", format: "jinja", type: "select", statement: "SELECT hex(PollK) AS PollK, TypeC, StateC, FName, FHeader, FDescription FROM TPoll WHERE PollK = {PollK}", "description": "Select active poll"},
+         {name: "vote-get_polls", format: "jinja", type: "select", statement: "SELECT hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollQuestion WHERE PollK = {PollK}", "description": "Select poll questions for poll"},
+         {name: "vote-get_answers", format: "jinja", type: "select", statement: "SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollAnswer WHERE PollK = {PollK}", "description": "Select poll questions for poll"},
+      ];
+
+        // ## loop aQuery array and add queries
+        aQuery.forEach( function(oQuery) {
+           let sArguments = "name=" + oQuery.name + "\n";
+           sArguments += "format=" + oQuery.format + "\n";
+           sArguments += "type=" + oQuery.type + "\n";
+           sArguments += "statement=" + oQuery.statement;
+           gd.SendToServer("", "!sys/meta/query/add", sArguments ).then( function(oResponse) {
+              const oQueryKey = gd_mapper.XML_GetFirstValue(oResponse);
+              console.log(`Query added with key ${oQuery.name} (key=${oQueryKey.id})`);
+           });
+        });
+
     }
     </script>
 </body>

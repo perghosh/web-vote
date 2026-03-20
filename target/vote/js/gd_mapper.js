@@ -13,24 +13,26 @@ var gd_mapper = gd_mapper || {};
    oNS.XML_GetFirstValue = function(xml_ , sNode = "result") {
       if( typeof xml_ === "object" ) { xml_ = xml_.data; }                    // If input is an object (e.g. server response), extract the XML string from the 'data' property
 
-      // check if xml_ isn't xml object, then try to parse it as XML string
+      // ## check if xml_ isn't xml object, then try to parse it as XML string
 
-      let aResultNodes;
+      let aResultNodes; // array with result nodes matching sNode name
       if( typeof xml_ === "string" ) {
          // ## Parse XML string and select result node
-         const sXmlString = String(xml_); // Ensure the input is treated as a string
-         const oParser = new DOMParser(); // Create a DOMParser to parse the XML string
+         const sXmlString = String(xml_); // Ensure it is string
+         const oParser = new DOMParser(); // Create a DOMParser
          const oXmlDoc = oParser.parseFromString(sXmlString, "application/xml"); // Parse the XML string into a document
-         aResultNodes = oXmlDoc.querySelectorAll(sNode);                   // Select all nodes matching the specified name (default "result")
+         aResultNodes = oXmlDoc.querySelectorAll(sNode);                      // Select all nodes matching the specified name (default "result")
       }
-      else if( xml_ instanceof Document ) {
-         // If input is already an XML Document, use it directly
+      else if( xml_ instanceof Document ) {                                   // If xml_ is document then no need to parse
          const oXmlDoc = xml_; // Use the provided XML Document
          aResultNodes = oXmlDoc.querySelectorAll(sNode); // Select all nodes matching the specified name (default "result")
       }
       else { throw new Error("Invalid XML input"); }
+      
+      if( !aResultNodes ) throw 
 
-      let oNode = null;
+      // ## Select the first node
+      let oNode = null; // First node value
       if( aResultNodes.length === 1 ) { oNode = aResultNodes[0]; }
       else if( aResultNodes.length > 1 ) { oNode = oXmlDoc.querySelector(sNode + "[command='select']"); }
 
@@ -39,16 +41,19 @@ var gd_mapper = gd_mapper || {};
       // ## Extract CDATA content and parse JSON
 
       const sCData = oNode.textContent; // Extract CDATA content from the selected node, result is placed in cdata
-      let aData; // Initialize variable to hold parsed JSON data
-      try { aData = JSON.parse(sCData); }
-      catch( oError ) { throw new Error("CDATA is not valid JSON: " + oError.message); }
+      let data_; // Initialize variable to hold parsed JSON data
+      try { data_ = JSON.parse(sCData); }
+      catch (oError) { throw new Error("CDATA is not valid JSON: " + oError.message); }
 
-      if( !Array.isArray(aData) ) { throw new Error("CDATA does not have expected array structure"); }
-      if( aData.length < 2 || !aData[1][0] ) { return null; }
+      // ## Handle different formats of node content and try to pick the first value or first object
 
-      const value_ = aData[1][0]; // Extract the first value from the second row
+      if (Array.isArray(data_) === true) {
+         const aData = data_; // Only to make code simpler
+         if (aData.length < 2 || !aData[1][0]) { return null; }
+         else { return aData[1][0]; }                                         // Return the first value in the second row; it's wrapped as an array
+      }
 
-      return value_;
+      return data_;
    };
 
 
@@ -57,9 +62,9 @@ var gd_mapper = gd_mapper || {};
     *
     * @param {string|Document} xml_ - XML string or Document with result nodes containing CDATA JSON
     * @returns {Array} Array of values from first result node, or empty array if no valid data found
-    */   
+    */
    oNS.XML_GetFirstArray = function(xml_ , sNode = "result") {
-      if( typeof xml_ === "object" ) { xml_ = xml_.data; }  
+      if( typeof xml_ === "object" ) { xml_ = xml_.data; }
       let aResultNodes;
       if( typeof xml_ === "string" ) {
          // ## Parse XML string and select result node
@@ -91,4 +96,4 @@ var gd_mapper = gd_mapper || {};
    };
 
 
-})(gd_mapper);   
+})(gd_mapper);

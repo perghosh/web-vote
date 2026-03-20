@@ -74,7 +74,7 @@ TPollAnswer: PollAnswerK, PollQuestionK, FName, FLabel, FDescription
          </div>
       </div>
    </div>
-   <!-- 
+   <!--
 
    -->
    <script>
@@ -87,6 +87,9 @@ document.addEventListener('DOMContentLoaded', function() {
    PAGE_initialize();
    PAGE_SetListeners();
 });
+
+
+
 
 function PAGE_initialize() {
    const fnRead = function(sName, oRecord) {
@@ -119,6 +122,7 @@ function PAGE_initialize() {
    oRCPollAnswer.table = "TPollAnswer";
    oDocument_g.AddRecord(oRCPollAnswer);
 
+
    let sPollKey = null; // Get poll key from url parameters if available, otherwise use null to fetch first poll
 
    RECORD_GetPoll( sPollKey ).then(function(oPoll) {
@@ -134,6 +138,9 @@ function PAGE_initialize() {
 
 }
 
+/**
+ *
+ */
 function PAGE_SetListeners() {
    const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
    ePage.addEventListener("click", function(e_) {
@@ -464,9 +471,8 @@ function PAGE_RenderCommands( eContainer, aButtons, sTable ) {
    eContainer.appendChild(eCommandRow);
 }
 
-function RECORD_GetPoll( sPollKey ) {
-   //if( !sPollKey || sPollKey.length !== 32 ) { return Promise.reject(new Error("Invalid poll key")); }
 
+function RECORD_GetPoll( sPollKey ) {
    if( sPollKey === null )
    {
       // Get first key from TPoll table and use that as default
@@ -487,7 +493,7 @@ function RECORD_GetPoll( sPollKey ) {
       const sStatus = oResult.status;
       if( sStatus !== "success" ) { throw new Error(`Error fetching poll data: ${oResult.message}`); }
       return oResult.data[0]; // Assuming PollK is unique and returns a single record
-   });   
+   });
 }
 
    </script>

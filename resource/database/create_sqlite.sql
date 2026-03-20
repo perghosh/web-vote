@@ -280,6 +280,10 @@ CREATE TABLE "TSystemStatement" (
     ,"FTable" VARCHAR(200)
 );
 
+-- Generate insert statements for TSystemStatement
+
+
+
 
 
 -- Insert table numbers for all tables in the script
