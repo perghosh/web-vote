@@ -92,6 +92,7 @@ vote-get_answers - Select poll answers for poll
 'use strict';
 
 let oDocument_g; // Global document object
+let oToast_g;
 
 // ## Prepare base url .....................................................
 const sBaseUrl = gd.GetBaseUrl();
@@ -120,6 +121,7 @@ function PAGE_initialize() {
    };
 
    oDocument_g = new CDocument({});                                           // Create new document
+   oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
 
    // ## Create record containers for poll, question and answer tables ........
 
@@ -143,19 +145,18 @@ function PAGE_initialize() {
    // try to get poll key from url parameters, if not available use null to fetch first poll
    const oUrlParameter = new URLSearchParams(window.location.search);
    sPollKey = oUrlParameter.get("PollK") || null;
-   if( sPollKey !== null && sPollKey.length !== 32 ) {
+   if( sPollKey === null || sPollKey.length !== 32 ) {
       // ## For development and testing purposes, if poll key is not in url parameters, get first poll key from database
-      gd.ShowToast("Invalid poll key in URL parameters, fetching first poll for testing purposes", { type: "warning" });
+      oToast_g.Show("Invalid poll key in URL parameters, fetching first poll for testing purposes", { type: "warning" });
       sPollKey = null;                                                        // Set poll key to null to fetch first poll
 
       gd.SendToServer("", "!db/select", `query=#vote-get_first`).then(function(oResult) {
-         const oKey = gd_mapper.XML_GetFirstValue(oResult);
-         sPollKey = oKey.PollK;
+         sPollKey = gd_mapper.XML_GetFirstValue(oResult);
          oDocument_g.SetValue("PollK", sPollKey);                              // Store poll key in document values for later use
          PAGE_LoadPollInformation();
       }).catch(function(error) {
          console.error("Error fetching first poll key: ", error);
-         gd.ShowToast("Error fetching first poll key: " + error.message, { type: "error" });
+         oToast_g.Show("Error fetching first poll key: " + error.message, { type: "error" });
       });
 
    }
@@ -179,7 +180,6 @@ function PAGE_LoadPollInformation() {
    if( !sPollKey ) { throw new Error("Poll key is not set in document values"); }
 
    // ## Fetch poll details, questions and answers in parallel using Promise.all
-   /*
    Promise.all([
       gd.SendToServer("", "!db/select", `query=#vote-get&values=${JSON.stringify({ PollK: sPollKey })}`),
       gd.SendToServer("", "!db/select", `query=#vote-get_polls&values=${JSON.stringify({ PollK: sPollKey })}`),
@@ -192,7 +192,10 @@ function PAGE_LoadPollInformation() {
       console.log("Poll details:", oPoll);
       console.log("Questions:", aQuestions);
       console.log("Answers:", aAnswers);
-      */
+   }).catch(function(error) {
+      console.error("Error fetching poll information:", error);
+      oToast_g.Show("Error fetching poll information: " + error.message, { type: "error" });
+   });
 }
 
 /**
