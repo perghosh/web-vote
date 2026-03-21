@@ -29,7 +29,7 @@ var gd_mapper = gd_mapper || {};
       }
       else { throw new Error("Invalid XML input"); }
       
-      if( !aResultNodes ) throw 
+      if( !aResultNodes ) { throw new Error("No result nodes found"); }
 
       // ## Select the first node
       let oNode = null; // First node value

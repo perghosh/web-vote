@@ -95,7 +95,7 @@ class DBRecord {
       get type() { return this.sType; }
       get default() { return this.default_; }
 
-      set( sColumn, sSplitter = "," ) { 
+      set( sColumn, sSplitter = "," ) {
          const aParts = sColumn.split(sSplitter).map(s => s.trim());
          this.sName = aParts[0] || "";
          this.sAlias = aParts[1] || this.sName;
@@ -124,7 +124,7 @@ class DBRecord {
     */
    constructor(columns_ = [], options_ = {}) {
       if( columns_ === undefined || columns_ === null ) columns_ = [];
-      if(typeof columns_ === "string") { 
+      if(typeof columns_ === "string") {
          // ## Support both comma and semicolon delimiters for column names in string format
          if(columns_.includes(";")) {
             // name, alias, type
@@ -639,7 +639,7 @@ class DBRecordContainer extends DBRecord {
    /** Default query strategies — tried in order, first match wins */
    static aStrategiesDefault = [
       (e_, column) => e_.querySelector(`[data-field="${column.sName}"]`),
-      (e_, column) => e_.querySelector(`[data-columnumn="${column.sName}"]`),
+      (e_, column) => e_.querySelector(`[data-column="${column.sName}"]`),
       (e_, column) => e_.querySelector(`[name="${column.sName}"]`),
       (e_, column) => e_.querySelector(`#${column.sName}`),
       (e_, column) => e_.querySelector(`[id$="_${column.sName}"]`),

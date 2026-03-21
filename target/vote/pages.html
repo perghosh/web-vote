@@ -21,6 +21,7 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
     <link rel="stylesheet" href="css/input-effects.css">
     <script src="js/gd_browser.js"></script>
     <script src="js/gd_mapper.js"></script>
+    <script src="js/gd_ui_toast.js"></script>
     <title>Pages Navigation - Web Vote</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -89,7 +90,7 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
             <span class="page-link" data-command="load-sql">
                <div class="page-link-title">
                   <h2>Load</h2>
-                  <span>Load SQL queries</h2>
+                  <div><span>Load SQL queries</span><span data-value="value-statement-count"></span></div>
                </div>
             </span>
         </div>
@@ -97,37 +98,30 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
 
     <script>
     let oDocument_g;
+    let oToast_g;
+
+   // ## Prepare base url .....................................................
+   const sBaseUrl = gd.GetBaseUrl();
+   gd.SetBaseUrl(sBaseUrl);
+
 
     /** --------------------------------------------------------------------- @API [tag: initialize]
      * Main initialization function that initializes the navigation page
      */
-    function PAGE_Initialize() {
+    function PAGE_Initialize() {                                                                   console.assert( gd_mapper.XML_GetFirstValue !== undefined, "gd_mapper.XML_GetFirstValue function is not defined, make sure gd_mapper.js is loaded" );    
         oDocument_g = new CDocument({});
+        oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
+
+        SERVER_LoadSqlQueries();
 
         // ## Start idle timer - call PAGE_OnIdle() once per second
-        CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+        //CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
     }
 
-    /** --------------------------------------------------------------------- @API [tag: onidle]
-     * Handles idle state (no changes needed for this static page)
-     */
-    const PAGE_OnIdle = (function() {
-        var bLastModified = false;
-
-        return function() {
-            const bModified = oDocument_g.IsModified();
-
-            if (bModified !== bLastModified) {
-                // Navigation page is static - no changes needed
-                bLastModified = bModified;
-            }
-        }
-    })();
 
     // Start page initialization ----------------------------------------------
     document.addEventListener('DOMContentLoaded', function() {
         PAGE_Initialize();
-        SERVER_LoadSqlQueries();
     });
 
     class CDocument {
@@ -144,7 +138,8 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
     // Check if queries exists in webserver, if not load them -----------------
     function SERVER_LoadSqlQueries() {
        gd.SendToServer("", "!sys/meta/query/count", "").then( function(oResponse) {
-          const iCount = gd_mapper.XML_GetFirstValue(oResponse).count;
+          const oCount = gd_mapper.XML_GetFirstValue(oResponse);
+          const iCount = oCount.count;
           if( iCount === 0 ) {                                                 // no queries means that we need to load them
              SERVER_AddSqlQuery();
           }
@@ -155,21 +150,35 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
    function SERVER_AddSqlQuery() {
       const aQuery = [
          {name: "vote-get_first", format: "raw", type: "select", statement: "SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1", "description": "Get first user (for development and testing purposes)"},
+
+         {name: "vote-count", format: "jinja", type: "select", statement: "SELECT COUNT(*) AS uCount FROM TPoll WHERE PollK = {PollK}", "description": "Count polls for poll key"},
+         {name: "vote-count_questions", format: "jinja", type: "select", statement: "SELECT COUNT(*) AS uCount FROM TPollQuestion WHERE PollK = {PollK}", "description": "Count questions for poll key"},
+
+
          {name: "vote-get", format: "jinja", type: "select", statement: "SELECT hex(PollK) AS PollK, TypeC, StateC, FName, FHeader, FDescription FROM TPoll WHERE PollK = {PollK}", "description": "Select active poll"},
          {name: "vote-get_polls", format: "jinja", type: "select", statement: "SELECT hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollQuestion WHERE PollK = {PollK}", "description": "Select poll questions for poll"},
          {name: "vote-get_answers", format: "jinja", type: "select", statement: "SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollAnswer WHERE PollK = {PollK}", "description": "Select poll questions for poll"},
       ];
 
         // ## loop aQuery array and add queries
-        aQuery.forEach( function(oQuery) {
+        const aPromise = aQuery.map( function(oQuery) {
            let sArguments = "name=" + oQuery.name + "\n";
            sArguments += "format=" + oQuery.format + "\n";
            sArguments += "type=" + oQuery.type + "\n";
            sArguments += "statement=" + oQuery.statement;
-           gd.SendToServer("", "!sys/meta/query/add", sArguments ).then( function(oResponse) {
+           return gd.SendToServer("", "!sys/meta/query/add", sArguments ).then( function(oResponse) {
               const oQueryKey = gd_mapper.XML_GetFirstValue(oResponse);
               console.log(`Query added with key ${oQuery.name} (key=${oQueryKey.id})`);
            });
+        });
+
+        Promise.all(aPromise).then( function() {
+           oToast_g.Show(`${aQuery.length} SQL queries loaded`, { sType: "success" });
+
+           // Fill in the data value for number of queries loaded
+           const eElement = document.querySelector("[data-value='value-statement-count']");
+           if(eElement) { eElement.textContent = ` ${aQuery.length} queries loaded`; }
+
         });
 
     }

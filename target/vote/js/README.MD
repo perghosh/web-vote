@@ -7,6 +7,7 @@ Shared utility and UI classes used by the vote application.
 - [JavaScript Library Files](#javascript-library-files)
   - [Table of Contents](#table-of-contents)
   - [Quick Reference](#quick-reference)
+  - [Data attributes used in html pages](#data-attributes-used-in-html-pages)
   - [gd\_browser.js](#gd_browserjs)
   - [gd\_data\_table.js](#gd_data_tablejs)
   - [gd\_db.js](#gd_dbjs)
@@ -32,6 +33,21 @@ Shared utility and UI classes used by the vote application.
 | `gd_ui_tabs.js` | `UITabControl` | Tab switching logic, caller supplies all CSS |
 | `gd_ui_toast.js` | `UIToast` | Positioned toast popups with progress bar |
 | `gd_ui_tree_temp.js` | `UITree` | Hierarchical tree with lazy loading and selection |
+
+---
+
+## Data attributes used in html pages
+
+| Name | Description |
+|------|-------------------|
+| `data-section` | Type of section when page is divided in to different parts |
+| `data-command` | command name and try to use this with event delecation, also make it descriptive what the command does. Do not try to be smart |
+| `data-field` | Name of database field, use this to bind information from server, often database fields |
+| `data-table` | Can be used if field need to know what table it belongs to |
+| `data-comment` | When something need to be described for development |
+
+
+
 
 ---
 
