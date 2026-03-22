@@ -10,7 +10,6 @@ WHERE type = 'table' AND name NOT LIKE 'sqlite_%';
 
 -- Re-enable foreign keys
 PRAGMA foreign_keys = ON;
-
 */
 
 

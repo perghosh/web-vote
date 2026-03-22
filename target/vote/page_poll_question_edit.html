@@ -62,6 +62,9 @@ vote-get_answers - Select poll answers for poll
     </style>
 </head>
 <body>
+   <!--
+    | ## Section for main poll, at top of page show the poll for questions and answers to questions
+    -->
    <div id="idPage" class="page-container container page" data-section="page">
       <div id="idPoll" class="container-form" >
          <div data-section="record" data-table="TPoll">
@@ -103,9 +106,6 @@ document.addEventListener('DOMContentLoaded', function() {
    PAGE_initialize();
    //PAGE_SetListeners();
 });
-
-
-
 
 function PAGE_initialize() {
    const fnRead = function(sName, oRecord) {
@@ -179,7 +179,25 @@ function PAGE_LoadPollInformation() {
    const sPollKey = oDocument_g.GetValue("PollK");
    if( !sPollKey ) { throw new Error("Poll key is not set in document values"); }
 
+   const sNewLine = "\n";
+   gd.SendToServer("", "!db/select", `query=#vote-get${sNewLine}values=${JSON.stringify({ PollK: sPollKey })}`).then(function(oResult) {
+      const aTable = gd_mapper.XML_GetFirstArray( oResult );
+      if( aTable.length <= 1 ) { throw new Error("No poll found for poll key: " + sPollKey); }
+
+      const tableVote = new Table(aTable); // Convert the XML response to a Table object for easier data manipulation
+      const oPoll = tableVote.AsJson(0, 1)[0];  // Get poll information as json
+
+      // ## Set poll information in document values and render form
+      oDocument_g.GetRecord("TPoll").SetValue(oPoll);
+
+
+   }).catch(function(error) {
+      console.error("Error fetching poll details:", error);
+      oToast_g.Show("Error fetching poll details: " + error.message, { type: "error" });
+   });
+
    // ## Fetch poll details, questions and answers in parallel using Promise.all
+   /*
    Promise.all([
       gd.SendToServer("", "!db/select", `query=#vote-get&values=${JSON.stringify({ PollK: sPollKey })}`),
       gd.SendToServer("", "!db/select", `query=#vote-get_polls&values=${JSON.stringify({ PollK: sPollKey })}`),
@@ -196,6 +214,7 @@ function PAGE_LoadPollInformation() {
       console.error("Error fetching poll information:", error);
       oToast_g.Show("Error fetching poll information: " + error.message, { type: "error" });
    });
+   */
 }
 
 /**
@@ -453,7 +472,6 @@ class CDocument {
       return this.aTable.find(oTable => oTable.name === sTable);
    }
 }
-
 
    </script>
 </body>

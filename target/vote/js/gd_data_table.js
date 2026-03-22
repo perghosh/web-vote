@@ -82,12 +82,20 @@ class Table {
       if( typeof columns_ === "string" ) { columns_ = columns_.split(","); }
       if( !Array.isArray(columns_) ) { throw new Error("Invalid argument"); }
 
-      // Check if the first element is an array to identify a 2D table structure
-      const bIsTableData = columns_.length > 0 && Array.isArray(columns_[0]);
+      
+      const bIsTableData = columns_.length > 0 && Array.isArray(columns_[0]);  // Check if the first element is an array to identify a 2D table structure
 
       if( bIsTableData ) {
-         this.aTable = columns_;
-         this.aColumn = [];
+         const bHeader = options_.bHeader !== undefined ? options_.bHeader : true; // Default to true if not specified
+
+         if( bHeader !== true ) {
+            this.aTable = columns_;
+            this.aColumn = [];
+         }
+         else {
+            this.aTable = columns_.slice(1);                                  // Data rows start from the second element
+            this.aColumn = columns_[0].map(column => new Table.column(column)); // First row is header
+         }
       }
       else {
          // ## If not table data, assume it's column data
@@ -634,12 +642,15 @@ class Table {
       return sResult;
    }
 
-   AsJson(row_, oOptions = {}) {
+   AsJson(row_, options_ = {}) {
+      let iCount = this.Size();
+      if( typeof options_ === "number" ) { iCount = options_; options_ = {}; }
+      const oOptions = options_ || {};
       const bIncludeNull = oOptions.bIncludeNull || false;
-      const iIndent = oOptions.iIndent || 3;
 
       const iRowBegin = row_ || 0;
-      const iRowEnd = iRowBegin + ( row_ ? 1 : this.Size() );
+      let iRowEnd = iRowBegin + iCount;
+      if( (iRowBegin + iRowEnd) > this.Size() ) { iRowEnd = this.Size() - iRowBegin; }
 
       let aRows = [];
 
@@ -654,7 +665,7 @@ class Table {
          aRows.push(o);
       }
 
-      return JSON.stringify(aRows, null, iIndent);
+      return aRows;
    }
 
    // Get internal table data array ------------------------------------------
