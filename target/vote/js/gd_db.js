@@ -809,43 +809,195 @@ class DBRecordContainer extends DBRecord {
    // ==========================================================================
 
    /** -----------------------------------------------------------------------
-    * Pull values from bound elements into the record.
-    * Columns without a bound element fall back to fnRead callback (DBRecord behavior).
+    * Pull values from bound elements or a container resolved on the fly into
+    * the record.
     *
-    * @param {Function} [fnRead] - Fallback callback for unbound columns
-    * @returns {this}
+    * Accepts three calling patterns:
+    *
+    *   1. ReadValues()
+    *      Uses already-bound mapElements (from BindContainer / ScanContainer).
+    *      Falls back to the fnRead callback for any unbound column.
+    *
+    *   2. ReadValues(container)
+    *      container may be:
+    *        - a string  → resolved via document.getElementById() first,
+    *                       then document.querySelector() as fallback
+    *        - an Element → used directly
+    *      Elements are discovered on the fly using the active strategy chain
+    *      (this.container_.aStrategies if a container is already bound,
+    *      otherwise DBRecordContainer.aStrategiesDefault).
+    *      Manual bindings in mapElements always take priority.
+    *      mapElements is NOT mutated — this is a transient read.
+    *
+    *   3. ReadValues(fnRead)
+    *      Legacy callback form; same behaviour as before.
+    *      Falls through to fnRead for every column that has no bound element.
+    *
+    * @param {string|Element|Function} [target_]
+    *   - string   : id or querySelector expression for the container
+    *   - Element  : container element
+    *   - Function : read callback (sName, oColumn) for unbound columns
+    *   - omitted  : use bound mapElements + optional this.fnRead fallback
+    *
+    * @returns {this} For chaining
     */
-   ReadValues(fnRead) {
-      fnRead = fnRead || this.fnRead;
+   ReadValues(target_) {
+
+      // ── 1. Resolve a container when a string or Element is passed ──────────
+      if(typeof target_ === "string" || target_ instanceof Element) {
+
+         let oContainer = null;
+
+         if(typeof target_ === "string") {
+            oContainer = document.getElementById(target_) ?? document.querySelector(target_);
+            if(!oContainer) {
+               console.warn(`ReadValues: Could not find container for '${target_}'`);
+               return this;
+            }
+         }
+         else {
+            oContainer = target_;
+         }
+
+         // Use the strategy chain already stored on the bound container, or fall
+         // back to the class-level defaults when no container has been bound yet.
+         const aStrategies = (this.container_ && this.container_.aStrategies) || DBRecordContainer.aStrategiesDefault;
+
+         this.aColumn.forEach(oColumn => {
+            const sName = oColumn.sName;
+
+            // Manual bindings always win — read through the stored binding.
+            const binding = this.mapElements.get(sName);
+            if(binding?._manual) {
+               this._set_value_internal(sName, this._read_element(binding));
+               return;
+            }
+
+            // Walk the strategy chain to find an element inside oContainer.
+            for(const fnStrategy of aStrategies) {
+               try {
+                  const el = fnStrategy(oContainer, oColumn);
+                  if(el instanceof Element) {
+                     this._set_value_internal(sName, this._read_element({ element: el, fnGet: null, fnSet: null }));
+                     break;
+                  }
+               }
+               catch(e) {
+                  console.warn(`ReadValues: Strategy threw for column '${sName}':`, e);
+               }
+            }
+         });
+
+         return this;
+      }
+
+      // ── 2. Callback / bound-elements path (original behaviour) ─────────────
+      const fnRead = typeof target_ === "function" ? target_ : (this.fnRead ?? null);
 
       this.aColumn.forEach(oColumn => {
          const sName   = oColumn.sName;
          const binding = this.mapElements.get(sName);
 
-         if(binding) { this._set_value_internal(sName, this._read_element(binding)); }
-         else if(fnRead) { fnRead.call(this, sName, oColumn); }
+         if(binding)       { this._set_value_internal(sName, this._read_element(binding)); }
+         else if(fnRead)   { fnRead.call(this, sName, oColumn); }
       });
 
       return this;
    }
 
    /** -----------------------------------------------------------------------
-    * Push record values out to bound elements.
-    * Columns without a bound element fall back to fnWrite callback (DBRecord behavior).
+    * Push record values out to bound elements or a container resolved on the fly.
     *
-    * @param {Function} [fnWrite] - Fallback callback for unbound columns
-    * @returns {this}
+    * Accepts three calling patterns:
+    *
+    *   1. WriteValues()
+    *      Uses already-bound mapElements (from BindContainer / ScanContainer).
+    *      Falls back to the fnWrite callback for any unbound column.
+    *
+    *   2. WriteValues(container)
+    *      container may be:
+    *        - a string  → resolved via document.getElementById() first,
+    *                       then document.querySelector() as fallback
+    *        - an Element → used directly
+    *      Elements are discovered on the fly using the active strategy chain
+    *      (this.container_.aStrategies if a container is already bound,
+    *      otherwise DBRecordContainer.aStrategiesDefault).
+    *      Manual bindings in mapElements always take priority.
+    *      mapElements is NOT mutated — this is a transient write.
+    *
+    *   3. WriteValues(fnWrite)
+    *      Legacy callback form; same behaviour as before.
+    *      Falls through to fnWrite for every column that has no bound element.
+    *
+    * @param {string|Element|Function} [target_]
+    *   - string   : id or querySelector expression for the container
+    *   - Element  : container element
+    *   - Function : write callback (sName, oColumn) for unbound columns
+    *   - omitted  : use bound mapElements + optional this.fnWrite fallback
+    *
+    * @returns {this} For chaining
     */
-   WriteValues(fnWrite) {
-      fnWrite = fnWrite || this.fnWrite;
+   WriteValues(target_) {
+
+      // ── 1. Resolve a container when a string or Element is passed ──────────
+      if(typeof target_ === "string" || target_ instanceof Element) {
+
+         let oContainer = null;
+
+         if(typeof target_ === "string") {
+            oContainer = document.getElementById(target_) ?? document.querySelector(target_);
+            if(!oContainer) {
+               console.warn(`WriteValues: Could not find container for '${target_}'`);
+               return this;
+            }
+         }
+         else {
+            oContainer = target_;
+         }
+
+         // Use the strategy chain already stored on the bound container, or fall
+         // back to the class-level defaults when no container has been bound yet.
+         const aStrategies = (this.container_ && this.container_.aStrategies) || DBRecordContainer.aStrategiesDefault;
+
+         this.aColumn.forEach(oColumn => {
+            const sName  = oColumn.sName;
+            const value  = this.mapValues.get(sName) ?? null;
+
+            // Manual bindings always win — write through the stored binding.
+            const binding = this.mapElements.get(sName);
+            if(binding?._manual) {
+               this._write_element(binding, value);
+               return;
+            }
+
+            // Walk the strategy chain to find an element inside oContainer.
+            for(const fnStrategy of aStrategies) {
+               try {
+                  const el = fnStrategy(oContainer, oColumn);
+                  if(el instanceof Element) {
+                     this._write_element({ element: el, fnGet: null, fnSet: null }, value);
+                     break;
+                  }
+               }
+               catch(e) {
+                  console.warn(`WriteValues: Strategy threw for column '${sName}':`, e);
+               }
+            }
+         });
+
+         return this;
+      }
+
+      // ── 2. Callback / bound-elements path (original behaviour) ─────────────
+      const fnWrite = typeof target_ === "function" ? target_ : (this.fnWrite ?? null);
 
       this.aColumn.forEach(oColumn => {
          const sName   = oColumn.sName;
          const binding = this.mapElements.get(sName);
          const value   = this.mapValues.get(sName) ?? null;
 
-         if(binding) { this._write_element(binding, value); }
-         else if(fnWrite) { fnWrite.call(this, sName, oColumn); }
+         if(binding)        { this._write_element(binding, value); }
+         else if(fnWrite)   { fnWrite.call(this, sName, oColumn); }
       });
 
       return this;

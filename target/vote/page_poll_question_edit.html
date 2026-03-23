@@ -66,6 +66,8 @@ vote-get_answers - Select poll answers for poll
     | ## Section for main poll, at top of page show the poll for questions and answers to questions
     -->
    <div id="idPage" class="page-container container page" data-section="page">
+      <div id="idMessage" class="container-form"></div>
+      <hr>
       <div id="idPoll" class="container-form" >
          <div data-section="record" data-table="TPoll">
             <h2>Poll Details</h2>
@@ -125,17 +127,17 @@ function PAGE_initialize() {
 
    // ## Create record containers for poll, question and answer tables ........
 
-   let oRCPoll = new DBRecordContainer(["FName,Name,string;FHeader,Header,string;FDescription,Description,string"], { fnRead, fnWrite });
+   let oRCPoll = new DBRecordContainer("FName,Name,string;FHeader,Header,string;FDescription,Description,string", { fnRead, fnWrite });
    oRCPoll.table = "TPoll";                                                    // set table to table name
    oDocument_g.AddRecord(oRCPoll);                                                        // add record to document
 
    // TPollQuestion
-   let oRCPollQuestion = new DBRecordContainer(["FName,Name,string;FLabel,Header,string;FDescription,Description,string"], { fnRead, fnWrite });
+   let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header,string;FDescription,Description,string", { fnRead, fnWrite });
    oRCPollQuestion.table = "TPollQuestion";
    oDocument_g.AddRecord(oRCPollQuestion);
 
    // TPollAnswer
-   let oRCPollAnswer = new DBRecordContainer(["FName,Name,string;FLabel,Header,string;FDescription,Description,string"], { fnRead, fnWrite });
+   let oRCPollAnswer = new DBRecordContainer("FName,Name,string;FLabel,Header,string;FDescription,Description,string", { fnRead, fnWrite });
    oRCPollAnswer.table = "TPollAnswer";
    oDocument_g.AddRecord(oRCPollAnswer);
 
@@ -187,8 +189,14 @@ function PAGE_LoadPollInformation() {
       const tableVote = new Table(aTable); // Convert the XML response to a Table object for easier data manipulation
       const oPoll = tableVote.AsJson(0, 1)[0];  // Get poll information as json
 
+      document.getElementById("idMessage").textContent = `Poll information loaded for poll: ${JSON.stringify(oPoll)}`; // Display message that poll information is loaded
+
       // ## Set poll information in document values and render form
       oDocument_g.GetRecord("TPoll").SetValue(oPoll);
+      const oDBRecordContainer = oDocument_g.GetRecord("TPoll");
+
+      //oDBRecordContainer.BindContainer( document.getElementById("idPoll") ); // Bind the record container to the poll container in the DOM
+      oDBRecordContainer.WriteValues("idPoll");
 
 
    }).catch(function(error) {
