@@ -4,6 +4,9 @@
    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
    --radius: 8px;
    --radius-sm: 6px;
+
+   --space-sm: 8px;   /* Small: for general elements */
+   --space-lg: 24px;   /* Large: for headings and sections */   
 }
 
 
@@ -36,3 +39,35 @@
 .form-row--4column { grid-template-columns: repeat(4, 1fr); }
 .form-row--aside-left { grid-template-columns: 1fr 2fr; } 
 .form-row--aside-right { grid-template-columns: 2fr 1fr; } 
+
+
+/**
+ * MARGIN UTILITIES
+ */
+
+/* Small Variants */
+.margin_t-small { margin-top: var(--space-sm); }
+.margin_b-small { margin-bottom: var(--space-sm); }
+.margin_tb-small { margin-top: var(--space-sm); margin-bottom: var(--space-sm); }
+.margin_l-small { margin-left: var(--space-sm); }
+.margin_r-small { margin-right: var(--space-sm); }
+.margin_lr-small { margin-left: var(--space-sm); margin-right: var(--space-sm); }
+.margin_a-small { margin: var(--space-sm); }
+
+/* Large Variants (Headings) */
+.margin_t-large { margin-top: var(--space-lg); }
+.margin_b-large { margin-bottom: var(--space-lg); }
+.margin_tb-large { margin-top: var(--space-lg); margin-bottom: var(--space-lg); }
+.margin_l-large { margin-left: var(--space-lg); }
+.margin_r-large { margin-right: var(--space-lg); }
+.margin_lr-large { margin-left: var(--space-lg); margin-right: var(--space-lg); }
+.margin_a-large { margin: var(--space-lg); }
+
+/**
+ * PADDING UTILITIES (Optional but recommended)
+ */
+
+.padding_a-small { padding: var(--space-sm); }
+.padding_a-large { padding: var(--space-lg); }
+.padding_tb-small { padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+.padding_tb-large { padding-top: var(--space-lg); padding-bottom: var(--space-lg); }

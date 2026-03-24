@@ -8,6 +8,7 @@ PAGE_ Method documentation:
 
 PAGE_Initialize - Main initialization function that sets up the navigation page
 PAGE_OnIdle - Handles idle state (no changes needed for this static page)
+SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not exist
 
 -->
 
@@ -90,7 +91,7 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
             <span class="page-link" data-command="load-sql">
                <div class="page-link-title">
                   <h2>Load</h2>
-                  <div><span>Load SQL queries</span><span data-value="value-statement-count"></span></div>
+                  <div><span>Load SQL queries</span>&nbsp;<span style="text-decoration: underline;" data-value="value-statement-count"></span></div>
                </div>
             </span>
         </div>
@@ -142,6 +143,13 @@ PAGE_OnIdle - Handles idle state (no changes needed for this static page)
           const iCount = oCount.count;
           if( iCount === 0 ) {                                                 // no queries means that we need to load them
              SERVER_AddSqlQuery();
+          }
+          else {
+             oToast_g.Show(`${iCount} SQL queries already loaded`, { sType: "info" });
+
+             // ## Fill in the data value for number of queries loaded
+             const eElement = document.querySelector("[data-value='value-statement-count']");
+             if(eElement) { eElement.textContent = `${iCount} queries already loaded`; }
           }
        });
     }

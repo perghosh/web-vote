@@ -323,7 +323,6 @@ class DBRecord {
    ClearValues() {
       // Set all values to null
       this.mapValues.forEach((value, key) => { this.mapValues.set(key, null); });
-      this.WriteValues();
       this._aKeyColumns = null;
    }
 
@@ -851,7 +850,7 @@ class DBRecordContainer extends DBRecord {
          if(typeof target_ === "string") {
             oContainer = document.getElementById(target_) ?? document.querySelector(target_);
             if(!oContainer) {
-               console.warn(`ReadValues: Could not find container for '${target_}'`);
+               console.assert(`ReadValues: Could not find container for '${target_}'`);
                return this;
             }
          }
@@ -883,7 +882,7 @@ class DBRecordContainer extends DBRecord {
                   }
                }
                catch(e) {
-                  console.warn(`ReadValues: Strategy threw for column '${sName}':`, e);
+                  console.assert(`ReadValues: Strategy threw for column '${sName}':`, e);
                }
             }
          });
