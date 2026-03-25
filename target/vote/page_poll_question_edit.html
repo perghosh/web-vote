@@ -56,8 +56,8 @@ vote-get_answers - Select poll answers for poll
     <script src="js/gd_ui_tablelite.js"></script>
     <script src="js/gd_data_table.js"></script>
     <script src="js/gd_db.js"></script>
-    <script src="js/gd_mapper.js"></script>
     <script src="js/gd_browser.js"></script>
+    <script src="js/document.js"></script>
     <title>Login - Web Vote</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -160,7 +160,7 @@ function PAGE_initialize() {
       sPollKey = null;                                                        // Set poll key to null to fetch first poll
 
       gd.SendToServer("", "!db/select", `query=#vote-get_first`).then(function(oResult) {
-         sPollKey = gd_mapper.XML_GetFirstValue(oResult);
+         sPollKey = XML_GetFirstValue(oResult);
          oDocument_g.SetValue("PollK", sPollKey);                              // Store poll key in document values for later use
          PAGE_LoadPollInformation();
       }).catch(function(error) {
@@ -190,7 +190,7 @@ function PAGE_LoadPollInformation() {
 
    const sNewLine = "\n";
    gd.SendToServer("", "!db/select", `query=#vote-get${sNewLine}values=${JSON.stringify({ PollK: sPollKey })}`).then(function(oResult) {
-      const aTable = gd_mapper.XML_GetFirstArray( oResult );
+      const aTable = XML_GetFirstArray( oResult );
       if( aTable.length <= 1 ) { throw new Error("No poll found for poll key: " + sPollKey); }
 
       const tableVote = new Table(aTable); // Convert the XML response to a Table object for easier data manipulation
@@ -374,50 +374,6 @@ function Message_d( message_ ) {
    if( typeof message_ === "object" ) { sMessage += JSON.stringify(message_); }
    else { sMessage = message_; }
    eMessage.textContent = sMessage;
-}
-
-
-class CDocument {
-
-   static iIdleTimerId_s = null; // Global timer ID for idle callback
-
-   constructor( oOptions = {} ) {
-      this.bModified = false; // Initialize modified flag to false
-      this.oValues = {};      // Object to hold global values for the document, can be used to store any data related to the document
-      this.oElement = {};     // Cache for DOM elements
-      this.aRecords = [];    // Initialize records array to empty, holds DBRecord objects
-      this.aTable = []; // Initialize table array to empty, holds Table objects
-   }
-
-   // Get global value by name -----------------------------------------------
-   GetValue(sName) { return this.oValues[sName]; }
-   // Set global value by name -----------------------------------------------
-   SetValue(sName, value_) { this.oValues[sName] = value_; }
-
-   // Check if document has been modified ------------------------------
-   IsModified() { return this.bModified; }
-   // Set modified flag to true or false -------------------------------
-   SetModified(bModified) { this.bModified = bModified; }
-
-   // Get DOM element by name ------------------------------------------
-   GetElement(sName) {
-      if(!this.oElement[sName]) { this.oElement[sName] = document.querySelector(`[data-section="${sName}"]`); }
-      return this.oElement[sName];
-   }
-
-   // Add a record to the document --------------------------------------------
-   AddRecord(oRecord) { this.aRecords.push(oRecord); }
-
-   // Get a record by table name ----------------------------------------------
-   GetRecord( sTable ) {
-      return this.aRecords.find(oRecord => oRecord.table === sTable);
-   }
-
-   AddTable( oTable ) { this.aTable.push(oTable); }
-
-   GetTable( sTable ) {
-      return this.aTable.find(oTable => oTable.name === sTable);
-   }
 }
 
    </script>

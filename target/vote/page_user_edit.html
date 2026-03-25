@@ -44,6 +44,7 @@ data-action="user-update" - Command for updating a user
     <script src="js/gd_data_table.js"></script>
     <script src="js/gd_db.js"></script>
     <script src="js/gd_browser.js"></script>
+    <script src="js/document.js"></script>
     <title>Login - Web Vote</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -460,36 +461,6 @@ const PAGE_OnIdle = (function() {
    }
 })();
 
-
-class CDocument {
-
-   static iIdleTimerId_s = null; // Global timer ID for idle callback
-
-   constructor( oOptions = {} ) {
-      this.bModified = false; // Initialize modified flag to false
-      this.aRecords = []; // Initialize records array to empty, holds DBRecord objects
-      this.aTable = []; // Initialize table array to empty, holds Table objects
-   }
-
-   // Check if document has been modified -------------------------------------
-   IsModified() { return this.bModified; }
-   // Set modified flag to true or false --------------------------------------
-   SetModified(bModified) { this.bModified = bModified; }
-
-   // Add a record to the document --------------------------------------------
-   AddRecord(oRecord) { this.aRecords.push(oRecord); }
-
-   // Get a record by table name ----------------------------------------------
-   GetRecord( sTable ) {
-      return this.aRecords.find(oRecord => oRecord.table === sTable);
-   }
-
-   AddTable( oTable ) { this.aTable.push(oTable); }
-
-   GetTable( sTable ) {
-      return this.aTable.find(oTable => oTable.name === sTable);
-   }
-}
     </script>
 </body>
 </html>
