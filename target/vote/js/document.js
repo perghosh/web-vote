@@ -294,8 +294,8 @@ function XML_AppendObject(document_, oValues, sNode = "values", sField = "value"
    // ## Create new XML document if null, otherwise use existing document
    if(document_ === null) {
       oDocument = document.implementation.createDocument("", "", null);
-      const o_ = oDocument.createElement(sRoot);
-      oDocument.appendChild(o_);
+      const eRoot = oDocument.createElement(sRoot);
+      oDocument.appendChild(eRoot);
    }
    // ## If Document provided, use it
    else if(document_ instanceof Document) {
@@ -341,7 +341,7 @@ function XML_AppendObject(document_, oValues, sNode = "values", sField = "value"
       for(const [sKey, vValue] of Object.entries(oChildField)) {
          const eField = oDocument.createElement(sField);
          eField.setAttribute("name", sKey);
-         eField.setAttribute(sField, JSON.stringify(vValue));
+         eField.textContent = JSON.stringify(vValue);
          eValues.appendChild(eField);
       }
    }
@@ -350,10 +350,10 @@ function XML_AppendObject(document_, oValues, sNode = "values", sField = "value"
       for(const [sKey, vValue] of Object.entries(oFieldOrAttribute)) {
          const eField = oDocument.createElement(sField);
          eField.setAttribute("name", sKey);
-         eField.setAttribute(sField, String(vValue));
+         eField.textContent = String(vValue);
          eValues.appendChild(eField);
       }
    }
 
-   return { document: oDocument, element: eValues };
+   return [ oDocument, eValues ];                                             // returns document and parent values element
 }
