@@ -254,8 +254,15 @@ function PAGE_SetListeners() {
          switch( sCommand ) {
             case "update":
                const oValues = oDBRecord.GetAllValues();
+               const oDocument = XML_AppendObject(null, oValues, "values", "value").document; // Convert values to XML format for sending to server
+               const eValues = oDocument.querySelector("values");
+               XML_AppendObject(eValues, { PollK: oDocument_g.GetValue("PollK") }, undefined, "where"); // Append poll key to values for updating the correct poll in the database
                Message_d(`Updating poll with values: ${JSON.stringify(oValues)}`);
-               console.log("Update poll command triggered");
+               gd.SendToServer("", "!db/update", `table=TPoll`, oDocument).then(function(oResponse) {
+                  oToast_g.Show("Poll updated successfully", { type: "success" });
+               }).catch(function(error) {
+                  oToast_g.Show("Error updating poll: " + error.message, { type: "error" });
+               });
                break;
             case "delete":
                console.log("Delete poll command triggered");

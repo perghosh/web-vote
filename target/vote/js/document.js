@@ -167,7 +167,7 @@ function XML_GetFirstValue(xml_ , sNode = "result") {
       aResultNodes = oDocument.querySelectorAll(sNode); // Select all nodes matching the specified name (default "result")
    }
    else { throw new Error("Invalid XML input"); }
-   
+
    if( !aResultNodes || aResultNodes.length === 0 ) { throw new Error("No result nodes found"); }
 
    // ## Select the first node
@@ -186,9 +186,9 @@ function XML_GetFirstValue(xml_ , sNode = "result") {
 
    // ## Handle different formats of node content and try to pick the first value or first object
 
-   if (Array.isArray(data_) === true) {
+   if(Array.isArray(data_) === true) {
       const aData = data_; // Only to make code simpler
-      if (aData.length < 2 || !aData[1][0]) { return null; }
+      if(aData.length < 2 || !aData[1][0]) { return null; }
       else { return aData[1][0]; }                                         // Return the first value in the second row; it's wrapped as an array
    }
 
@@ -239,104 +239,91 @@ function XML_GetFirstArray(xml_ , sNode = "result") {
    return aData;
 };
 
-
-/** --------------------------------------------------------------------------- XMP_AppendObject
- * Append an object as a new node with CDATA JSON content to an XML document. If document is null, a new one is created.
- * 
- * If object have any value that is an array or object that is taken and stringified as JSON and primitive values are added as attributes to parent values element.
- * If there isn't any array or object value then all values are added as JSON in CDATA section.
- * 
- * @param {Document|null} oDocument - Existing XML document to append to, or null to create a new one
- * @param {Object} oValues - Object to be stringified as JSON and placed in CDATA section
- * @param {string} sNode - Name of the node to create for the object (default "values")
- * @returns {Document} The XML document with the new node appended
+/** ---------------------------------------------------------------------------  XML_AppendElement
+ * Append an element with attributes and optional value to a parent XML element.
+ *
+ * @param {Element} eParent - Parent XML element to append to (must be valid Element)
+ * @param {Object} oValues - Object containing key-value pairs to set as XML attributes
+ * @param {*} value_ - Optional value to set on a child value element (undefined = no child)
+ * @param {string} sNode - Name of the child value element (default "value")
+ * @returns {{ parent: Element, element: Element|null }} Parent element and created value element
  */
-function XML_AppendObject(oDocument, oValues, sNode = "values") {
-   // ## Create new XML document if null, otherwise use existing document
-   if (oDocument === null) {
-      oDocument = document.implementation.createDocument("", "", null);
-      const o_ = oDocument.createElement("document");
-      oDocument.appendChild(o_);
-   }
+function XML_AppendElement(eParent, oValues, value_, sNode = "value") {
+   if(!(eParent instanceof Element)) { throw new Error("eParent must be a valid Element"); }
 
-   // ## Create new node for the object and append to document
-   const oNode = oDocument.createElement(sNode);
-   
-   // ### Separate primitive and complex values
-   const oChildField = {};
-   const oFieldOrAttribute = {};
-   let bHasChild = false;
-   
-   for (const [sKey, vValue] of Object.entries(oValues)) {
-      if (vValue !== null && (typeof vValue === 'object' || Array.isArray(vValue))) {
-         oChildField[sKey] = vValue;
-         bHasChild = true;
-      } 
-      else { oFieldOrAttribute[sKey] = vValue;}
-   }
+   const oDocument = eParent.ownerDocument;
+   const eValue = oDocument.createElement(sNode);
+   eParent.appendChild(eValue);
 
-   // ### Add values as attributes or child field elements based on whether there are complex values
-   
-   if(bHasChild) {
-      // Case 1: Has complex values - primitives become attributes, complex go to CDATA
-      for(const [sKey, vValue] of Object.entries(oFieldOrAttribute)) {
-         if(vValue !== undefined && vValue !== null) { oNode.setAttribute(sKey, String(vValue));}
-      }
-      
-      // Add complex values as JSON in CDATA
-      if(Object.keys(oChildField).length > 0) {
-         const cdata = oDocument.createCDATASection(JSON.stringify(oChildField));
-         oNode.appendChild(cdata);
-      }
-   } else {
-      // Case 2: No complex values - all primitive values go as JSON in CDATA
-      if(Object.keys(oFieldOrAttribute).length > 0) {
-         const cdata = oDocument.createCDATASection(JSON.stringify(oFieldOrAttribute));
-         oNode.appendChild(cdata);
+   // ## Set object values as attributes on the created element
+   for(const [sKey, vValue] of Object.entries(oValues)) {
+      if(vValue !== undefined && vValue !== null) {
+         eValue.setAttribute(sKey, String(vValue));
       }
    }
 
-   oDocument.documentElement.appendChild(oNode);
-   return oDocument;
+   // ## Set value_ as text content if provided
+   if(value_ !== undefined) {
+      eValue.textContent = String(value_);
+   }
+
+   return { parent: eParent, element: eValue };
 }
 
 /** --------------------------------------------------------------------------- XMP_AppendObject
  * Append an object as a new node to an XML document. If document is null, a new one is created.
- * 
+ *
  * Handles object values in two ways:
  * - If the object contains any complex values (objects or arrays), primitive values become attributes
  *   on the parent node, while complex values are added as child "field" elements with their name and
  *   JSON-stringified value as attributes.
  * - If the object contains only primitive values, all values are added as child "field" elements
  *   with name and value attributes.
- * 
- * @param {Document|null} oDocument - Existing XML document to append to, or null to create a new one
+ *
+ * @param {Document|null} document_ - Existing XML document to append to
  * @param {Object} oValues - Object containing key-value pairs to be added to the XML
  * @param {string} sNode - Name of the parent node to create for the object (default "values")
  * @param {string} sField - Name of the attribute that holds the value (default "value")
- * @returns {Document} The XML document with the new node appended
+ * @param {string} sRoot - Name of the root element when creating a new document (default "document")
+ * @returns {{ document: Document, element: Element }} XML document and the created element node
  */
-function XML_AppendObject(oDocument, oValues, sNode = "values", sField = "value") {
+function XML_AppendObject(document_, oValues, sNode = "values", sField = "value", sRoot = "document") {
+   let oDocument; // XML Document to append to, created if null
+   let eValues; // Element to where values are added
+
    // ## Create new XML document if null, otherwise use existing document
-   if(oDocument === null) {
+   if(document_ === null) {
       oDocument = document.implementation.createDocument("", "", null);
-      const o_ = oDocument.createElement("document");
+      const o_ = oDocument.createElement(sRoot);
       oDocument.appendChild(o_);
    }
+   // ## If Document provided, use it
+   else if(document_ instanceof Document) {
+      oDocument = document_;
+   }
+   // ## If Element provided, use its ownerDocument and treat element as values node
+   else if(document_ instanceof Element) {
+      eValues = document_;
+      oDocument = document_.ownerDocument;
+   }
+   else { throw new Error("document_ must be null, Document, or Element"); }
 
-   // ## Create new node for the object
-   const oNode = oDocument.createElement(sNode);
-   
+   // ## Create new node for the object if not set
+   if(!eValues) {
+      eValues = oDocument.createElement(sNode);
+      oDocument.documentElement.appendChild(eValues);
+   }
+
    // ### Separate primitive and complex values
    const oChildField = {};
    const oFieldOrAttribute = {};
    let bHasChild = false;
-   
+
    for(const [sKey, vValue] of Object.entries(oValues)) {
-      if(vValue !== null && (typeof vValue === 'object' || Array.isArray(vValue))) {
+      if(vValue !== null && typeof vValue === 'object') {
          oChildField[sKey] = vValue;
          bHasChild = true;
-      } 
+      }
       else { oFieldOrAttribute[sKey] = vValue; }
    }
 
@@ -344,32 +331,29 @@ function XML_AppendObject(oDocument, oValues, sNode = "values", sField = "value"
 
    if(bHasChild) {
       // Case 1: Has complex values - primitives become attributes, complex go as field elements
-      for (const [sKey, vValue] of Object.entries(oFieldOrAttribute)) {
-         if (vValue !== undefined && vValue !== null) {
-            oNode.setAttribute(sKey, String(vValue));
+      for(const [sKey, vValue] of Object.entries(oFieldOrAttribute)) {
+         if(vValue !== undefined && vValue !== null) {
+            eValues.setAttribute(sKey, String(vValue));
          }
       }
 
       // Add complex values as field elements with JSON-stringified value
       for(const [sKey, vValue] of Object.entries(oChildField)) {
-         const oField = oDocument.createElement("field");
-         oField.setAttribute("name", sKey);
-         oField.setAttribute(sField, JSON.stringify(vValue));
-         oNode.appendChild(oField);
+         const eField = oDocument.createElement(sField);
+         eField.setAttribute("name", sKey);
+         eField.setAttribute(sField, JSON.stringify(vValue));
+         eValues.appendChild(eField);
       }
-      
-      oDocument.documentElement.appendChild(oNode);
    }
    else {
       // Case 2: No complex values - all primitives become field elements
-      for (const [sKey, vValue] of Object.entries(oFieldOrAttribute)) {
-         const oField = oDocument.createElement("field");
-         oField.setAttribute("name", sKey);
-         oField.setAttribute(sField, String(vValue));
-         oNode.appendChild(oField);
+      for(const [sKey, vValue] of Object.entries(oFieldOrAttribute)) {
+         const eField = oDocument.createElement(sField);
+         eField.setAttribute("name", sKey);
+         eField.setAttribute(sField, String(vValue));
+         eValues.appendChild(eField);
       }
-      oDocument.documentElement.appendChild(oNode);
    }
 
-   return oDocument;
+   return { document: oDocument, element: eValues };
 }
