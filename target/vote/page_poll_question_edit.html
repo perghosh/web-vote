@@ -11,9 +11,11 @@ PAGE_Initialize - Main initialization function that sets up the page, creates dr
 PAGE_LoadPollInformation - Retrieves and sets up poll information, main poll, questions and anwswers
 PAGE_SetListeners - Configures event listeners for page interactions, handling actions like send and save
 PAGE_RenderForm - Render UI elements for record
+PAGE_HtmlRender - Render html for new question and answer forms
 PAGE_Update - Update UI elements
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_ProcessResponse - Processes the response from the server and updates the UI accordingly
+PAGE_ResponseMessage - Displays a message based on the response from the server, showing success or error messages as needed
 
 Message_d - For development, display message in page
 
@@ -93,13 +95,42 @@ vote-get_answers - Select poll answers for poll
          <div data-section="commands">
             <span class="button" data-action="update-poll" data-command="update" data-table="TPoll">Save Poll</span>
             <span class="button" data-action="delete-poll" data-command="delete" data-table="TPoll">Delete</span>
-            <span class="button" data-action="add-question-form" data-command="insert" data-table="TPollQuestion">Add Question</span>
+            <span class="button" data-action="new-question-form" data-command="new" data-table="TPollQuestion">Add Question</span>
          </div>
       </div>
+   <div id="idQuestions"></div>
    </div>
-   <!--
 
+   <!--
+    | Templates to clone
    -->
+   <template id="idTemplateQuestion">
+      <div class="container-form" data-table="TPollQuestion">
+         <div data-section="record" data-table="TPollQuestion">
+            <h2 class="margin_b-small">Question Details</h2>
+            <div class="form-group form-row form-row--aside-left">
+               <label class="floating">
+                  <input type="text" placeholder=" " data-field="FName" required>
+                  <span>Name</span>
+               </label>
+               <label class="floating">
+                  <input type="text" placeholder=" " data-field="FLabel" required>
+                  <span>Label</span>
+               </label>
+            </div>
+            <div class="form-group">
+               <label class="floating">
+                  <textarea placeholder=" " data-field="FDescription" rows="3"></textarea>
+                  <span>Description</span>
+               </label>
+            </div>
+         </div>
+         <div data-section="commands">
+            <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Save Question</span>
+            <span class="button" data-action="delete-pollquestion" data-command="delete" data-table="TPollQuestion">Delete</span>
+         </div>
+      </div>
+   </template>
    <script>
 'use strict';
 
@@ -259,13 +290,11 @@ function PAGE_SetListeners() {
                XML_AppendObject(eValues, { PollK: oDocument_g.GetValue("PollK") }, undefined, "where"); // Append poll key to values for updating the correct poll in the database
 
                const sXML = (new XMLSerializer()).serializeToString(oDocument)
-
-
                Message_d(`Updating poll with values: ${sXML}`);
                gd.SendToServer("", "!db/update", `table=TPoll`, oDocument).then(function(oResponse) {
-                  oToast_g.Show("Poll updated successfully", { type: "success" });
+                  PAGE_ResponseMessage({table: "TPoll", command: "update", response: oResponse, status: "success"}); // Process response and show message
                }).catch(function(error) {
-                  oToast_g.Show("Error updating poll: " + error.message, { type: "error" });
+                  PAGE_ResponseMessage({table: "TPoll", command: "update", response: oResponse, status: "error" }); // Process response and show message
                });
                break;
             case "delete":
@@ -277,6 +306,12 @@ function PAGE_SetListeners() {
       }
       else if( sTableName === "TPollQuestion" ) {
          switch( sCommand ) {
+            case "new": // 
+               // ## Clone the html table idQuestions and add to page
+               const eTemplateQuestion = document.getElementById("idTemplateQuestion");
+               const eNewQuestion = eTemplateQuestion.content.cloneNode(true);
+               document.getElementById("idQuestions").appendChild(eNewQuestion);
+               break;
             case "insert":
                Message_d("Insert question command triggered");
                console.log("Insert question command triggered");
@@ -360,8 +395,15 @@ function PAGE_RenderForm( eContainer, aFields ) {
    });
 }
 
+function PAGE_HtmlRender( sTableName ) {
+   if( sTableName === "TPollQuestion" ) {
+      const eContainer = document.querySelector('[data-section="question-list"]');
+      //const sHtml;
+   }
+}   
 
-/** --------------------------------------------------------------------- @API [tag: onidle]
+
+/** -------------------------------------------------------------------------- PAGE_OnIdle
  * Handles idle state by updating UI elements and checking for changes
  */
 const PAGE_OnIdle = (function() {
@@ -376,6 +418,51 @@ const PAGE_OnIdle = (function() {
      }
   }
 })();
+
+
+/** -------------------------------------------------------------------------- PAGE_ResponseMessage
+ * Processes the response from the server and updates the UI accordingly
+ */
+function PAGE_ResponseMessage( oResponse ) {
+
+   const sTable = oResponse.table || "unknown table";
+   const sType = oResponse.type || "unknown type";
+   const sStatus = oResponse.status || "unknown status";
+   const sCommand = oResponse.command || "unknown command";
+   
+   if( sTable === "TPoll" ) {
+      let sMessage = "Poll ";
+      switch( sCommand ) {
+         case "update": sMessage += "updated "; break;
+      }
+   }
+   else if( sTable === "TPollQuestion" ) {
+      let sMessage = "Question ";
+      switch( sCommand ) {
+         case "insert": sMessage += "added "; break;
+         case "update": sMessage += "updated "; break;
+         case "delete": sMessage += "deleted "; break;
+      }
+   }
+   else if( sTable === "TPollAnswer" ) {
+      let sMessage = "Answer ";
+      switch( sCommand ) {
+         case "insert": sMessage += "added "; break;
+         case "update": sMessage += "updated "; break;
+         case "delete": sMessage += "deleted "; break;
+      }
+   }
+   else {
+      console.error(`Unknown table: ${sTable}`);
+   }
+
+   if( oResponse.success ) {
+      oToast_g.Show(sMessage + "successfully", { type: "success" });
+   }
+   else {
+      oToast_g.Show(`Error ${sMessage.toLowerCase()}: ${oResponse.error || "Unknown error"}`, { type: "error" });
+   }
+};
 
 
 // For development, display message in page
