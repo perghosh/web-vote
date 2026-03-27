@@ -15,7 +15,7 @@ PAGE_HtmlRender - Render html for new question and answer forms
 PAGE_Update - Update UI elements
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_ProcessResponse - Processes the response from the server and updates the UI accordingly
-PAGE_ResponseMessage - Displays a message based on the response from the server, showing success or error messages as needed
+PAGE_Message - Displays a message based on the response from the server, showing success or error messages as needed
 
 Message_d - For development, display message in page
 
@@ -104,10 +104,29 @@ vote-get_answers - Select poll answers for poll
    <!--
     | Templates to clone
    -->
+   <template id="idTemplateNewQuestion">
+      <div class="container-form" data-table="TPollQuestion" data-section="form">
+         <div data-section="record" data-table="TPollQuestion" data-key="">
+            <h2 class="margin_b-small">Question name</h2>
+            <div class="form-group form-row form-row--aside-left">
+               <label class="floating">
+                  <input type="text" placeholder=" " data-field="FName" required>
+                  <span>Name</span>
+               </label>
+            </div>
+            <input type="hidden" data-field="PollK">
+         </div>
+         <div data-section="commands">
+            <span class="button" data-action="insert-pollquestion" data-command="insert" data-table="TPollQuestion">Add Question</span>
+            <span class="button" data-action="cancel-pollquestion" data-command="cancel" data-table="TPollQuestion">Cancel</span>
+         </div>
+      </div>
+   </template>
+
    <template id="idTemplateQuestion">
       <div class="container-form" data-table="TPollQuestion">
-         <div data-section="record" data-table="TPollQuestion">
-            <h2 class="margin_b-small">Question Details</h2>
+         <div data-section="record" data-table="TPollQuestion" data-key="">
+            <h2 class="margin_b-small">Question</h2>
             <div class="form-group form-row form-row--aside-left">
                <label class="floating">
                   <input type="text" placeholder=" " data-field="FName" required>
@@ -170,7 +189,7 @@ function PAGE_initialize() {
    oDocument_g.AddRecord(oRCPoll);                                                        // add record to document
 
    // TPollQuestion
-   let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header,string;FDescription,Description,string", { fnRead, fnWrite });
+   let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header,string;FDescription,Description,string;PollK,,string", { fnRead, fnWrite });
    oRCPollQuestion.table = "TPollQuestion";
    oDocument_g.AddRecord(oRCPollQuestion);
 
@@ -273,30 +292,30 @@ function PAGE_SetListeners() {
 
       const sCommand = eTarget.dataset.command;
       if( !sCommand ) return;                                                 // If no command is defined, return
+      const eForm = eTarget.closest('[data-section="form"]');                 // Check if the clicked element is inside a record section
 
       const sTableName = eTarget.dataset.table;                                                 console.assert( sTableName, "Table name is not defined in data-table attribute" );
       const sAction = eTarget.dataset.action;                                                      console.assert( sAction, "Action is not defined in data-action attribute" );
 
       let oDBRecord = oDocument_g.GetRecord(sTableName);                                           console.assert( oDBRecord, `No record found for table ${sTableName}` );
 
+      // ## TPoll commands ....................................................
       if( sTableName === "TPoll" ) {
          oDBRecord.ClearValues();
          oDBRecord.ReadValues("idPoll");
          switch( sCommand ) {
-            case "update":
+            case "update": {
                const oValues = oDBRecord.GetAllValues();
                const [ oDocument, eValues ]  = XML_AppendObject(null, oValues, "values", "value"); // Convert values to XML format for sending to server
                eValues.setAttribute("table", "TPoll");
                XML_AppendObject(eValues, { PollK: oDocument_g.GetValue("PollK") }, undefined, "where"); // Append poll key to values for updating the correct poll in the database
 
-               const sXML = (new XMLSerializer()).serializeToString(oDocument)
-               Message_d(`Updating poll with values: ${sXML}`);
                gd.SendToServer("", "!db/update", `table=TPoll`, oDocument).then(function(oResponse) {
-                  PAGE_ResponseMessage({table: "TPoll", command: "update", response: oResponse, status: "success"}); // Process response and show message
+                  PAGE_Message({table: "TPoll", command: "update", response: oResponse, status: "success"}); // Process response and show message
                }).catch(function(error) {
-                  PAGE_ResponseMessage({table: "TPoll", command: "update", response: oResponse, status: "error" }); // Process response and show message
+                  PAGE_Message({table: "TPoll", command: "update", response: oResponse, status: "error" }); // Process response and show message
                });
-               break;
+            } break;
             case "delete":
                console.log("Delete poll command triggered");
                break;
@@ -304,18 +323,41 @@ function PAGE_SetListeners() {
                console.error(`Unknown command: ${sCommand} for table ${sDatabaseTableName}`);
          }
       }
+
+      // ## TPollQuestion commands ............................................
       else if( sTableName === "TPollQuestion" ) {
+         if( eForm ) {
+            oDBRecord.ClearValues();
+            oDBRecord.ReadValues( eForm );
+         }
          switch( sCommand ) {
-            case "new": // 
+            case "cancel": // Cancel the current operation adding new question
+               document.getElementById("idNewQuestion").remove(); // Remove the new question form from the page
+               break;
+            case "new": //
+               if( document.getElementById("idNewQuestion") !== null ) { Message_d("New question is already open. Please close it before adding a new one.  ", "error"); return; }
+
                // ## Clone the html table idQuestions and add to page
-               const eTemplateQuestion = document.getElementById("idTemplateQuestion");
-               const eNewQuestion = eTemplateQuestion.content.cloneNode(true);
+               const eTemplateQuestion = document.getElementById("idTemplateNewQuestion");
+               const eNewQuestionFragment = eTemplateQuestion.content.cloneNode(true);
+               const eNewQuestion = eNewQuestionFragment.firstElementChild;
+               eNewQuestion.setAttribute("id", "idNewQuestion");               // Set id value to cloned question elemet ()
                document.getElementById("idQuestions").appendChild(eNewQuestion);
+               eNewQuestion.querySelector(`[data-field="PollK"]`).value = oDocument_g.GetValue("PollK"); // Set poll key value in hidden input field for new question form
                break;
-            case "insert":
-               Message_d("Insert question command triggered");
-               console.log("Insert question command triggered");
-               break;
+            case "insert": {
+               const oValues = oDBRecord.GetAllValues();
+               const [ oDocument, eValues ]  = XML_AppendObject(null, oValues, "values", "value"); // Convert values to XML format for sending to server
+               eValues.setAttribute("table", "TPollQuestion");
+               gd.SendToServer("", "!db/insert", `table=${sTableName}`, oDocument).then(function(oResponse) {
+                  PAGE_Message({table: sTableName, command: "insert", response: oResponse, status: "success"}); // Process response and show message
+               }).catch(function(error) {
+                  PAGE_Message({table: sTableName, command: "insert", response: oResponse, status: "error" }); // Process response and show message
+               });
+            } break;
+            case "update": {
+               const oValues = oDBRecord.GetAllValues();
+            } break;
             default:
                console.error(`Unknown command: ${sCommand} for table ${sDatabaseTableName}`);
          }
@@ -400,7 +442,7 @@ function PAGE_HtmlRender( sTableName ) {
       const eContainer = document.querySelector('[data-section="question-list"]');
       //const sHtml;
    }
-}   
+}
 
 
 /** -------------------------------------------------------------------------- PAGE_OnIdle
@@ -420,16 +462,21 @@ const PAGE_OnIdle = (function() {
 })();
 
 
-/** -------------------------------------------------------------------------- PAGE_ResponseMessage
+/** -------------------------------------------------------------------------- PAGE_Message
  * Processes the response from the server and updates the UI accordingly
  */
-function PAGE_ResponseMessage( oResponse ) {
+function PAGE_Message( response_, sType = "info" ) {
+
+   // If response is a string, show it directly as a message
+   if( typeof response_ === "string" ) { oToast_g.Show(response_, { type: sType });  return; }
+
+   const oResponse = response_ || {};
 
    const sTable = oResponse.table || "unknown table";
-   const sType = oResponse.type || "unknown type";
+   sType = oResponse.type || sType;
    const sStatus = oResponse.status || "unknown status";
    const sCommand = oResponse.command || "unknown command";
-   
+
    if( sTable === "TPoll" ) {
       let sMessage = "Poll ";
       switch( sCommand ) {
@@ -466,7 +513,11 @@ function PAGE_ResponseMessage( oResponse ) {
 
 
 // For development, display message in page
-function Message_d( message_ ) {
+function Message_d( message_, sType = "info" ) {
+   if( typeof message_ === "string" && message_.length < 80 ) {
+      PAGE_Message( message_, sType );
+      return;
+   }
    const eMessage = document.getElementById("idMessage");
    let sMessage = "Message: ";
    if( typeof message_ === "object" ) { sMessage += JSON.stringify(message_); }

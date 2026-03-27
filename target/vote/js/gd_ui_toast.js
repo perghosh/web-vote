@@ -430,27 +430,7 @@ class UIToast {
          // #### Close button styles .........................................
          Object.assign(eClose.style, {alignItems:'center',background:'none',border:'none',color:'inherit',cursor:'pointer',display:'flex',fontSize:'20px',height:'20px',justifyContent:'center',lineHeight:'1',opacity:'0.7',padding:'0',position:'absolute',right:'8px',top:'8px',width:'20px'});
 
-/*
-         eClose.style.position = 'absolute';
-         eClose.style.top = '8px';
-         eClose.style.right = '8px';
-         eClose.style.background = 'none';
-         eClose.style.border = 'none';
-         eClose.style.color = 'inherit';
-         eClose.style.fontSize = '20px';
-         eClose.style.lineHeight = '1';
-         eClose.style.cursor = 'pointer';
-         eClose.style.padding = '0';
-         eClose.style.width = '20px';
-         eClose.style.height = '20px';
-         eClose.style.display = 'flex';
-         eClose.style.alignItems = 'center';
-         eClose.style.justifyContent = 'center';
-         eClose.style.opacity = '0.7';
-         */
-
          eClose.addEventListener('mouseenter', () => { eClose.style.opacity = '1'; });
-
          eClose.addEventListener('mouseleave', () => { eClose.style.opacity = '0.7'; });
 
          // Store close handler for cleanup
