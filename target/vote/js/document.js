@@ -270,7 +270,7 @@ function XML_AppendElement(eParent, oValues, value_, sNode = "value") {
    return { parent: eParent, element: eValue };
 }
 
-/** --------------------------------------------------------------------------- XMP_AppendObject
+/** --------------------------------------------------------------------------- XML_AppendObject
  * Append an object as a new node to an XML document. If document is null, a new one is created.
  *
  * Handles object values in two ways:
@@ -356,4 +356,34 @@ function XML_AppendObject(document_, oValues, sNode = "values", sField = "value"
    }
 
    return [ oDocument, eValues ];                                             // returns document and parent values element
+}
+
+
+/** --------------------------------------------------------------------------- CopyFieldValues
+ * Copies field values from one element to another.
+ *
+ * @param {Element|string} source_ - The source element or a CSS selector string.
+ * @param {Element|string} target_ - The target element or a CSS selector string.
+ * @throws {Error} If the source or target is not an Element.
+ * @returns {void}
+ */
+function CopyFieldValues( source_, target_ )
+{
+   let eSource; // Element or string selector for the source element
+   let eTarget; // Element or string selector for the target element
+
+   // ## Prepare source element
+   if( source_ instanceof Element ) eSource = source_;
+   else if( typeof source_ === "string" ) eSource = document.querySelector(source_);
+   else throw new Error("Invalid source type");
+
+   // ## Prepare target element
+   if( target_ instanceof Element ) eTarget = target_;
+   else if( typeof target_ === "string" ) eTarget = document.querySelector(target_);
+   else throw new Error("Invalid target type")
+
+   eSource.querySelectorAll('[data-field]').forEach(eSourceElement => {
+      const eTargetElement = eTarget.querySelector(`[data-field="${eSourceElement.dataset.field}"]`);
+      if(eTargetElement) eTargetElement.value = eSourceElement.value;
+   });
 }

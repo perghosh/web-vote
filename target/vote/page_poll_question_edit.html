@@ -124,7 +124,7 @@ vote-get_answers - Select poll answers for poll
    </template>
 
    <template id="idTemplateQuestion">
-      <div class="container-form" data-table="TPollQuestion">
+      <div class="container-form" data-table="TPollQuestion" data-section="form">
          <div data-section="record" data-table="TPollQuestion" data-key="">
             <h2 class="margin_b-small">Question</h2>
             <div class="form-group form-row form-row--aside-left">
@@ -143,6 +143,8 @@ vote-get_answers - Select poll answers for poll
                   <span>Description</span>
                </label>
             </div>
+            <input type="hidden" data-field="PollK">
+            <input type="hidden" data-field="PollQuestionK">
          </div>
          <div data-section="commands">
             <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Save Question</span>
@@ -334,7 +336,7 @@ function PAGE_SetListeners() {
             case "cancel": // Cancel the current operation adding new question
                document.getElementById("idNewQuestion").remove(); // Remove the new question form from the page
                break;
-            case "new": //
+            case "new": {
                if( document.getElementById("idNewQuestion") !== null ) { Message_d("New question is already open. Please close it before adding a new one.  ", "error"); return; }
 
                // ## Clone the html table idQuestions and add to page
@@ -344,19 +346,29 @@ function PAGE_SetListeners() {
                eNewQuestion.setAttribute("id", "idNewQuestion");               // Set id value to cloned question elemet ()
                document.getElementById("idQuestions").appendChild(eNewQuestion);
                eNewQuestion.querySelector(`[data-field="PollK"]`).value = oDocument_g.GetValue("PollK"); // Set poll key value in hidden input field for new question form
-               break;
+            } break;
             case "insert": {
                const oValues = oDBRecord.GetAllValues();
                const [ oDocument, eValues ]  = XML_AppendObject(null, oValues, "values", "value"); // Convert values to XML format for sending to server
+               XML_AppendElement(eValues, { name: "PollQuestionK" },undefined, "returning"); // append returning field.
                eValues.setAttribute("table", "TPollQuestion");
                gd.SendToServer("", "!db/insert", `table=${sTableName}`, oDocument).then(function(oResponse) {
-                  PAGE_Message({table: sTableName, command: "insert", response: oResponse, status: "success"}); // Process response and show message
+                  // ## Replace html form for adding new question with html form for question prepared to add answers
+                  const eNew =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild; // oneliner for: gets template, clones the html and get element to cloned html
+                  const eOld = document.getElementById("idNewQuestion"); // html form for adding new question 
+                  const eParent = eOld.parentNode;
+                  CopyFieldValues(eOld, eNew); // Copy values from new question form to question form
+                  const sNewQuestionK = XML_GetFirstValue(oResponse);
+                  eNew.querySelector(`[data-field="PollQuestionK"]`).value = sNewQuestionK; // Set the new question key value in hidden input field
+                  eParent.replaceChild(eNew, eOld);
+                  //PAGE_Message({table: sTableName, command: "insert", response: oResponse, status: "success"}); // Process response and show message
                }).catch(function(error) {
                   PAGE_Message({table: sTableName, command: "insert", response: oResponse, status: "error" }); // Process response and show message
                });
             } break;
             case "update": {
                const oValues = oDBRecord.GetAllValues();
+               const [ oDocument, eValues ]  = XML_AppendObject(null, oValues, "values", "value"); // Convert values to XML format for sending to server
             } break;
             default:
                console.error(`Unknown command: ${sCommand} for table ${sDatabaseTableName}`);
