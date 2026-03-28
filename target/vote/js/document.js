@@ -367,7 +367,7 @@ function XML_AppendObject(document_, oValues, sNode = "values", sField = "value"
  *
  * This function assumes that both elements have the same structure and field names.
  *
- * @param {Element|string} source_ - The source element or a CSS selector string.
+ * @param {Element|string|object} source_ - The source element, a CSS selector string, or a plain object with key-value pairs.
  * @param {Element|string} target_ - The target element or a CSS selector string.
  * @param {Array<string>} [aName] - Optional array of field names to copy; if not provided, all fields are copied.
  * @throws {Error} If the source or target is not an Element or cannot be found.
@@ -377,10 +377,12 @@ function FIELD_CopyValues( source_, target_, aName )
 {
    let eSource; // Element or string selector for the source element
    let eTarget; // Element or string selector for the target element
+   let bSourceIsObject = false; // Flag to track if source is a plain object
 
    // ## Prepare source element
    if( source_ instanceof Element ) eSource = source_;
    else if( typeof source_ === "string" ) eSource = document.querySelector(source_); // Use querySelector to find the source element by CSS selector
+   else if( source_ !== null && typeof source_ === "object" ) { bSourceIsObject = true; } // Source is a plain object (JSON)
    else throw new Error("Invalid source type");
 
    // ## Prepare target element
@@ -388,18 +390,34 @@ function FIELD_CopyValues( source_, target_, aName )
    else if( typeof target_ === "string" ) eTarget = document.querySelector(target_);
    else throw new Error("Invalid target type")
 
-   if( !eSource || !eTarget ) { throw new Error("Source or target element not found"); }
+   if( !eTarget ) { throw new Error("Target element not found"); }
 
-   // ## Determine if we should filter by specific field names
-   const bUseFilter = Array.isArray(aName) && aName.length > 0;   
+   const bUseFilter = Array.isArray(aName) && aName.length > 0;                // Determine if we should filter by specific field names
 
+   // ## If source is an object, iterate over its keys and set values in target
+   if( bSourceIsObject ) {
+      Object.keys(source_).forEach(sFieldName => {
+         if(bUseFilter && !aName.includes(sFieldName)) { return; } // Skip this field if it's not in the filter list
+
+         const eTargetElement = eTarget.querySelector(`[data-field="${sFieldName}"]`);
+         if(eTargetElement) {
+            const sValue = source_[sFieldName];
+            if (eTargetElement.matches("input, textarea, select")) { eTargetElement.value = sValue ?? ""; }
+            else { eTargetElement.textContent = sValue ?? ""; }
+         }
+      });
+      return;
+   }
+
+   // If source is an element, iterate over its data-field elements
+   if( !eSource ) { throw new Error("Source element not found"); }
    eSource.querySelectorAll('[data-field]').forEach(eSourceElement => {
       const sFieldName = eSourceElement.dataset.field; // Get the field name from data-field attribute
       if(bUseFilter && !aName.includes(sFieldName)) { return; }               // Skip this field if it's not in the filter list
 
       const eTargetElement = eTarget.querySelector(`[data-field="${sFieldName}"]`);
       if(eTargetElement) {
-         if (eTargetElement.matches("input, textarea, select")) { eTargetElement.value = eSourceElement.value ?? ""; } 
+         if (eTargetElement.matches("input, textarea, select")) { eTargetElement.value = eSourceElement.value ?? ""; }
          else { eTargetElement.textContent = eSourceElement.value ?? eSourceElement.textContent ?? ""; }
       }
    });

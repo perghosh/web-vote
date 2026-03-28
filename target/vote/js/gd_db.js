@@ -133,6 +133,8 @@ class DBRecord {
             // ## Now split each column definition into name, alias, and type
             columns_ = columns_.map(sColumn => {
                const aParts = sColumn.split(",").map(s => s.trim());
+               if( aParts.length < 2 ) { aParts[1] = aParts[0]; } // Default alias to name
+               if( aParts.length < 3 ) { aParts[2] = "string"; } // Default type to string
                return { sName: aParts[0], sAlias: aParts[1] || aParts[0], sType: aParts[2] || "string" };
             });
 

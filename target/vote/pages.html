@@ -166,7 +166,19 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
          {name: "vote-get", format: "jinja", type: "select", statement: "SELECT hex(PollK) AS PollK, TypeC, StateC, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}", "description": "Select active poll"},
          {name: "vote-get_polls", format: "jinja", type: "select", statement: "SELECT hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollQuestion WHERE PollK = X{PollK}", "description": "Select poll questions for poll"},
          {name: "vote-get_answers", format: "jinja", type: "select", statement: "SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollAnswer WHERE PollK = X{PollK}", "description": "Select poll questions for poll"},
-      ];
+
+         {name: "vote-all_questions", format: "jinja", type: "select",
+         statement: // Select all questions for selected poll
+"SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuestionK, " +
+"hex(TPollAnswer.PollAnswerK) AS PollAnswerK, TPollQuestion.FName AS Q_FName, " +
+"TPollQuestion.FLabel AS Q_FLabel, TPollQuestion.FDescription AS Q_Description, " +
+"TPollAnswer.FName AS A_FName, TPollAnswer.FAnswer AS A_FAnswer, " +
+"TPollAnswer.FDescription AS A_Description FROM TPoll " +
+"LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK " +
+"LEFT JOIN TPollAnswer ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK " +
+"WHERE TPoll.PollK = X{PollK} ORDER BY 1,2",
+"description": "Select active poll with questions and answers in a single query using JSON aggregation" }
+   ];
 
         // ## loop aQuery array and add queries
         const aPromise = aQuery.map( function(oQuery) {

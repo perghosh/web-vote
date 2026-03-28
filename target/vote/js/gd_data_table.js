@@ -177,7 +177,7 @@ class Table {
          return null;
       }
 
-      return this._GetCellValue(iRow, iColumn);
+      return this._get_cell_value(iRow, iColumn);
    }
 
    /** -----------------------------------------------------------------------
@@ -216,12 +216,12 @@ class Table {
          }
          // ## Handle single object input..........................................
          else if( Object.prototype.toString.call(table_) === "[object Object]" ) {
-            aTable = [this._ObjectToRow(table_)];
+            aTable = [this._object_to_row(table_)];
          }
          // ## Handle array of objects .............................................
          else if( Array.isArray(table_) && table_.length > 0 && Object.prototype.toString.call(table_[0]) === "[object Object]" ) {
             aTable = [];
-            for( let i = 0; i < table_.length; i++ ) { aTable.push(this._ObjectToRow(table_[i])); }
+            for( let i = 0; i < table_.length; i++ ) { aTable.push(this._object_to_row(table_[i])); }
          }
          // ## Handle single row array (not array of arrays) ..................
          else if( Array.isArray(table_) && table_.every(Array.isArray) === false ) {
@@ -351,6 +351,107 @@ class Table {
 
       if( oOptions.bIndices ) { return [aData, aIndices]; }
       return aData;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Get data for a single row in a flexible way.
+    *
+    * Columns can be selected by name (string), index (number), or an array
+    * of either. A regex filter further narrows which columns are included.
+    * Output can be a plain array or a JSON object keyed by column name.
+    * When format is "json", the result can optionally be merged into an
+    * existing object under a custom key.
+    *
+    * @param {number} iRow - Row index
+    * @param {Object} [options_={}]
+    * @param {string|number|Array<string|number>} [options_.columns]
+    *   Columns to include. Each entry may be a column name (string) or
+    *   index (number). If omitted, all columns are included.
+    * @param {RegExp|string} [options_.filter]
+    *   A RegExp (or string converted to one) tested against every column
+    *   name. Only matching columns are kept. Applied after `columns`.
+    * @param {"array"|"json"} [options_.format="array"]
+    *   "array"  → returns a plain value array  [ v1, v2, … ]
+    *   "json"   → returns { columnName: value, … }
+    * @param {Object} [options_.append]
+    *   An existing object to extend. Requires format "json". The row data
+    *   is attached to this object and the object is returned.
+    * @param {string} [options_.append_key]
+    *   Key used when attaching to append. If omitted the row fields are
+    *   merged at the top level of append.
+    *
+    * @returns {Array|Object|null} null if iRow is out of range
+    *
+    * @example
+    * // Plain array (default)
+    * table.GetRowData(2);
+    * // → [ "Alice", 30, "alice@example.com" ]
+    *
+    * @example
+    * // Select columns by name and index
+    * table.GetRowData(2, { columns: ["Name", 2] });
+    * // → [ "Alice", "alice@example.com" ]
+    *
+    * @example
+    * // Regex filter: only columns whose name ends with "e"
+    * table.GetRowData(2, { filter: /e$/i, format: "json" });
+    * // → { Name: "Alice", Age: 30 }
+    *
+    * @example
+    * // Merge into an existing object under a custom key
+    * const user = { id: 99 };
+    * table.GetRowData(2, { format: "json", append: user, append_key: "profile" });
+    * // → { id: 99, profile: { Name: "Alice", Age: 30, Email: "alice@example.com" } }
+    *
+    * @example
+    * // Merge fields directly into an existing object (no append_key)
+    * const user = { id: 99 };
+    * table.GetRowData(2, { format: "json", append: user });
+    * // → { id: 99, Name: "Alice", Age: 30, Email: "alice@example.com" }
+    */
+   GetRowData(iRow, options_ = {}) {
+      if(iRow < 0 || iRow >= this.aTable.length) { return null; }
+
+      const oOptions = Object.assign( { columns: null, filter: null, format: "array", append: null, append_key: null }, options_);
+
+      // ## 1. Resolve which column indices to work with ......................
+      let aIndices;
+      if(oOptions.columns !== null) {
+         const aRequested = Array.isArray(oOptions.columns) ? oOptions.columns: [oOptions.columns];// Normalise to array, resolve each entry to a column index
+
+         aIndices = [];
+         for (const col_ of aRequested) {
+            const iCol = typeof col_ === "number" ? col_ : this.GetColumnIndex(col_);
+            if(iCol >= 0 && iCol < this.aColumn.length) { aIndices.push(iCol); }
+         }
+      } 
+      else {
+         aIndices = Array.from({ length: this.aColumn.length }, (_, i) => i);  // All columns
+      }
+
+      // ## 2. Apply regex filter against column names ────────────────────────
+      if(oOptions.filter !== null) {
+         const regex_ = oOptions.filter instanceof RegExp ? oOptions.filter : new RegExp(oOptions.filter);
+
+         aIndices = aIndices.filter(i => regex_.test(this.aColumn[i].sName));
+      }
+
+      // ## 3. Build output ...................................................
+      if(oOptions.format === "json") {
+         const oRow = {};
+         for (const i of aIndices) { oRow[this.aColumn[i].sName] = this._get_cell_value(iRow, i); }
+
+         // ### Merge into append if provided 
+         if(oOptions.append !== null && typeof oOptions.append === "object") {
+            if(oOptions.append_key) { oOptions.append[oOptions.append_key] = oRow; } // Attach under specified key
+            else { Object.assign(oOptions.append, oRow); }                     // Merge at top level
+            return oOptions.append;                                            // Return the modified append object
+         }
+
+         return oRow;                                                          // Return JSON object keyed by column name
+      }
+
+      return aIndices.map(i => this._get_cell_value(iRow, i));                 // Default: "array"
    }
 
    /** -----------------------------------------------------------------------
@@ -519,7 +620,7 @@ class Table {
 
       let aRowIndices = []; // Determine which rows to clone
 
-      if (oOptions.aRows !== null) { aRowIndices = oOptions.aRows; }          // Priority 1: Use explicitly provided row indices
+      if(oOptions.aRows !== null) { aRowIndices = oOptions.aRows; }          // Priority 1: Use explicitly provided row indices
       else {
          const iEnd = Math.min(oOptions.iBegin + oOptions.iCount, this.Size());// Priority 2: Use range based on iBegin and iCount
          for(let i = oOptions.iBegin; i < iEnd; i++) { aRowIndices.push(i); }
@@ -549,7 +650,7 @@ class Table {
    AsObject(iRow) {
       const o = {};
       for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
-         o[this.aColumn[iColumn].name] = this._GetCellValue(iRow, iColumn);
+         o[this.aColumn[iColumn].name] = this._get_cell_value(iRow, iColumn);
       }
       return o;
    }
@@ -559,7 +660,7 @@ class Table {
       let s = "";
       const iColumnCount = this.aColumn.length;
       for(let iColumn = 0; iColumn < iColumnCount; iColumn++) {
-         s += this._GetCellValue(iRow, iColumn) + sSeparator;
+         s += this._get_cell_value(iRow, iColumn) + sSeparator;
       }
       return s.trim();
    }
@@ -619,7 +720,7 @@ class Table {
          sResult += `<${sRow}>`;
          const iColumnCount = this.GetColumnCount();
          for(let iColumn = 0; iColumn < iColumnCount; iColumn++) {
-            const v_ = this._GetCellValue(iRow, iColumn);
+            const v_ = this._get_cell_value(iRow, iColumn);
             if( v_ !== null && v_ !== undefined ) {
                sResult += `<${sColumn} name="${this._EscapeXmlValue(this.aColumn[iColumn].name)}">${this._EscapeXmlValue(v_)}</${sColumn}>`;
             }
@@ -631,7 +732,7 @@ class Table {
          sResult += `<${sRow}`;
          const iColumnCount = this.GetColumnCount();
          for(let iColumn = 0; iColumn < iColumnCount; iColumn++) {
-            const v_ = this._GetCellValue(iRow, iColumn);
+            const v_ = this._get_cell_value(iRow, iColumn);
             if( v_ !== null && v_ !== undefined ) {
                sResult += ` ${this._EscapeXmlValue(this.aColumn[iColumn].name)}="${this._EscapeXmlValue(v_)}"`;
             }
@@ -657,7 +758,7 @@ class Table {
       for(let iRow = iRowBegin; iRow < iRowEnd; iRow++) {
          const o = {};
          for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
-            const v_ = this._GetCellValue(iRow, iColumn);
+            const v_ = this._get_cell_value(iRow, iColumn);
             if( bIncludeNull || (v_ !== null && v_ !== undefined) ) {
                o[this.aColumn[iColumn].name] = v_;
             }
@@ -696,7 +797,7 @@ class Table {
          return null;
       }
 
-      return this._GetCellValue(iRow, iColumn);
+      return this._get_cell_value(iRow, iColumn);
    }
 
    /** -----------------------------------------------------------------------
@@ -710,7 +811,7 @@ class Table {
       if( typeof column_ === "string") { iColumn = this.GetColumnIndex(column_); }
       if(iRow < 0 || iRow >= this.aTable.length || iColumn < 0 || iColumn >= this.aColumn.length) { return false; }
 
-      this._SetCellValue(iRow, iColumn, value_);
+      this._set_cell_value(iRow, iColumn, value_);
       return true;
    }
 
@@ -722,7 +823,7 @@ class Table {
     GetRow(iRow) {
       if(iRow < 0 || iRow >= this.aTable.length) { return null; }
 
-      return this._GetRow(iRow);
+      return this._get_row(iRow);
    }
 
    /** -----------------------------------------------------------------------
@@ -730,9 +831,9 @@ class Table {
     * @param {number} iRow index for row
     * @returns {Array<any>} Array of cell values for the row
     */
-   _GetRow(iRow) {
+   _get_row(iRow) {
      const row_ = [];
-     for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {  row_.push(this._GetCellValue(iRow, iColumn)); }
+     for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {  row_.push(this._get_cell_value(iRow, iColumn)); }
 
      return row_;
   }
@@ -787,9 +888,9 @@ class Table {
    Delete(position_, iLength) {
       let iPosition;
       let aRow;
-      if (typeof position_ === 'number') { iPosition = position_; }
-      else if (Array.isArray(position_)) { aRow = position_; }
-      else if (typeof position_ === 'object') {
+      if(typeof position_ === 'number') { iPosition = position_; }
+      else if(Array.isArray(position_)) { aRow = position_; }
+      else if(typeof position_ === 'object') {
          aRow = this.FindAll(position_);
       }
       else { iPosition = 0; }
@@ -829,7 +930,7 @@ class Table {
       if( row_ === undefined || row_ === null ) { row_ = 1; } // Default to the secornd row because first may be header
       if( typeof row_ === "number" && this.Size() === 1) { row_ = 0; }
 
-      if( typeof row_ === "number" ) { aRow = this._GetRow(row_); }
+      if( typeof row_ === "number" ) { aRow = this._get_row(row_); }
       if(!aRow) return;
 
       for(let i = 0; i < aRow.length; i++) {
@@ -876,7 +977,7 @@ class Table {
          // Peek at next row to guess type
          let sType = "string";
          if(this.aTable.length > 1) {
-            const v_ = this._GetCellValue(1, i);
+            const v_ = this._get_cell_value(1, i);
             if(typeof v_ === "number") sType = "number";
             else if(v_ instanceof Date) sType = "date";
          }
@@ -894,7 +995,7 @@ class Table {
     * @param {number} iRow index for row
     * @param {number} iColumn index for column
     */
-   _GetCellValue(iRow, iColumn) {
+   _get_cell_value(iRow, iColumn) {
       let value_ = this.aTable[iRow][iColumn]; // Get raw cell value from cell position
       if(Array.isArray(value_)) { value_ = value_[0];  }                      // if column is array, return first element
 
@@ -908,7 +1009,7 @@ class Table {
     * @param {Object} object_ - Object with keys matching column names
     * @returns {Array} Row array aligned to column definitions
     */
-   _ObjectToRow( object_ ) {
+   _object_to_row( object_ ) {
       const iColumnCount = this.GetColumnCount();
       const aRow = new Array(iColumnCount).fill(null);                         // Initialize with null for all columns
 
@@ -922,11 +1023,25 @@ class Table {
    }
 
    /** -----------------------------------------------------------------------
+    * Convert a row array to an object by using column names as keys.
+    *
+    * @param {Array} aRow - Row array with cell values
+    * @returns {Object} Object with keys from column names and values from the row
+    */
+   _row_to_object( aRow ) {
+      const o = {};
+      for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
+         o[this.aColumn[iColumn].name] = aRow[iColumn];
+      }
+      return o;
+   }
+
+   /** -----------------------------------------------------------------------
     * Internal method to set cell value, no checks for valid column or row
     * @param {number} iRow index for row
     * @param {number} iColumn index for column
     * @param {any} value_ value set to cell
     */
-   _SetCellValue(iRow, iColumn, value_) { this.aTable[iRow][iColumn] = value_; }
+   _set_cell_value(iRow, iColumn, value_) { this.aTable[iRow][iColumn] = value_; }
 
 }

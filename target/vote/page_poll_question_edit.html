@@ -11,7 +11,6 @@ PAGE_Initialize - Main initialization function that sets up the page, creates dr
 PAGE_LoadPollInformation - Retrieves and sets up poll information, main poll, questions and anwswers
 PAGE_SetListeners - Configures event listeners for page interactions, handling actions like send and save
 PAGE_RenderForm - Render UI elements for record
-PAGE_HtmlRender - Render html for new question and answer forms
 PAGE_Update - Update UI elements
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_ProcessResponse - Processes the response from the server and updates the UI accordingly
@@ -232,7 +231,7 @@ function PAGE_initialize() {
    oDocument_g.AddRecord(oRCPollQuestion);
 
    // TPollAnswer
-   let oRCPollAnswer = new DBRecordContainer("FName,Name,string;FLabel,Header,string;FDescription,Description,string", { fnRead, fnWrite });
+   let oRCPollAnswer = new DBRecordContainer("FName,Name;FLabel,Header;FAnswer,Answer;FAnswerMore,More;FDescription,Description;PollK;PollQuestionK", { fnRead, fnWrite });
    oRCPollAnswer.table = "TPollAnswer";
    oDocument_g.AddRecord(oRCPollAnswer);
 
@@ -299,25 +298,32 @@ function PAGE_LoadPollInformation() {
       oToast_g.Show("Error fetching poll details: " + error.message, { type: "error" });
    });
 
-   // ## Fetch poll details, questions and answers in parallel using Promise.all
-   /*
-   Promise.all([
-      gd.SendToServer("", "!db/select", `query=#vote-get&values=${JSON.stringify({ PollK: sPollKey })}`),
-      gd.SendToServer("", "!db/select", `query=#vote-get_polls&values=${JSON.stringify({ PollK: sPollKey })}`),
-      gd.SendToServer("", "!db/select", `query=#vote-get_answers&values=${JSON.stringify({ PollK: sPollKey })}`)
-   ]).then(function([oPollResult, oQuestionsResult, oAnswersResult]) {
-      const oPoll = oPollResult.data[0];
-      const aQuestions = oQuestionsResult.data;
-      const aAnswers = oAnswersResult.data;
+   const fnRenderVotes = function( oTable ) {
+      const eQuestions = document.getElementById("idQuestions");
+      let sQuestionK = null;
+      for( let uRow = 0; uRow < oTable.GetRowCount(); uRow++ ) {
+         const sCheckQuestionK = oTable.GetCellValue(uRow, "PollQuestionK");
+         if( sCheckQuestionK !== sQuestionK ) {
+            sQuestionK = sCheckQuestionK;
+            // ## Geneate html for new question
+            const eQuestion =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
+            eQuestions.appendChild(eQuestion);
+         }
+      }
+   };
 
-      console.log("Poll details:", oPoll);
-      console.log("Questions:", aQuestions);
-      console.log("Answers:", aAnswers);
+
+   gd.SendToServer("", "!db/select", "query=#vote-all_questions\n" + `values={"PollK":"${sPollKey}"}`).then(function(oResult) {
+      const data_ = oResult.data;
+      const aResult = JSON.parse( data_.querySelector("result").textContent ); // first result holds array
+      const oTable = new Table(aResult);
+      fnRenderVotes( oTable );
    }).catch(function(error) {
-      console.error("Error fetching poll information:", error);
-      oToast_g.Show("Error fetching poll information: " + error.message, { type: "error" });
+      console.error("Error fetching poll questions:", error);
+      oToast_g.Show("Error fetching poll questions: " + error.message, { type: "error" });
    });
-   */
+
+
 }
 
 /**
@@ -392,7 +398,7 @@ function PAGE_SetListeners() {
                gd.SendToServer("", "!db/insert", `table=${sTableName}`, oDocument).then(function(oResponse) {
                   // ## Replace html form for adding new question with html form for question prepared to add answers
                   const eNew =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild; // oneliner for: gets template, clones the html and get element to cloned html
-                  const eOld = document.getElementById("idNewQuestion"); // html form for adding new question 
+                  const eOld = document.getElementById("idNewQuestion"); // html form for adding new question
                   const eParent = eOld.parentNode;
                   FIELD_CopyValues(eOld, eNew); // Copy values from new question form to question form
                   const sNewQuestionK = XML_GetFirstValue(oResponse);
@@ -494,14 +500,6 @@ function PAGE_RenderForm( eContainer, aFields ) {
       eDivRow.appendChild(eLabel);
    });
 }
-
-function PAGE_HtmlRender( sTableName ) {
-   if( sTableName === "TPollQuestion" ) {
-      const eContainer = document.querySelector('[data-section="question-list"]');
-      //const sHtml;
-   }
-}
-
 
 /** -------------------------------------------------------------------------- PAGE_OnIdle
  * Handles idle state by updating UI elements and checking for changes
