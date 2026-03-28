@@ -308,6 +308,14 @@ function PAGE_LoadPollInformation() {
             // ## Geneate html for new question
             const eQuestion =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
             eQuestions.appendChild(eQuestion);
+            let oRow = oTable.GetRowData(uRow, { format: "json" });            // Get question data as json and attach to question element for later use
+            // regex filter for all fields that start with capital "Q"
+            oTable.GetRowData(uRow, { format: "json", append: oRow, filter: /^Q/ }); // add capital Q fields to question data
+            // iterate all values and remove the capital Q if first
+            Object.keys(oRow).forEach(sKey => {
+               if( sKey.startsWith("Q") ) { oRow[sKey.substring(1)] = oRow[sKey]; } // remove capital Q from key 
+            });
+            FIELD_CopyValues( oRow, eQuestion );                               // Copy poll key and question key values from question data to question form hidden input fields
          }
       }
    };

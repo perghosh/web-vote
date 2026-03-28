@@ -170,8 +170,8 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
          {name: "vote-all_questions", format: "jinja", type: "select",
          statement: // Select all questions for selected poll
 "SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuestionK, " +
-"hex(TPollAnswer.PollAnswerK) AS PollAnswerK, TPollQuestion.FName AS Q_FName, " +
-"TPollQuestion.FLabel AS Q_FLabel, TPollQuestion.FDescription AS Q_Description, " +
+"hex(TPollAnswer.PollAnswerK) AS PollAnswerK, TPollQuestion.FName AS QFName, " +
+"TPollQuestion.FLabel AS QFLabel, TPollQuestion.FDescription AS QFDescription, " +
 "TPollAnswer.FName AS A_FName, TPollAnswer.FAnswer AS A_FAnswer, " +
 "TPollAnswer.FDescription AS A_Description FROM TPoll " +
 "LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK " +
