@@ -70,9 +70,9 @@ vote-get_answers - Select poll answers for poll
     | ## Section for main poll, at top of page show the poll for questions and answers to questions
     -->
    <div id="idPage" class="page-container container page" data-section="page">
-      <div id="idMessage" class="container-form"></div>
+      <div id="idMessage" class="container-form margin_b-small"></div>
       <hr>
-      <div id="idPoll" class="container-form" >
+      <div id="idPoll" class="container-form margin_b-small" >
          <div data-section="record" data-table="TPoll">
             <h2 class="margin_b-large">Poll Details</h2>
             <div class="form-group form-row form-row--aside-left">
@@ -92,20 +92,20 @@ vote-get_answers - Select poll answers for poll
                </label>
             </div>
          </div>
-         <div data-section="commands">
+         <div data-section="command">
             <span class="button" data-action="update-poll" data-command="update" data-table="TPoll">Save Poll</span>
             <span class="button" data-action="delete-poll" data-command="delete" data-table="TPoll">Delete</span>
             <span class="button" data-action="new-question-form" data-command="new" data-table="TPollQuestion">Add Question</span>
          </div>
       </div>
-   <div id="idQuestions"></div>
+      <div id="idQuestions"></div>
    </div>
 
    <!--
     | Templates to clone
    -->
    <template id="idTemplateNewQuestion">
-      <div class="container-form" data-table="TPollQuestion" data-section="form">
+      <div class="container-form margin_b-small" data-table="TPollQuestion" data-section="form">
          <div data-section="record" data-table="TPollQuestion" data-key="">
             <h2 class="margin_b-small">Question name</h2>
             <div class="form-group form-row form-row--aside-left">
@@ -116,7 +116,7 @@ vote-get_answers - Select poll answers for poll
             </div>
             <input type="hidden" data-field="PollK">
          </div>
-         <div data-section="commands">
+         <div data-section="command">
             <span class="button" data-action="insert-pollquestion" data-command="insert" data-table="TPollQuestion">Add Question</span>
             <span class="button" data-action="cancel-pollquestion" data-command="cancel" data-table="TPollQuestion">Cancel</span>
          </div>
@@ -124,34 +124,70 @@ vote-get_answers - Select poll answers for poll
    </template>
 
    <template id="idTemplateQuestion">
-      <div class="container-form" data-table="TPollQuestion" data-section="form">
-         <div data-section="record" data-table="TPollQuestion" data-key="">
+      <div class="container-form margin_b-small"data-section="form-list">
+         <div data-table="TPollQuestion" data-section="form">
+            <div data-section="record" data-table="TPollQuestion" data-key="">
+               <h2 class="margin_b-small">Question</h2>
+               <div class="form-group form-row form-row--aside-left">
+                  <label class="floating">
+                     <input type="text" placeholder=" " data-field="FName" required>
+                     <span>Name</span>
+                  </label>
+                  <label class="floating">
+                     <input type="text" placeholder=" " data-field="FLabel" required>
+                     <span>Label</span>
+                  </label>
+               </div>
+               <div class="form-group">
+                  <label class="floating">
+                     <textarea placeholder=" " data-field="FDescription" rows="3"></textarea>
+                     <span>Description</span>
+                  </label>
+               </div>
+               <input type="hidden" data-field="PollK">
+               <input type="hidden" data-field="PollQuestionK">
+            </div>
+            <div data-section="command">
+               <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Update question</span>
+               <span class="button" data-action="new-answer-form" data-command="new" data-table="TPollAnswer">Add Answer</span>
+               <span class="button" data-action="delete-pollquestion" data-command="delete" data-table="TPollQuestion">Delete</span>
+            </div>
+         </div>
+      </div>
+   </template>
+
+   <!--  -->
+   <template id="idTemplateAnswer">
+      <div class="margin_t-small" data-table="TPollAnswer" data-section="form">
+         <div data-section="record" data-table="TPollAnswer" data-key="">
             <h2 class="margin_b-small">Question</h2>
-            <div class="form-group form-row form-row--aside-left">
+            <div class="form-group form-row form-row--aside-right">
+               <label class="floating">
+                  <input type="text" placeholder=" " data-field="FAnswer" required>
+                  <span>Answer</span>
+               </label>
                <label class="floating">
                   <input type="text" placeholder=" " data-field="FName" required>
                   <span>Name</span>
                </label>
-               <label class="floating">
-                  <input type="text" placeholder=" " data-field="FLabel" required>
-                  <span>Label</span>
-               </label>
             </div>
             <div class="form-group">
                <label class="floating">
-                  <textarea placeholder=" " data-field="FDescription" rows="3"></textarea>
+                  <textarea placeholder=" " data-field="FDescription" rows="2"></textarea>
                   <span>Description</span>
                </label>
             </div>
             <input type="hidden" data-field="PollK">
             <input type="hidden" data-field="PollQuestionK">
+            <input type="hidden" data-field="PollAnswerK">
          </div>
-         <div data-section="commands">
-            <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Save Question</span>
+         <div data-section="command">
+            <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Update question</span>
             <span class="button" data-action="delete-pollquestion" data-command="delete" data-table="TPollQuestion">Delete</span>
          </div>
       </div>
    </template>
+
    <script>
 'use strict';
 
@@ -294,7 +330,8 @@ function PAGE_SetListeners() {
 
       const sCommand = eTarget.dataset.command;
       if( !sCommand ) return;                                                 // If no command is defined, return
-      const eForm = eTarget.closest('[data-section="form"]');                 // Check if the clicked element is inside a record section
+      const eForm = eTarget.closest('[data-section="form"]');                 // Container element for form based on command
+      const eFormList = eTarget.closest('[data-section="form-list"]');        // Continer list for forms based on command
 
       const sTableName = eTarget.dataset.table;                                                 console.assert( sTableName, "Table name is not defined in data-table attribute" );
       const sAction = eTarget.dataset.action;                                                      console.assert( sAction, "Action is not defined in data-action attribute" );
@@ -357,7 +394,7 @@ function PAGE_SetListeners() {
                   const eNew =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild; // oneliner for: gets template, clones the html and get element to cloned html
                   const eOld = document.getElementById("idNewQuestion"); // html form for adding new question 
                   const eParent = eOld.parentNode;
-                  CopyFieldValues(eOld, eNew); // Copy values from new question form to question form
+                  FIELD_CopyValues(eOld, eNew); // Copy values from new question form to question form
                   const sNewQuestionK = XML_GetFirstValue(oResponse);
                   eNew.querySelector(`[data-field="PollQuestionK"]`).value = sNewQuestionK; // Set the new question key value in hidden input field
                   eParent.replaceChild(eNew, eOld);
@@ -374,8 +411,17 @@ function PAGE_SetListeners() {
                console.error(`Unknown command: ${sCommand} for table ${sDatabaseTableName}`);
          }
       }
-       else if( sTableName === "TPollAnswer" ) {
+
+      // ## TPollAnswer commands ..............................................
+      else if( sTableName === "TPollAnswer" ) {
          switch( sCommand ) {
+            case "new": {
+               // ## Clone the html fragment for new answer and add to page
+               const eQuestion = eFormList.querySelector('[data-table="TPollQuestion"]'); // Get question form container for current answer form based on command
+               const eAnswer = document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
+               FIELD_CopyValues(eQuestion,  eAnswer, ["PollK", "PollQuestionK"] ); // Copy poll key and question key values from question form to answer form
+               eFormList.appendChild(eAnswer); // Append new answer form to the question form list
+            } break;
             case "insert":
                console.log("Insert answer command triggered");
                break;
@@ -383,7 +429,7 @@ function PAGE_SetListeners() {
                console.error(`Unknown command: ${sCommand} for table ${sDatabaseTableName}`);
          }
       }
-       else {
+      else {
          console.error(`Unknown table: ${sDatabaseTableName}`);
       }
    });

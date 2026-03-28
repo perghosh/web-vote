@@ -240,8 +240,10 @@ CREATE TABLE TPollQuestion (
    ,TypeC INTEGER           -- Type of question
    ,StateC INTEGER          -- State of question
    ,FName VARCHAR(500)
+   ,FQuestion VARCHAR(500)  -- Question text, this is used when question is listed for voter to select
+   ,FQuestionMore TEXT      -- Question text if there is a need to describe question more in detail, this is used when voter has selected the question and is about to answer
    ,FLabel VARCHAR(100)     -- Label may be used to inform voter about something, maybe hint about the comments
-   ,FDescription VARCHAR(2000)
+   ,FDescription VARCHAR(2000)-- Describe question if there is a need to describe in some way
    ,FWeight INTEGER         -- Poll question weight, if different answers is weighted
    ,FOrder INTEGER          -- order question in poll
    ,CONSTRAINT FK_TPollQuestion_PollK FOREIGN KEY (PollK) REFERENCES TPoll(PollK) ON DELETE CASCADE
@@ -259,6 +261,8 @@ CREATE TABLE TPollAnswer (
    ,TypeC INTEGER           -- Type of answer
    ,StateC INTEGER          -- State of answer
    ,FName VARCHAR(500)      -- Answer name, this is used when answer is listed for voter to select
+   ,FAnswer VARCHAR(500)    -- Answer text, this is used when answer is listed for voter to select
+   ,FAnswerMore TEXT        -- Answer text if there is a need to describe answer more in detail, this is used when voter has selected the answer and is about to answer
    ,FLabel VARCHAR(100)     -- Label may be used to inform voter about something, maybe hint about the comments
    ,FDescription TEXT       -- Answer description if there is a need to describe
    ,FWeight INTEGER         -- If answer is weighted, how much weight this answer give the voter

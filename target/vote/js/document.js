@@ -359,22 +359,28 @@ function XML_AppendObject(document_, oValues, sNode = "values", sField = "value"
 }
 
 
-/** --------------------------------------------------------------------------- CopyFieldValues
+/** --------------------------------------------------------------------------- FIELD_CopyValues
  * Copies field values from one element to another.
+ *
+ * Use this to copy value from elements marked with attribute data-field
+ * to another element marked with data-field.
+ *
+ * This function assumes that both elements have the same structure and field names.
  *
  * @param {Element|string} source_ - The source element or a CSS selector string.
  * @param {Element|string} target_ - The target element or a CSS selector string.
- * @throws {Error} If the source or target is not an Element.
+ * @param {Array<string>} [aName] - Optional array of field names to copy; if not provided, all fields are copied.
+ * @throws {Error} If the source or target is not an Element or cannot be found.
  * @returns {void}
  */
-function CopyFieldValues( source_, target_ )
+function FIELD_CopyValues( source_, target_, aName )
 {
    let eSource; // Element or string selector for the source element
    let eTarget; // Element or string selector for the target element
 
    // ## Prepare source element
    if( source_ instanceof Element ) eSource = source_;
-   else if( typeof source_ === "string" ) eSource = document.querySelector(source_);
+   else if( typeof source_ === "string" ) eSource = document.querySelector(source_); // Use querySelector to find the source element by CSS selector
    else throw new Error("Invalid source type");
 
    // ## Prepare target element
@@ -382,8 +388,19 @@ function CopyFieldValues( source_, target_ )
    else if( typeof target_ === "string" ) eTarget = document.querySelector(target_);
    else throw new Error("Invalid target type")
 
+   if( !eSource || !eTarget ) { throw new Error("Source or target element not found"); }
+
+   // ## Determine if we should filter by specific field names
+   const bUseFilter = Array.isArray(aName) && aName.length > 0;   
+
    eSource.querySelectorAll('[data-field]').forEach(eSourceElement => {
-      const eTargetElement = eTarget.querySelector(`[data-field="${eSourceElement.dataset.field}"]`);
-      if(eTargetElement) eTargetElement.value = eSourceElement.value;
+      const sFieldName = eSourceElement.dataset.field; // Get the field name from data-field attribute
+      if(bUseFilter && !aName.includes(sFieldName)) { return; }               // Skip this field if it's not in the filter list
+
+      const eTargetElement = eTarget.querySelector(`[data-field="${sFieldName}"]`);
+      if(eTargetElement) {
+         if (eTargetElement.matches("input, textarea, select")) { eTargetElement.value = eSourceElement.value ?? ""; } 
+         else { eTargetElement.textContent = eSourceElement.value ?? eSourceElement.textContent ?? ""; }
+      }
    });
 }
