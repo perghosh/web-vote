@@ -159,7 +159,7 @@ vote-get_answers - Select poll answers for poll
    <template id="idTemplateAnswer">
       <div class="margin_t-small" data-table="TPollAnswer" data-section="form">
          <div data-section="record" data-table="TPollAnswer" data-key="">
-            <h2 class="margin_b-small">Question</h2>
+            <h3 class="margin_b-small">Answer</h3>
             <div class="form-group form-row form-row--aside-right">
                <label class="floating">
                   <input type="text" placeholder=" " data-field="FAnswer" required>
@@ -170,19 +170,21 @@ vote-get_answers - Select poll answers for poll
                   <span>Name</span>
                </label>
             </div>
+            <!--
             <div class="form-group">
                <label class="floating">
                   <textarea placeholder=" " data-field="FDescription" rows="2"></textarea>
                   <span>Description</span>
                </label>
             </div>
+         -->
             <input type="hidden" data-field="PollK">
             <input type="hidden" data-field="PollQuestionK">
             <input type="hidden" data-field="PollAnswerK">
          </div>
          <div data-section="command">
-            <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Update question</span>
-            <span class="button" data-action="delete-pollquestion" data-command="delete" data-table="TPollQuestion">Delete</span>
+            <span class="button" data-action="update-pollanswer" data-command="update" data-table="TPollAnswer">Update answer</span>
+            <span class="button" data-action="delete-pollanswer" data-command="delete" data-table="TPollAnswer">Delete</span>
          </div>
       </div>
    </template>
@@ -199,11 +201,11 @@ gd.SetBaseUrl(sBaseUrl);
 
 // ## Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-   PAGE_initialize();
+   PAGE_Initialize();
    PAGE_SetListeners();
 });
 
-function PAGE_initialize() {
+function PAGE_Initialize() {
    const fnRead = function(sName, oRecord) {
       //const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
       //const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
@@ -299,24 +301,42 @@ function PAGE_LoadPollInformation() {
    });
 
    const fnRenderVotes = function( oTable ) {
+      let eQuestion = null;
       const eQuestions = document.getElementById("idQuestions");
       let sQuestionK = null;
       for( let uRow = 0; uRow < oTable.GetRowCount(); uRow++ ) {
          const sCheckQuestionK = oTable.GetCellValue(uRow, "PollQuestionK");
+         // ## If question key is different from previous question key, we have a new question and we need to generate html for it
          if( sCheckQuestionK !== sQuestionK ) {
             sQuestionK = sCheckQuestionK;
-            // ## Geneate html for new question
-            const eQuestion =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
+            // ### Geneate html for new question
+            eQuestion =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
             eQuestions.appendChild(eQuestion);
             let oRow = oTable.GetRowData(uRow, { format: "json" });            // Get question data as json and attach to question element for later use
             // regex filter for all fields that start with capital "Q"
-            oTable.GetRowData(uRow, { format: "json", append: oRow, filter: /^Q/ }); // add capital Q fields to question data
+            oTable.GetRowData(uRow, { format: "json", append: oRow, filter: /^Q_/ }); // add capital Q fields to question data
             // iterate all values and remove the capital Q if first
             Object.keys(oRow).forEach(sKey => {
-               if( sKey.startsWith("Q") ) { oRow[sKey.substring(1)] = oRow[sKey]; } // remove capital Q from key 
+               if( sKey.startsWith("Q_") ) { oRow[sKey.substring(2)] = oRow[sKey]; } // remove capital Q from key 
             });
             FIELD_CopyValues( oRow, eQuestion );                               // Copy poll key and question key values from question data to question form hidden input fields
          }
+
+         // ## Generate html for answer and attach to current question
+         const sAnswer = oTable.GetCellValue(uRow, "A_FAnswer");
+         if( eQuestion && sAnswer ) {
+            const eAnswer = document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
+            eQuestion.appendChild(eAnswer);                                    // Attach answer element to current question element
+            let oRow = oTable.GetRowData(uRow, { format: "json" });            // Get answer data as json and attach to answer element for later use
+            // regex filter for all fields that start with capital "A"
+            oTable.GetRowData(uRow, { format: "json", append: oRow, filter: /^A_/ }); // add capital A fields to answer data
+            // iterate all values and remove the capital A if first
+            Object.keys(oRow).forEach(sKey => {
+               if( sKey.startsWith("A_") ) { oRow[sKey.substring(2)] = oRow[sKey]; } // remove capital A from key 
+            });
+            FIELD_CopyValues( oRow, eAnswer );                               // Copy poll key, question key and answer key values from answer data to answer form hidden input fields
+         }
+
       }
    };
 
@@ -398,7 +418,7 @@ function PAGE_SetListeners() {
                document.getElementById("idQuestions").appendChild(eNewQuestion);
                eNewQuestion.querySelector(`[data-field="PollK"]`).value = oDocument_g.GetValue("PollK"); // Set poll key value in hidden input field for new question form
             } break;
-            case "insert": {
+            case "insert": { // ## Create new question and replace the html form to question section that are able to connect answers.
                const oValues = oDBRecord.GetAllValues();
                const [ oDocument, eValues ]  = XML_AppendObject(null, oValues, "values", "value"); // Convert values to XML format for sending to server
                XML_AppendElement(eValues, { name: "PollQuestionK" },undefined, "returning"); // append returning field.
@@ -406,13 +426,12 @@ function PAGE_SetListeners() {
                gd.SendToServer("", "!db/insert", `table=${sTableName}`, oDocument).then(function(oResponse) {
                   // ## Replace html form for adding new question with html form for question prepared to add answers
                   const eNew =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild; // oneliner for: gets template, clones the html and get element to cloned html
-                  const eOld = document.getElementById("idNewQuestion"); // html form for adding new question
+                  const eOld = document.getElementById("idNewQuestion");      // html form for adding new question
                   const eParent = eOld.parentNode;
-                  FIELD_CopyValues(eOld, eNew); // Copy values from new question form to question form
-                  const sNewQuestionK = XML_GetFirstValue(oResponse);
+                  FIELD_CopyValues(eOld, eNew);                               // Copy values from new question form to question form
+                  const sNewQuestionK = XML_GetFirstValue(oResponse);         // Get key to new creeated question.
                   eNew.querySelector(`[data-field="PollQuestionK"]`).value = sNewQuestionK; // Set the new question key value in hidden input field
                   eParent.replaceChild(eNew, eOld);
-                  //PAGE_Message({table: sTableName, command: "insert", response: oResponse, status: "success"}); // Process response and show message
                }).catch(function(error) {
                   PAGE_Message({table: sTableName, command: "insert", response: oResponse, status: "error" }); // Process response and show message
                });
@@ -435,6 +454,10 @@ function PAGE_SetListeners() {
 
       // ## TPollAnswer commands ..............................................
       else if( sTableName === "TPollAnswer" ) {
+         if( eForm ) {
+            oDBRecord.ClearValues();
+            oDBRecord.ReadValues( eForm );
+         }
          switch( sCommand ) {
             case "new": {
                // ## Clone the html fragment for new answer and add to page
@@ -443,9 +466,32 @@ function PAGE_SetListeners() {
                FIELD_CopyValues(eQuestion,  eAnswer, ["PollK", "PollQuestionK"] ); // Copy poll key and question key values from question form to answer form
                eFormList.appendChild(eAnswer); // Append new answer form to the question form list
             } break;
-            case "insert":
-               console.log("Insert answer command triggered");
-               break;
+            case "update": {
+               const oValues = oDBRecord.GetAllValues();
+               console.log("Values to update: ", oValues);
+               // try to get key to answer
+               const sPollAnswerK = eForm.querySelector(`[data-field="PollAnswerK"]`).value;
+               if( !sPollAnswerK ) { 
+                  console.log("No key found and we insert instead of update, this should be changed to insert command instead of update. For now we just return."); 
+
+                  gd.DB.Insert("TPollAnswer", oValues, "PollAnswerK").then(oResponse => {
+                     const sNewAnswerK = XML_GetFirstValue(oResponse);
+                     eForm.querySelector(`[data-field="PollAnswerK"]`).value = sNewAnswerK;
+                     PAGE_Message("Answer added successfully", "success");
+                  })
+                  .catch((error) => { PAGE_Message("Error adding answer", "danger"); });
+                  return; 
+               }
+               else {
+                  gd.DB.Update("TPollAnswer", oValues ).then(oResponse => {
+                     PAGE_Message("Answer updated successfully", "success");
+                  })
+                  .catch((error) => { PAGE_Message("Error updating answer", "danger"); });
+               }
+            } break;
+            case "delete": {
+               console.log("Delete answer command triggered");
+            } break;
             default:
                console.error(`Unknown command: ${sCommand} for table ${sDatabaseTableName}`);
          }
@@ -539,7 +585,7 @@ const PAGE_OnIdle = (function() {
 function PAGE_Message( response_, sType = "info" ) {
 
    // If response is a string, show it directly as a message
-   if( typeof response_ === "string" ) { oToast_g.Show(response_, { type: sType });  return; }
+   if( typeof response_ === "string" ) { oToast_g.Show(response_, { sType: sType });  return; }
 
    const oResponse = response_ || {};
 

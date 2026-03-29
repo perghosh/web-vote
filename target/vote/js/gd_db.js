@@ -1033,3 +1033,39 @@ class DBRecordContainer extends DBRecord {
       el.textContent = v;
    }
 }
+
+
+var gd = gd || {};
+gd.DB = {
+   /** Insert a row. Returns promise resolving to new key value or null. */
+   Insert(sTable, oValues, returning_) {
+      const [oDocument, eValues] = XML_AppendObject(null, oValues, "values", "value");
+      eValues.setAttribute("table", sTable);
+      if(typeof returning_ === "string") XML_AppendElement(eValues, {name: returning_ }, undefined, "returning");
+      else if( typeof returning_ === "object") XML_AppendElement(eValues, returning_, undefined, "returning");
+      else if( returning_ ) throw new Error("Invalid returning_ parameter: must be string, object, or falsy");
+      return gd.SendToServer("", "!db/insert", `table=${sTable}`, oDocument);
+   },
+
+   /** Update rows matching oWhere. */
+   Update(sTable, oValues, oWhere) {
+      const [oDocument, eValues] = XML_AppendObject(null, oValues, "values", "value");
+      eValues.setAttribute("table", sTable);
+      XML_AppendObject(eValues, oWhere, undefined, "where");
+      return gd.SendToServer("", "!db/update", `table=${sTable}`, oDocument);
+   },
+
+   /** Delete rows matching oWhere. */
+   Delete(sTable, oWhere) {
+      const [oDocument, eValues] = XML_AppendObject(null, {}, "values", "value");
+      eValues.setAttribute("table", sTable);
+      XML_AppendObject(eValues, oWhere, undefined, "where");
+      return gd.SendToServer("", "!db/delete", `table=${sTable}`, oDocument);
+   },
+
+   /** Run a named query with JSON values. */
+   Select(sQueryName, oValues) {
+      const sValues = oValues ? `\nvalues=${JSON.stringify(oValues)}` : "";
+      return gd.SendToServer("", "!db/select", `query=#${sQueryName}${sValues}`);
+   }
+};
