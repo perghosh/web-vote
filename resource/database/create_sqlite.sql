@@ -25,6 +25,12 @@ CREATE TABLE table_number (
    description VARCHAR(250) CHECK(length(description) < 250)
 );
 
+-- tie us used to connect votes that belongs together, for example when a voter votes for multiple questions in a poll, those votes can be connected with a tie, this can then be used to analyze how voters have voted across questions and maybe use this information to weight votes in some way.
+CREATE TABLE tie (
+   tie_k BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
+   ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP-- when tie was created
+);
+
 -- CREATE TABLE TGroup, group codes
 CREATE TABLE "TCodeGroup" (
     "CodeGroupK" INTEGER PRIMARY KEY NOT NULL
@@ -117,7 +123,7 @@ CREATE INDEX I_TOrganization_SuperK ON TOrganization (SuperK);
 
 /* Used to store user information */
 CREATE TABLE TUser (
-    UserK           BLOB PRIMARY KEY DEFAULT (randomblob(16)),
+    UserK           BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
     ContainerK      INTEGER NOT NULL,
     OrganizationK   BLOB,
     UserGroupK      INTEGER,
@@ -153,15 +159,35 @@ CREATE INDEX I_TUser_ContainerK ON TUser(ContainerK);
 CREATE INDEX I_TUser_FAlias      ON TUser(FAlias);
 CREATE INDEX I_TUser_FDisplayName ON TUser(FDisplayName);
 
+CREATE TABLE TVoter (
+    VoterK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
+   ,UserK BLOB
+   ,CreateD         DATETIME DEFAULT CURRENT_TIMESTAMP
+   ,UpdateD         DATETIME
+   ,FIp             TEXT    -- IP address for voter, this can be used to block voters or analyze from where voters are coming from
+   ,FUserAgent      VARCHAR(100) -- User agent string for tracking device/browser information
+   ,FName           VARCHAR(100)
+   ,FAlias          VARCHAR(100)
+   ,FMail           VARCHAR(200)
+   ,FMailHide BLOB
+   ,FPassword BLOB
+   ,FPhone          VARCHAR(100)
+   ,FLastVote       DATETIME
+   ,FDescription    VARCHAR(1000)  
+   ,FUnlock         TEXT
+   ,FValidated      INTEGER -- 0 = not validated, 1 = validated, 2 = blocked
+   ,FDeleted        INTEGER DEFAULT 0
+);
+
 
 CREATE TABLE TPoll (
-   PollK BLOB PRIMARY KEY DEFAULT (randomblob(16))
+   PollK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
    ,PollGroupK BLOB         -- main poll group that poll is connected to if any
    ,ParentK BLOB            -- if poll is connected to any other table compare to normal connection
    ,table_number INTEGER    -- Table number for describing what table TPoll belongs to
    ,SuperK BLOB             -- owner Poll when used in hierarchical structure
    ,UserK BLOB              -- user that has created this poll
-   ,CreateD DATETIME        -- when poll was created
+   ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP-- when poll was created
    ,UpdateD DATETIME        -- last time poll was updated
    ,TypeC INTEGER           -- Type of poll
    ,StateC INTEGER          -- State of poll
@@ -189,7 +215,7 @@ CREATE INDEX "IC_TPoll_ParentK" ON TPoll (ParentK);
 CREATE INDEX "I_TPoll_PollGroupK" ON TPoll (PollGroupK);
 
 CREATE TABLE TPollSection (
-   PollSectionK BLOB PRIMARY KEY DEFAULT (randomblob(16))
+   PollSectionK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
    ,PollK BLOB
    ,SuperK BLOB             -- owner Poll section when used in hierarchical structure
    ,FIndex INTEGER          -- used to order sections
@@ -214,7 +240,7 @@ CREATE INDEX I_TPollComment_VoterK ON TPollComment (VoterK);
 
 /* Limits are used to set limits for the poll, like rules what for different questions */
 CREATE TABLE TPollLimit (
-   PollLimitK BLOB PRIMARY KEY DEFAULT (randomblob(16))
+   PollLimitK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
    ,PollK BLOB
    ,PollQuestionK BLOB
    ,UpdateD DATETIME
@@ -231,7 +257,7 @@ CREATE INDEX IC_TPollLimit_PollK ON TPollLimit (PollK);
 CREATE INDEX I_TPollLimit_PollQuestionK ON TPollLimit (PollQuestionK);
 
 CREATE TABLE TPollQuestion (
-	PollQuestionK BLOB PRIMARY KEY DEFAULT (randomblob(16))
+	PollQuestionK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
 	,PollK BLOB
    ,SuperK BLOB             -- owner question when used in hierarchical structure
    ,PollSectionK BLOB
@@ -251,12 +277,12 @@ CREATE TABLE TPollQuestion (
 CREATE INDEX IC_TPollQuestion_PollK ON TPollQuestion (PollK);
 
 CREATE TABLE TPollAnswer (
-	PollAnswerK BLOB PRIMARY KEY DEFAULT (randomblob(16))
+	PollAnswerK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
 	,PollK BLOB
 	,PollQuestionK BLOB
    ,SuperK BLOB             -- owner answer when used in hierarchical structure
    ,PollSectionK BLOB       -- When poll is divided in sections
-   ,CreateD DATETIME
+   ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP
    ,UpdateD DATETIME
    ,TypeC INTEGER           -- Type of answer
    ,StateC INTEGER          -- State of answer
@@ -273,6 +299,29 @@ CREATE TABLE TPollAnswer (
 );
 CREATE INDEX IC_TPollAnswer_PollK ON TPollAnswer (PollK);
 CREATE INDEX I_TPollAnswer_PollQuestionK ON TPollAnswer (PollQuestionK);
+
+
+CREATE TABLE IF NOT EXISTS TPollVote (
+    PollVoteK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
+    PollAnswerK   BLOB NOT NULL,
+    VoterK        BLOB,                       -- Voter reference
+    CreateD       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    TypeC         INTEGER,
+    StateC        INTEGER,
+    FSelect       INTEGER,                    -- Usually 1 if selected
+    FWeight       INTEGER,                    -- Weight for weighted polls
+    FIp           TEXT,                       -- IP address
+    FComment      TEXT,                       -- Comment (max ~500 chars)
+    verified      INTEGER,                    -- SMALLINT → INTEGER in SQLite
+    FTie          BLOB,                       -- UNIQUEIDENTIFIER → TEXT (or BLOB)
+    CONSTRAINT FK_TPollVote_PollAnswerK  FOREIGN KEY (PollAnswerK) REFERENCES TPollAnswer(PollAnswerK) ON DELETE CASCADE,
+    CONSTRAINT FK_TPollVote_VoterK FOREIGN KEY (VoterK) REFERENCES TVoter(VoterK) ON DELETE CASCADE
+);
+
+-- Indexes
+CREATE INDEX I_TPollVote_PollQuestionK ON TPollVote (PollAnswerK);
+CREATE INDEX I_TPollVote_FTie ON TPollVote (FTie);
+CREATE INDEX I_TPollVote_FIp ON TPollVote (FIp);
 
 CREATE TABLE "TSystemStatement" (
     "SystemStatementK" INTEGER PRIMARY KEY AUTOINCREMENT

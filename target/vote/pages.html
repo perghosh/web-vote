@@ -171,8 +171,8 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
          statement: // Select all questions for selected poll
 "SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuestionK, " +
 "hex(TPollAnswer.PollAnswerK) AS PollAnswerK, TPollQuestion.FName AS Q_FName, " +
-"TPollQuestion.FLabel AS Q_FLabel, TPollQuestion.FDescription AS Q_FDescription, " +
-"TPollAnswer.FName AS A_FName, TPollAnswer.FAnswer AS A_FAnswer, " +
+"TPollQuestion.FLabel AS Q_FLabel, TPollQuestion.FDescription AS Q_FDescription, TPollQuestion.FOrder AS Q_FOrder, " +
+"TPollAnswer.FName AS A_FName, TPollAnswer.FAnswer AS A_FAnswer, TPollAnswer.FOrder AS A_FOrder, " +
 "TPollAnswer.FDescription AS A_Description FROM TPoll " +
 "LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK " +
 "LEFT JOIN TPollAnswer ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK " +

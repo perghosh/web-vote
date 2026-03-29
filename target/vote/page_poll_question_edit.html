@@ -10,7 +10,6 @@ PAGE_ Method documentation:
 PAGE_Initialize - Main initialization function that sets up the page, creates draggable elements and configures listeners
 PAGE_LoadPollInformation - Retrieves and sets up poll information, main poll, questions and anwswers
 PAGE_SetListeners - Configures event listeners for page interactions, handling actions like send and save
-PAGE_RenderForm - Render UI elements for record
 PAGE_Update - Update UI elements
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_ProcessResponse - Processes the response from the server and updates the UI accordingly
@@ -230,7 +229,7 @@ function PAGE_Initialize() {
 
    // try to get poll key from url parameters, if not available use null to fetch first poll
    const oUrlParameter = new URLSearchParams(window.location.search);
-   sPollKey = oUrlParameter.get("PollK") || null;
+   sPollKey = oUrlParameter.get("PollK") || oUrlParameter.get("key") || null;
    if( sPollKey === null || sPollKey.length !== 32 ) {
       // ## For development and testing purposes, if poll key is not in url parameters, get first poll key from database
       oToast_g.Show("Invalid poll key in URL parameters, fetching first poll for testing purposes", { type: "warning" });
@@ -244,7 +243,10 @@ function PAGE_Initialize() {
          console.error("Error fetching first poll key: ", error);
          oToast_g.Show("Error fetching first poll key: " + error.message, { type: "error" });
       });
-
+   }
+   else {
+      oDocument_g.SetValue("PollK", sPollKey);                              // Store poll key in document values for later use
+      PAGE_LoadPollInformation();
    }
 }
 
@@ -323,7 +325,8 @@ function PAGE_LoadPollInformation() {
       const data_ = oResult.data;
       const aResult = JSON.parse( data_.querySelector("result").textContent ); // first result holds array
       const oTable = new Table(aResult);
-      fnRenderVotes( oTable );
+      if( oTable.GetRowCount() === 1 && !oTable.GetRowData(0, {format:"json"}).PollQuestionK ) { Message_d("No questions found for this poll", "warning"); return; }
+      else { fnRenderVotes( oTable ); }
    }).catch(function(error) {
       console.error("Error fetching poll questions:", error);
       oToast_g.Show("Error fetching poll questions: " + error.message, { type: "error" });
@@ -483,65 +486,6 @@ function PAGE_SetListeners() {
    });
 }
 
-/** ---------------------------------------------------------------------------
- *
- */
-function PAGE_RenderForm( eContainer, aFields ) {
-   // ## Prepare fields to set where new row is created .......................
-   let bCols = false;
-   aFields.forEach(oField => {
-      if( !oField.label ) return;
-      if( !oField.cols || bCols === false ) { oField.bRow = true; }
-
-      if( oField.cols ) { bCols = true }
-      else { bCols = false }
-   });
-
-   // print fields
-   console.log(aFields);
-
-   aFields.forEach(oField => {
-      if( !oField.label ) return;
-
-      // ## Prepare row for field .............................................
-      let eDivRow;
-      if(oField.bRow) {
-         eDivRow = document.createElement('div');
-         eDivRow.className = 'grid-row';
-         if(oField.cols) { eDivRow.classList.add(`cols-${oField.cols}`); }
-         eDivRow.style.marginTop = '20px';
-         eContainer.appendChild(eDivRow);
-      }
-      else { eDivRow = eContainer.lastElementChild; }
-
-      // ## Prepare label for field ...........................................
-      const eLabel = document.createElement('label');
-      eLabel.className = 'floating';
-
-      // ### Add span class if span is defined
-      if( oField.span ) { eLabel.classList.add(`col-span-${oField.span}`); }
-
-
-
-      let sTagName = "input";
-      let sType = oField.type;
-      if( sType === "text" ) { sTagName = "textarea"; }
-      const eInput = document.createElement(sTagName);
-      if( sType === "text" ) { eInput.rows = 3; }
-      else { eInput.type = oField.input || 'text'; }
-      eInput.placeholder = ' ';
-      eInput.required = oField.required;
-      eInput.dataset.field = oField.field;
-
-      // ## Prepare label for field ...........................................
-      const eSpan = document.createElement('span');
-      eSpan.textContent = oField.label;
-
-      eLabel.appendChild(eInput);
-      eLabel.appendChild(eSpan);
-      eDivRow.appendChild(eLabel);
-   });
-}
 
 /** -------------------------------------------------------------------------- PAGE_OnIdle
  * Handles idle state by updating UI elements and checking for changes
