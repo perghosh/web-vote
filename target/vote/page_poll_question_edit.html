@@ -206,34 +206,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function PAGE_Initialize() {
-   const fnRead = function(sName, oRecord) {
-      //const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
-      //const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
-      if( eField ) { this.SetValue( sName, eField.value ); }
-   };
-
-   const fnWrite = function(sName, oRecord) {
-      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
-      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
-      if( eField ) { eField.value = this.GetValue(sName); }
-   };
-
    oDocument_g = new CDocument({});                                           // Create new document
    oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
 
    // ## Create record containers for poll, question and answer tables ........
 
-   let oRCPoll = new DBRecordContainer("FName,Name,string;FHeader,Header,string;FDescription,Description,string", { fnRead, fnWrite });
+   let oRCPoll = new DBRecordContainer("FName,Name,string;FHeader,Header,string;FDescription,Description,string");
    oRCPoll.table = "TPoll";                                                    // set table to table name
    oDocument_g.AddRecord(oRCPoll);                                                        // add record to document
 
    // TPollQuestion
-   let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header,string;FDescription,Description,string;PollK,,string", { fnRead, fnWrite });
+   let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header,string;FDescription,Description,string;PollK,,string");
    oRCPollQuestion.table = "TPollQuestion";
    oDocument_g.AddRecord(oRCPollQuestion);
 
    // TPollAnswer
-   let oRCPollAnswer = new DBRecordContainer("FName,Name;FLabel,Header;FAnswer,Answer;FAnswerMore,More;FDescription,Description;PollK;PollQuestionK", { fnRead, fnWrite });
+   let oRCPollAnswer = new DBRecordContainer("FName,Name;FLabel,Header;FAnswer,Answer;FAnswerMore,More;FDescription,Description;PollK;PollQuestionK;PollAnswerK");
    oRCPollAnswer.table = "TPollAnswer";
    oDocument_g.AddRecord(oRCPollAnswer);
 
@@ -258,21 +246,11 @@ function PAGE_Initialize() {
       });
 
    }
-
-
-   /*
-   RECORD_GetPoll( sPollKey ).then(function(oPoll) {
-      oRCPoll.SetValues(oPoll);
-      oDocument_g.AddRecord(oRCPoll);
-      PAGE_RenderForm( oDocument_g.GetElement("record"), aFieldQuestion );
-      PAGE_RenderCommands( oDocument_g.GetElement("record"), aButtonQuestionCommands, 'TPoll' );
-   }).catch(function(error) {
-      console.error("Error fetching poll data:", error);
-      //gd.ShowToast("Error fetching poll data: " + error.message, { type: "error" });
-   });
-   */
 }
 
+/** --------------------------------------------------------------------------- PAGE_LoadPollInformation
+ * Load poll information, questions and answers for the current poll key and set values in document and render forms
+ */
 function PAGE_LoadPollInformation() {
    const sPollKey = oDocument_g.GetValue("PollK");
    if( !sPollKey ) { throw new Error("Poll key is not set in document values"); }
@@ -291,7 +269,6 @@ function PAGE_LoadPollInformation() {
       oDocument_g.GetRecord("TPoll").SetValue(oPoll);
       const oDBRecordContainer = oDocument_g.GetRecord("TPoll");
 
-      //oDBRecordContainer.BindContainer( document.getElementById("idPoll") ); // Bind the record container to the poll container in the DOM
       oDBRecordContainer.WriteValues("idPoll");
 
 
@@ -299,6 +276,7 @@ function PAGE_LoadPollInformation() {
       console.error("Error fetching poll details:", error);
       oToast_g.Show("Error fetching poll details: " + error.message, { type: "error" });
    });
+
 
    const fnRenderVotes = function( oTable ) {
       let eQuestion = null;
@@ -350,12 +328,10 @@ function PAGE_LoadPollInformation() {
       console.error("Error fetching poll questions:", error);
       oToast_g.Show("Error fetching poll questions: " + error.message, { type: "error" });
    });
-
-
 }
 
-/**
- *
+/** --------------------------------------------------------------------------- PAGE_SetListeners
+ * Set event listeners for page interactions, handling actions like send and save
  */
 function PAGE_SetListeners() {
    const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
@@ -467,7 +443,7 @@ function PAGE_SetListeners() {
                eFormList.appendChild(eAnswer); // Append new answer form to the question form list
             } break;
             case "update": {
-               const oValues = oDBRecord.GetAllValues();
+               const oValues = oDBRecord.GetFilledValues();
                console.log("Values to update: ", oValues);
                // try to get key to answer
                const sPollAnswerK = eForm.querySelector(`[data-field="PollAnswerK"]`).value;
@@ -490,7 +466,12 @@ function PAGE_SetListeners() {
                }
             } break;
             case "delete": {
-               console.log("Delete answer command triggered");
+               const oWhere = oDBRecord.GetValues( ["PollAnswerK"] );
+               gd.DB.Delete("TPollAnswer", oWhere ).then(oResponse => {
+                  eForm.remove(); // Remove answer form from page
+                  PAGE_Message("Answer deleted successfully", "success");
+               })
+               .catch((error) => { PAGE_Message("Error deleting answer", "danger"); });
             } break;
             default:
                console.error(`Unknown command: ${sCommand} for table ${sDatabaseTableName}`);

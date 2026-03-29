@@ -258,7 +258,7 @@ class DBRecord {
       else { throw new Error("Invalid arguments: expected string, object, or array"); }
    }
 
-   /** ------------------------------------------------------------------------
+   /** ------------------------------------------------------------------------ GetValue
     * Get a value by column name
     * @param {string} sName - Column name
     * @returns {*} The value or undefined if not found
@@ -275,7 +275,19 @@ class DBRecord {
       return value_;
    }
 
-   /** ------------------------------------------------------------------------
+   /** ------------------------------------------------------------------------ GetValues
+    * Get values for specified columns
+    * @param {Array<string>} aName - Array of column names
+    * @returns {Object} Object with column names as keys and their values
+    */
+   GetValues( aName ) {
+      const oResult = {};
+      aName.forEach(sName => { oResult[sName] = this.GetValue(sName); });
+      return oResult;
+   }
+
+
+   /** ------------------------------------------------------------------------ GetAllValues
     * Get all values as an object
     * @returns {Object} Object with column names as keys
     */
@@ -285,7 +297,7 @@ class DBRecord {
       return oResult;
    }
 
-   /** ------------------------------------------------------------------------
+   /** ------------------------------------------------------------------------ GetFilledValues
     * Get filled values as an object (skips empty values unless required)
     * @returns {Object} Object with column names as keys
     */
@@ -319,7 +331,7 @@ class DBRecord {
       return oResult;
    }
 
-   /** ------------------------------------------------------------------------
+   /** ------------------------------------------------------------------------ ClearValues
     * Clear all values from the record (sets to null and calls WriteValues)
     */
    ClearValues() {
@@ -329,7 +341,7 @@ class DBRecord {
    }
 
 
-   /** ------------------------------------------------------------------------
+   /** ------------------------------------------------------------------------ ReadValues
     * Load values from external source via callback (e.g., from HTML inputs)
     *
     * Callback receives (sName, oColumn) and should call this.SetValue(sName, value)
@@ -344,7 +356,7 @@ class DBRecord {
       this.aColumn.forEach( oColumn => { fnRead.call( this, oColumn.sName, oColumn ); });
    }
 
-   /** ------------------------------------------------------------------------
+   /** ------------------------------------------------------------------------ WriteValues
     * Write values to external target via callback (e.g., to HTML inputs)
     *
     * Callback receives (sName, oColumn, value) and should update the target
@@ -359,7 +371,7 @@ class DBRecord {
       this.aColumn.forEach( oColumn => { fnWrite.call( this, oColumn.sName, oColumn ); });
    }
 
-   /** ------------------------------------------------------------------------
+   /** ------------------------------------------------------------------------ GetKeyValue
     * Get the primary key value (requires exactly one key column)
     *
     * Key values are values used as primary keys in the database.
