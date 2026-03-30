@@ -126,7 +126,7 @@ vote-get_answers - Select poll answers for poll
          <div data-table="TPollQuestion" data-section="form">
             <div data-section="record" data-table="TPollQuestion" data-key="">
                <h2 class="margin_b-small">Question</h2>
-               <div class="form-group form-row form-row--aside-left">
+               <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 64px;">
                   <label class="floating">
                      <input type="text" placeholder=" " data-field="FName" required>
                      <span>Name</span>
@@ -134,6 +134,10 @@ vote-get_answers - Select poll answers for poll
                   <label class="floating">
                      <input type="text" placeholder=" " data-field="FLabel" required>
                      <span>Label</span>
+                  </label>
+                  <label class="floating">
+                     <input type="number" step="1" min="0" placeholder=" " data-field="FOrder" value="0">
+                     <span>#</span>
                   </label>
                </div>
                <div class="form-group">
@@ -159,14 +163,18 @@ vote-get_answers - Select poll answers for poll
       <div class="margin_t-small" data-table="TPollAnswer" data-section="form">
          <div data-section="record" data-table="TPollAnswer" data-key="">
             <h3 class="margin_b-small">Answer</h3>
-            <div class="form-group form-row form-row--aside-right">
+            <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 64px;">
                <label class="floating">
                   <input type="text" placeholder=" " data-field="FAnswer" required>
                   <span>Answer</span>
                </label>
                <label class="floating">
-                  <input type="text" placeholder=" " data-field="FName" required>
+                  <input type="text" placeholder=" " data-field="FName">
                   <span>Name</span>
+               </label>
+               <label class="floating">
+                  <input type="number" step="1" min="0" placeholder=" " data-field="FOrder" value="0">
+                  <span>#</span>
                </label>
             </div>
             <!--
@@ -215,12 +223,12 @@ function PAGE_Initialize() {
    oDocument_g.AddRecord(oRCPoll);                                                        // add record to document
 
    // TPollQuestion
-   let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header,string;FDescription,Description,string;PollK,,string");
+   let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header;FDescription,Description;FOrder,Order;FPollK");
    oRCPollQuestion.table = "TPollQuestion";
    oDocument_g.AddRecord(oRCPollQuestion);
 
    // TPollAnswer
-   let oRCPollAnswer = new DBRecordContainer("FName,Name;FLabel,Header;FAnswer,Answer;FAnswerMore,More;FDescription,Description;PollK;PollQuestionK;PollAnswerK");
+   let oRCPollAnswer = new DBRecordContainer("FName,Name;FLabel,Label;FAnswer,Answer;FAnswerMore,More;FDescription,Description;FOrder,Order;PollK;PollQuestionK;PollAnswerK");
    oRCPollAnswer.table = "TPollAnswer";
    oDocument_g.AddRecord(oRCPollAnswer);
 
@@ -297,7 +305,7 @@ function PAGE_LoadPollInformation() {
             oTable.GetRowData(uRow, { format: "json", append: oRow, filter: /^Q_/ }); // add capital Q fields to question data
             // iterate all values and remove the capital Q if first
             Object.keys(oRow).forEach(sKey => {
-               if( sKey.startsWith("Q_") ) { oRow[sKey.substring(2)] = oRow[sKey]; } // remove capital Q from key 
+               if( sKey.startsWith("Q_") ) { oRow[sKey.substring(2)] = oRow[sKey]; } // remove capital Q from key
             });
             FIELD_CopyValues( oRow, eQuestion );                               // Copy poll key and question key values from question data to question form hidden input fields
          }
@@ -312,7 +320,7 @@ function PAGE_LoadPollInformation() {
             oTable.GetRowData(uRow, { format: "json", append: oRow, filter: /^A_/ }); // add capital A fields to answer data
             // iterate all values and remove the capital A if first
             Object.keys(oRow).forEach(sKey => {
-               if( sKey.startsWith("A_") ) { oRow[sKey.substring(2)] = oRow[sKey]; } // remove capital A from key 
+               if( sKey.startsWith("A_") ) { oRow[sKey.substring(2)] = oRow[sKey]; } // remove capital A from key
             });
             FIELD_CopyValues( oRow, eAnswer );                               // Copy poll key, question key and answer key values from answer data to answer form hidden input fields
          }
@@ -450,8 +458,8 @@ function PAGE_SetListeners() {
                console.log("Values to update: ", oValues);
                // try to get key to answer
                const sPollAnswerK = eForm.querySelector(`[data-field="PollAnswerK"]`).value;
-               if( !sPollAnswerK ) { 
-                  console.log("No key found and we insert instead of update, this should be changed to insert command instead of update. For now we just return."); 
+               if( !sPollAnswerK ) {
+                  console.log("No key found and we insert instead of update, this should be changed to insert command instead of update. For now we just return.");
 
                   gd.DB.Insert("TPollAnswer", oValues, "PollAnswerK").then(oResponse => {
                      const sNewAnswerK = XML_GetFirstValue(oResponse);
@@ -459,10 +467,11 @@ function PAGE_SetListeners() {
                      PAGE_Message("Answer added successfully", "success");
                   })
                   .catch((error) => { PAGE_Message("Error adding answer", "danger"); });
-                  return; 
+                  return;
                }
                else {
-                  gd.DB.Update("TPollAnswer", oValues ).then(oResponse => {
+                  const sPollQuestionK = eForm.querySelector(`[data-field="PollAnswerK"]`).value;
+                  gd.DB.Update("TPollAnswer", oValues, { PollAnswerK: sPollAnswerK } ).then(oResponse => {
                      PAGE_Message("Answer updated successfully", "success");
                   })
                   .catch((error) => { PAGE_Message("Error updating answer", "danger"); });

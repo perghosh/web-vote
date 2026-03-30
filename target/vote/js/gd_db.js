@@ -1061,6 +1061,7 @@ gd.DB = {
 
    /** Update rows matching oWhere. */
    Update(sTable, oValues, oWhere) {
+      if( typeof oWhere !== "object" || oWhere === null ) { throw new Error("oWhere must be a non-null object"); }
       const [oDocument, eValues] = XML_AppendObject(null, oValues, "values", "value");
       eValues.setAttribute("table", sTable);
       XML_AppendObject(eValues, oWhere, undefined, "where");

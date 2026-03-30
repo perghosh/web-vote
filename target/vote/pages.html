@@ -176,7 +176,7 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
 "TPollAnswer.FDescription AS A_Description FROM TPoll " +
 "LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK " +
 "LEFT JOIN TPollAnswer ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK " +
-"WHERE TPoll.PollK = X{PollK} ORDER BY 1,2",
+"WHERE TPoll.PollK = X{PollK} ORDER BY 1,TPollQuestion.FOrder, 2,TPollAnswer.FOrder",
 "description": "Select active poll with questions and answers in a single query using JSON aggregation" }
    ];
 
