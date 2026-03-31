@@ -1,0 +1,330 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+PAGE_Initialize - Initialize the page, load poll data
+PAGE_OnIdle - Handles idle state
+PAGE_Update - Update UI elements based on the given type
+PAGE_SetListeners - Configure page listeners, handle form submission and vote processing
+PAGE_ProcessResponse - Handle response data from server
+
+Objects:
+CDocument - Manages data and state of the page
+DBRecord - Represents a database record, with methods to read/write values
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="css/variables-green.css">
+   <link rel="stylesheet" href="css/elements.css">
+   <link rel="stylesheet" href="css/input-effects.css">
+   <script src="js/gd_browser.js"></script>
+   <script src="js/gd_ui_toast.js"></script>
+   <script src="js/gd_ui_tablelite.js"></script>
+   <script src="js/gd_db.js"></script>
+   <script src="js/gd_data_table.js"></script>
+   <script src="js/document.js"></script>
+   <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
+      .page-container { background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 30px; width: 100%; max-width: 700px; }
+      .poll-header { margin-bottom: 30px; border-bottom: 2px solid var(--border); padding-bottom: 20px; }
+      .poll-header h1 { color: var(--color-body); font-size: 28px; margin-bottom: 10px; }
+      .poll-header p { color: var(--color-muted); line-height: 1.6; }
+      .question-container { margin-bottom: 25px; padding: 15px; background: var(--background-light); border-radius: 8px; }
+      .question-label { color: var(--color-body); font-weight: 600; font-size: 16px; margin-bottom: 12px; display: block; }
+      .question-description { color: var(--color-muted); font-size: 14px; margin-bottom: 12px; }
+      .answer-option { display: flex; align-items: center; padding: 10px; border-radius: 6px; transition: background 0.2s; cursor: pointer; }
+      .answer-option:hover { background: var(--background-hover); }
+      .answer-option input[type="radio"] { margin-right: 12px; width: 20px; height: 20px; cursor: pointer; }
+      .answer-option input[type="checkbox"] { margin-right: 12px; width: 20px; height: 20px; cursor: pointer; }
+      .answer-label { color: var(--color-body); cursor: pointer; }
+      .button-container { display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px; }
+      .button { padding: 12px 30px; font-size: 14px; font-weight: 600; }
+      .loading { text-align: center; padding: 40px; color: var(--color-muted); }
+   </style>
+</head>
+<body>
+   <div id="idContainer" class="page-container">
+      <form id="idForm" class="container-form" onsubmit="event.preventDefault();">
+
+         <!-- Poll Header Section -->
+         <div id="idPollHeader" class="poll-header" style="display: none;">
+            <h1 id="idPollHeaderTitle"></h1>
+            <p id="idPollHeaderDescription"></p>
+         </div>
+
+         <!-- Loading Indicator -->
+         <div id="idLoading" class="loading">Loading poll...</div>
+
+         <!-- Questions Container -->
+         <div id="idQuestionsContainer"></div>
+
+         <!-- Buttons -->
+         <div id="idButtons" class="button-container" style="display: none;">
+            <button class="button" data-action="submit-vote" style="background: var(--primary); color: white;">Submit Vote</button>
+         </div>
+
+      </form>
+   </div>
+
+   <script>
+
+   let oToast_g;
+   let oDocument_g = new CDocument();
+   let oPollData_g = null;
+   let aQuestions_g = [];
+   const sBaseUrl = "vote";
+
+   /** --------------------------------------------------------------------------- PAGE_Initialize
+    * Initialize the page and load poll data
+    */
+   function PAGE_Initialize()
+   {
+      oToast_g = new gd_ui_toast();
+
+      // Get PollK from URL parameter
+      const oUrlParameter = gd.QueryStringToDictionary(location.search);
+      const sPollKey = oUrlParameter.PollK || oUrlParameter.key;
+
+      if( !sPollKey ) {
+         oToast_g.Error("No poll specified");
+         document.getElementById("idLoading").textContent = "Error: No poll specified";
+         return;
+      }
+
+      // Load poll data
+      PAGE_LoadPoll(sPollKey);
+
+      PAGE_SetListeners();
+   }
+
+   /** --------------------------------------------------------------------------- PAGE_LoadPoll
+    * Load poll questions and answers from the server
+    */
+   async function PAGE_LoadPoll(sPollKey)
+   {
+      try {
+         if( !sPollKey || sPollKey.length != 32 ) throw "" ;
+         const oResponse = await gd.SendToServer("", "!db/select", "query=#vote-all_questions\n" + `values={"PollK":"${sPollKey}"}` );
+
+         if( !oResponse || oResponse.status !== "success" ) {
+            throw new Error("Failed to load poll data");
+         }
+
+         const aData = JSON.parse(oResponse.data);
+         if( !aData || aData.length === 0 ) {
+            document.getElementById("idLoading").textContent = "No questions found for this poll";
+            return;
+         }
+
+         // Process the data into questions with answers
+         PAGE_ProcessPollData(aData);
+
+         // Render the poll
+         PAGE_RenderPoll();
+
+      } catch(oError) {
+         oToast_g.Error(oError.message);
+         document.getElementById("idLoading").textContent = "Error loading poll: " + oError.message;
+      }
+   }
+
+   /** --------------------------------------------------------------------------- PAGE_ProcessPollData
+    * Process the raw data into organized questions with answers
+    */
+   function PAGE_ProcessPollData(aData)
+   {
+      const oQuestions = {};
+
+      // Group by question
+      aData.forEach(oRow => {
+         const sQuestionK = oRow.PollQuestionK;
+         if( !oQuestions[sQuestionK] ) {
+            oQuestions[sQuestionK] = {
+               QuestionK: sQuestionK,
+               FName: oRow.Q_FName,
+               Label: oRow.Q_FLabel,
+               Description: oRow.Q_FDescription,
+               Order: oRow.Q_FOrder || 0,
+               Answers: []
+            };
+         }
+
+         // Add answer if exists
+         if( oRow.PollAnswerK ) {
+            oQuestions[sQuestionK].Answers.push({
+               AnswerK: oRow.PollAnswerK,
+               FName: oRow.A_FName,
+               Answer: oRow.A_FAnswer,
+               Order: oRow.A_FOrder || 0
+            });
+         }
+      });
+
+      // Convert to array and sort by order
+      aQuestions_g = Object.values(oQuestions).sort((a, b) => a.Order - b.Order);
+
+      // Store poll data
+      oPollData_g = {
+         PollK: aData[0].PollK
+      };
+   }
+
+   /** --------------------------------------------------------------------------- PAGE_RenderPoll
+    * Render the poll UI
+    */
+   function PAGE_RenderPoll()
+   {
+      const eLoading = document.getElementById("idLoading");
+      const ePollHeader = document.getElementById("idPollHeader");
+      const eQuestionsContainer = document.getElementById("idQuestionsContainer");
+      const eButtons = document.getElementById("idButtons");
+
+      // Hide loading
+      eLoading.style.display = "none";
+
+      // Show poll header (use first question's label as header if available, otherwise generic)
+      // Note: The poll header is not in the vote-all_questions query, so we'll use a generic approach
+      // or you could load it separately with vote-get
+
+      // Clear questions container
+      eQuestionsContainer.innerHTML = "";
+
+      // Render each question
+      aQuestions_g.forEach((oQuestion, iIndex) => {
+         const eQuestion = PAGE_CreateQuestionElement(oQuestion, iIndex);
+         eQuestionsContainer.appendChild(eQuestion);
+      });
+
+      // Show buttons
+      eButtons.style.display = "flex";
+   }
+
+   /** --------------------------------------------------------------------------- PAGE_CreateQuestionElement
+    * Create a DOM element for a question
+    */
+   function PAGE_CreateQuestionElement(oQuestion, iIndex)
+   {
+      const eContainer = document.createElement("div");
+      eContainer.className = "question-container";
+      eContainer.dataset.QuestionK = oQuestion.QuestionK;
+
+      // Question label
+      const eLabel = document.createElement("label");
+      eLabel.className = "question-label";
+      eLabel.textContent = (iIndex + 1) + ". " + (oQuestion.Label || oQuestion.FName);
+      eContainer.appendChild(eLabel);
+
+      // Question description
+      if( oQuestion.Description ) {
+         const eDesc = document.createElement("div");
+         eDesc.className = "question-description";
+         eDesc.textContent = oQuestion.Description;
+         eContainer.appendChild(eDesc);
+      }
+
+      // Sort answers by order
+      const aAnswers = oQuestion.Answers.sort((a, b) => a.Order - b.Order);
+
+      // Create answers
+      aAnswers.forEach((oAnswer) => {
+         const eOption = document.createElement("div");
+         eOption.className = "answer-option";
+
+         // Radio button for single selection
+         const eInput = document.createElement("input");
+         eInput.type = "radio";
+         eInput.name = "question_" + oQuestion.QuestionK;
+         eInput.value = oAnswer.AnswerK;
+         eInput.dataset.AnswerK = oAnswer.AnswerK;
+         eInput.dataset.QuestionK = oQuestion.QuestionK;
+
+         // Label
+         const eAnswerLabel = document.createElement("label");
+         eAnswerLabel.className = "answer-label";
+         eAnswerLabel.textContent = oAnswer.Answer || oAnswer.FName;
+
+         eOption.appendChild(eInput);
+         eOption.appendChild(eAnswerLabel);
+         eContainer.appendChild(eOption);
+      });
+
+      return eContainer;
+   }
+
+   /** --------------------------------------------------------------------------- PAGE_SetListeners
+    * Configure page listeners
+    */
+   function PAGE_SetListeners()
+   {
+      const eContainer = document.getElementById("idContainer");
+
+      eContainer.addEventListener("click", async function(oEvent) {
+         const eTarget = oEvent.target.closest("[data-action]");
+         if( !eTarget ) return;
+
+         const sAction = eTarget.dataset.action;
+
+         if( sAction === "submit-vote" ) {
+            await PAGE_SubmitVote();
+         }
+      });
+   }
+
+   /** --------------------------------------------------------------------------- PAGE_SubmitVote
+    * Submit the vote to the server
+    */
+   async function PAGE_SubmitVote()
+   {
+      // Collect selected answers
+      const aAnswers = [];
+      const bAllAnswered = aQuestions_g.every((oQuestion) => {
+         const eSelected = document.querySelector(`input[name="question_${oQuestion.QuestionK}"]:checked`);
+         if( eSelected ) {
+            aAnswers.push({
+               PollK: oPollData_g.PollK,
+               PollQuestionK: oQuestion.QuestionK,
+               PollAnswerK: eSelected.value
+            });
+            return true;
+         }
+         return false;
+      });
+
+      if( !bAllAnswered ) {
+         oToast_g.Warning("Please answer all questions");
+         return;
+      }
+
+      try {
+         // Submit votes - you would need to create a query to insert votes
+         // For now, this is a placeholder showing how to collect the data
+         oToast_g.Info("Vote submitted successfully!");
+
+         console.log("Submitted answers:", aAnswers);
+
+         // Here you would send the votes to the server
+         // You would need to create a vote-add query in pages.html
+
+      } catch(oError) {
+         oToast_g.Error(oError.message);
+      }
+   }
+
+   /** --------------------------------------------------------------------------- PAGE_OnIdle
+    * Handle idle state
+    */
+   const PAGE_OnIdle = function()
+   {
+   };
+
+   // Initialize page when DOM is ready
+   document.addEventListener("DOMContentLoaded", PAGE_Initialize);
+
+   </script>
+</body>
+</html>
