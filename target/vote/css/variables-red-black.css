@@ -1,83 +1,83 @@
-
 /*
 ## base classes
 
-1. **primary**
-2. **secondary**
-3. **success**
-4. **danger**
-5. **warning**
-6. **info**
-7. **light**
-8. **dark**
+1. primary
+2. secondary
+3. success
+4. danger
+5. warning
+6. info
+7. light
+8. dark
 */
-
 
 :root {
    /* --- BASE BODY --- */
-   --color-body: #333333; /* Dark gray is softer than pure black for reading */
-   --background-body: #ffffff; /* White background */
+   --color-body: #333333;
+   --background-body: #ffffff;
 
-   /* --- THEME COLORS (Your Red/Black/Gold Vibe) --- */
+   /* --- THEME COLORS (Red/Black/Gold Vibe) --- */
 
-   /* Primary: Dark Gray (Main Action) */
+   /* Primary: Dark Gray */
    --color-primary: #ffffff;
    --background-primary: #1a1a1a;
-   --background-primary-hover: #333333; /* Added Hover */
+   --background-primary-hover: #333333;
 
-   /* Secondary: Deep Red (Secondary Action) */
+   /* Secondary: Deep Red */
    --color-secondary: #ffffff;
    --background-secondary: #590000;
-   --background-secondary-hover: #7a0000; /* Added Hover */
+   --background-secondary-hover: #7a0000;
 
-   /* Success: Green (Standard for success messages) */
+   /* Success: Green */
    --color-success: #ffffff;
    --background-success: #28a745;
    --background-success-hover: #218838;
 
-   /* Danger: Red (Standard for errors/delete) */
+   /* Danger: Red */
    --color-danger: #ffffff;
    --background-danger: #b22222;
    --background-danger-hover: #8b1a1a;
 
-   /* Warning: Gold/Amber (Standard for warnings) */
+   /* Warning: Gold/Amber */
    --color-warning: #333333;
    --background-warning: #f0ad4e;
    --background-warning-hover: #ec971f;
 
-   /* Info: Blue (Standard for info) */
+   /* Info: Blue */
    --color-info: #ffffff;
    --background-info: #0275d8;
    --background-info-hover: #025aa5;
 
-   /* Light: Used for subtle backgrounds or disabled buttons */
-   --color-light: #333333; /* Changed from White to Dark Gray for contrast */
+   /* Light */
+   --color-light: #333333;
    --background-light: #eeeeee;
    --background-light-hover: #e0e0e0;
 
-   /* Dark: Used for heavy emphasis or footers */
-   --color-dark: #ffffff; /* Changed from Dark Gray to White for contrast */
+   /* Dark */
+   --color-dark: #ffffff;
    --background-dark: #000000;
    --background-dark-hover: #222222;
 
-  /* Borders: For inputs, cards, dividers */
+   /* Borders */
    --color-border: #dddddd;
-   --color-border-dark: #444444; /* Darker border for dark themes */
+   --color-border-dark: #444444;
 
-   /* Muted Text: For subtitles, dates, placeholder text */
+   /* Muted Text */
    --color-muted: #6c757d;
 
    /* Background Form */
    --background-form: #ffffff;
 
-   /* Inputs: Background for text boxes */
+   /* Background for Sub-forms */
+   --background-form-sub: #f5f0f0;
+
+   /* Inputs */
    --background-input: #ffffff;
    --color-input: #333333;
 
-   /* Link Color: Standard clickable links */
-   --color-link: #590000; /* Using your secondary red as the link color */
+   /* Links */
+   --color-link: #590000;
    --color-link-hover: #330000;
-
 
    /* --- ACTIVE & DISABLED --- */
    --background-active: #590000;

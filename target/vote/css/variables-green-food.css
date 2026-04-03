@@ -69,6 +69,8 @@
 
    /* Background Form */
    --background-form: #ffffff;
+   /* Background for Sub-forms */
+   --background-form-sub: #f8f0d9;
 
    /* Inputs */
    --background-input: #ffffff;

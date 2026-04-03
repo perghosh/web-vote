@@ -1,21 +1,20 @@
 /*
 ## base classes
 
-1. **primary**
-2. **secondary**
-3. **success**
-4. **danger**
-5. **warning**
-6. **info**
-7. **light**
-8. **dark**
+1. primary
+2. secondary
+3. success
+4. danger
+5. warning
+6. info
+7. light
+8. dark
 */
-
 
 :root {
    /* --- BASE BODY --- */
-   --color-body: #ffffff;
-   --background-body: #000000;
+   --color-body: #000000;
+   --background-body: #ffffff;
 
    /* --- THEME COLORS --- */
 
@@ -66,15 +65,17 @@
    /* Muted Text */
    --color-muted: #6c757d;
 
-
    /* Background Form */
    --background-form: #ffffff;
+
+   /* Background for Sub-forms */
+   --background-form-sub: #f0f8f0;
 
    /* Inputs */
    --background-input: #ffffff;
    --color-input: #000000;
 
-   /* Links */
+   /* Links: Matching Primary Green */
    --color-link: #28a745;
    --color-link-hover: #218838;
 
@@ -82,6 +83,6 @@
    --background-active: #28a745;
    --color-active: #ffffff;
 
-   --background-disabled: #2d2d2d;
+   --background-disabled: #e9ecef;
    --color-disabled: #6c757d;
 }

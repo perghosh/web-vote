@@ -23,7 +23,7 @@
 
 
 .container-form { background: var(--background-form); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 20px; }
-.container-form-sub { background: var(--background-form-sub); border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 20px; }
+.container-form-sub { background: var(--background-form-sub); border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 12px; }
 
 .container-form .row { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
 .container-form .row:last-child { margin-bottom: 0; } /* to align last item to bottom */
@@ -47,6 +47,7 @@
 
 
 .container-form .button { background-color: var(--background-primary); border-radius: 8px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; transition: background-color 0.2s, color 0.2s; }
+.container-form .button-small { padding: 5px 14px; font-size: 0.9rem; }
 .container-form .button:hover { background-color: var(--background-primary-hover); }
 .container-form .button-success { background-color: var(--background-success); color: var(--color-success); }
 .container-form .button-success:hover { background-color: var(--background-success-hover); }
@@ -61,45 +62,30 @@
 
 
 
-/* Container-scoped simplified classes */
-.container-form .group { margin-bottom: 1.5rem; position: relative; }
-
-/* Floating label */
 .container-form .floating { display: block; position: relative; }
 
-/* Input Styling */
 .container-form .floating input { background: var(--background-input); border: 2px solid var(--color-border); border-radius: 6px; color: var(--color-input); display: block; font-size: 1rem; padding: 14px 12px; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; }
 
-/* Textarea Styling */
 .container-form .floating textarea { background: var(--background-input); border: 2px solid var(--color-border); border-radius: 6px; color: var(--color-input); display: block; font-family: inherit; font-size: 1rem; min-height: 100px; padding: 14px 12px; padding-top: 24px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; }
 
-/*
-.container-form .floating :is(input, textarea) {  background: var(--background-input);  border: 2px solid var(--color-border);  border-radius: 6px; color: var(--color-input); font-size: 1rem;  width: 100%;  transition: border-color 0.2s, box-shadow 0.2s;}
-*/
+.container-form .floating span { background-color: var(--background-input); color: var(--color-muted); font-weight: normal; left: 12px; padding: 0 6px; pointer-events: none; position: absolute; top: 50%; transform: translateY(-50%); transition: 0.25s ease all; white-space: nowrap; }
 
-/* The floating label text - base state */
-.container-form .floating span { background-color: var(--background-input); color: var(--color-muted); font-weight: normal; left: 12px; padding: 0 4px; pointer-events: none; position: absolute; top: 50%; transform: translateY(-50%); transition: 0.2s ease all; white-space: nowrap; }
-
-/* Override: label at top for textarea */
 .container-form .floating:has(textarea) span { top: 14px; transform: none; }
 
-/* Float label when input has content */
-.container-form .floating:has(input:not(:placeholder-shown)) span { color: var(--background-primary); font-size: 0.8rem; font-weight: bold; top: -10px; transform: translateY(0); }
+.container-form .floating:has(input:not(:placeholder-shown)) span,
+.container-form .floating:has(textarea:not(:placeholder-shown)) span,
+.container-form .floating:focus-within span { color: var(--color-link) !important; font-size: 0.8rem; font-weight: bold; top: -10px; transform: translateY(0); }
 
-/* Float label when textarea has content */
-.container-form .floating:has(textarea:not(:placeholder-shown)) span { color: var(--background-primary); font-size: 0.8rem; font-weight: bold; top: -10px; transform: none; }
+.container-form .floating input:focus,
+.container-form .floating textarea:focus { border-color: var(--color-link); box-shadow: 0 0 0 3px rgba(188, 108, 37, 0.25); outline: none; }
 
-/* Float label when focused - must come last to override content states */
-.container-form .floating:focus-within span { color: var(--background-primary) !important; font-size: 0.8rem; font-weight: bold; top: -10px; transform: translateY(0); }
-
-/* Focus Ring for input */
-.container-form .floating input:focus { border-color: var(--background-primary); box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2); outline: none; }
-
-/* Focus Ring for textarea */
-.container-form .floating textarea:focus { border-color: var(--background-primary); box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2); outline: none; }
+.container-form .floating.sub-background span,
+.container-form .floating.sub-background input,
+.container-form .floating.sub-background textarea {  background-color: var(--background-form-sub); }
 
 /* Help Text */
 .container-form .help-text { color: var(--color-muted); display: block; font-size: 0.8rem; margin-left: 2px; margin-top: 5px; }
+
 
 /* Fallback for browsers without :has() support */
 @supports not (selector(:has(*))) {

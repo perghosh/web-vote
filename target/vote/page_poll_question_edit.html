@@ -48,7 +48,7 @@ vote-get_answers - Select poll answers for poll
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/variables-corporate-blue.css">
+    <link rel="stylesheet" href="css/variables-orange.css">
     <link rel="stylesheet" href="css/poll.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
@@ -85,7 +85,7 @@ vote-get_answers - Select poll answers for poll
             </div>
             <div class="form-group">
                <label class="floating">
-                  <textarea placeholder=" " data-field="FDescription" rows="3"></textarea>
+                  <textarea placeholder=" " data-field="FDescription" rows="2"></textarea>
                   <span>Description</span>
                </label>
             </div>
@@ -103,7 +103,7 @@ vote-get_answers - Select poll answers for poll
     | Templates to clone
    -->
    <template id="idTemplateNewQuestion">
-      <div class="container-form margin_b-small" data-table="TPollQuestion" data-section="form">
+      <div class="container-form margin_b-large" data-table="TPollQuestion" data-section="form">
          <div data-section="record" data-table="TPollQuestion" data-key="">
             <h2 class="margin_b-small">Question name</h2>
             <div class="form-group form-row form-row--aside-left">
@@ -151,7 +151,7 @@ vote-get_answers - Select poll answers for poll
                </div>
                <div class="form-group">
                   <label class="floating">
-                     <textarea placeholder=" " data-field="FDescription" rows="3"></textarea>
+                     <textarea placeholder=" " data-field="FDescription" rows="2"></textarea>
                      <span>Description</span>
                   </label>
                </div>
@@ -164,38 +164,29 @@ vote-get_answers - Select poll answers for poll
 
    <!--  -->
    <template id="idTemplateAnswer">
-      <div class="container-form-sub margin_t-small" data-table="TPollAnswer" data-section="form">
+      <div class="container-form-sub margin_tb-small" data-table="TPollAnswer" data-section="form">
          <div data-section="record" data-table="TPollAnswer" data-key="">
-            <h3 class="margin_b-small">Answer</h3>
-            <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 64px;">
-               <label class="floating">
+            <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 80px;">
+               <label class="floating sub-background">
                   <input type="text" placeholder=" " data-field="FAnswer" required>
-                  <span>Answer</span>
+                  <span>Answer text</span>
                </label>
-               <label class="floating">
+               <label class="floating sub-background">
                   <input type="text" placeholder=" " data-field="FName">
                   <span>Name</span>
                </label>
-               <label class="floating">
+               <label class="floating sub-background">
                   <input type="number" step="1" min="0" placeholder=" " data-field="FOrder" value="0">
                   <span>#</span>
                </label>
             </div>
-            <!--
-            <div class="form-group">
-               <label class="floating">
-                  <textarea placeholder=" " data-field="FDescription" rows="2"></textarea>
-                  <span>Description</span>
-               </label>
-            </div>
-         -->
             <input type="hidden" data-field="PollK">
             <input type="hidden" data-field="PollQuestionK">
             <input type="hidden" data-field="PollAnswerK">
          </div>
          <div data-section="command">
-            <span class="button" data-action="update-pollanswer" data-command="update" data-table="TPollAnswer">Update answer</span>
-            <span class="button button-danger" data-action="delete-pollanswer" data-command="delete" data-table="TPollAnswer">Delete</span>
+            <span class="button button-small" data-action="update-pollanswer" data-command="update" data-table="TPollAnswer">Update answer</span>
+            <span class="button button-danger button-small" data-action="delete-pollanswer" data-command="delete" data-table="TPollAnswer">Delete</span>
          </div>
       </div>
    </template>
