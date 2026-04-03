@@ -10,64 +10,40 @@
 }
 
 
-/**
- * Form elements styles
- */
 .form-group { margin-bottom: 20px; }
-
-.form-label { color: var(--color-body); display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
 .form-input, .form-select { background: var(--background-body); border: 2px solid var(--border); border-radius: var(--radius-sm); color: var(--color-body); padding: 10px 14px; transition: all 0.2s; width: 100%; }
-.form-textarea { background: var(--background-body); border: 2px solid var(--border); border-radius: var(--radius-sm); color: var(--color-body); font-family: 'Courier New', monospace; padding: 10px 14px; resize: vertical; transition: all 0.2s; }
-.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); outline: none; }
-
-
-@media (max-width: 768px) {
-   .form-row { grid-template-columns: 1fr; }
-   body { padding: 12px; }
-}
-
-.form-row { 
-   display: grid; 
-   gap: 16px; 
-   /* Make this more flexible - use fractions instead of fixed */
-   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-
-/* Add specific layouts when needed */
+.form-label { color: var(--color-body); display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+.form-row { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .form-row--2column { grid-template-columns: repeat(2, 1fr); }
 .form-row--3column { grid-template-columns: repeat(3, 1fr); }
 .form-row--4column { grid-template-columns: repeat(4, 1fr); }
-.form-row--aside-left { grid-template-columns: 1fr 2fr; } 
-.form-row--aside-right { grid-template-columns: 2fr 1fr; } 
+.form-row--aside-left { grid-template-columns: 1fr 2fr; }
+.form-row--aside-right { grid-template-columns: 2fr 1fr; }
+.form-textarea { background: var(--background-body); border: 2px solid var(--border); border-radius: var(--radius-sm); color: var(--color-body); font-family: 'Courier New', monospace; padding: 10px 14px; resize: vertical; transition: all 0.2s; }
 
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); outline: none; }
 
-/**
- * MARGIN UTILITIES
- */
-
-/* Small Variants */
-.margin_t-small { margin-top: var(--space-sm); }
-.margin_b-small { margin-bottom: var(--space-sm); }
-.margin_tb-small { margin-top: var(--space-sm); margin-bottom: var(--space-sm); }
-.margin_l-small { margin-left: var(--space-sm); }
-.margin_r-small { margin-right: var(--space-sm); }
-.margin_lr-small { margin-left: var(--space-sm); margin-right: var(--space-sm); }
-.margin_a-small { margin: var(--space-sm); }
-
-/* Large Variants (Headings) */
-.margin_t-large { margin-top: var(--space-lg); }
-.margin_b-large { margin-bottom: var(--space-lg); }
-.margin_tb-large { margin-top: var(--space-lg); margin-bottom: var(--space-lg); }
-.margin_l-large { margin-left: var(--space-lg); }
-.margin_r-large { margin-right: var(--space-lg); }
-.margin_lr-large { margin-left: var(--space-lg); margin-right: var(--space-lg); }
 .margin_a-large { margin: var(--space-lg); }
+.margin_a-small { margin: var(--space-sm); }
+.margin_b-large { margin-bottom: var(--space-lg); }
+.margin_b-small { margin-bottom: var(--space-sm); }
+.margin_l-large { margin-left: var(--space-lg); }
+.margin_l-small { margin-left: var(--space-sm); }
+.margin_lr-large { margin-left: var(--space-lg); margin-right: var(--space-lg); }
+.margin_lr-small { margin-left: var(--space-sm); margin-right: var(--space-sm); }
+.margin_r-large { margin-right: var(--space-lg); }
+.margin_r-small { margin-right: var(--space-sm); }
+.margin_t-large { margin-top: var(--space-lg); }
+.margin_t-small { margin-top: var(--space-sm); }
+.margin_tb-large { margin-top: var(--space-lg); margin-bottom: var(--space-lg); }
+.margin_tb-small { margin-top: var(--space-sm); margin-bottom: var(--space-sm); }
 
-/**
- * PADDING UTILITIES (Optional but recommended)
- */
-
-.padding_a-small { padding: var(--space-sm); }
 .padding_a-large { padding: var(--space-lg); }
-.padding_tb-small { padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+.padding_a-small { padding: var(--space-sm); }
 .padding_tb-large { padding-top: var(--space-lg); padding-bottom: var(--space-lg); }
+.padding_tb-small { padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+
+@media (max-width: 768px) {
+  .form-row { grid-template-columns: 1fr; }
+  body { padding: 12px; }
+}

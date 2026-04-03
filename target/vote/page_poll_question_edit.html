@@ -48,7 +48,7 @@ vote-get_answers - Select poll answers for poll
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/variables-orange.css">
+    <link rel="stylesheet" href="css/variables-purple-soft.css">
     <link rel="stylesheet" href="css/poll.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
@@ -70,32 +70,38 @@ vote-get_answers - Select poll answers for poll
    <div id="idPage" class="page-container container page" data-section="page">
       <div id="idMessage" class="container-form margin_b-small"></div>
       <hr>
-      <div id="idPoll" class="container-form margin_b-small" >
-         <div data-section="record" data-table="TPoll">
-            <h2 class="margin_b-large">Poll Details</h2>
-            <div class="form-group form-row form-row--aside-left">
-               <label class="floating">
+        
+         <!-- Poll Details -->
+         <div id="idPoll" class="container-form margin_b-small">
+            <div data-section="record" data-table="TPoll">
+               <h2 class="margin_b-large">Poll Details</h2>
+               
+               <div class="form-group form-row form-row--aside-left">
+               <div class="floating">
                   <input type="text" placeholder=" " data-field="FName" required>
                   <span>Name</span>
-               </label>
-               <label class="floating">
+               </div>
+               <div class="floating">
                   <input type="text" placeholder=" " data-field="FHeader" required>
                   <span>Header</span>
-               </label>
-            </div>
-            <div class="form-group">
-               <label class="floating">
-                  <textarea placeholder=" " data-field="FDescription" rows="2"></textarea>
+               </div>
+               </div>
+
+               <div class="form-group">
+               <div class="floating">
+                  <textarea placeholder=" " data-field="FDescription" rows="3"></textarea>
                   <span>Description</span>
-               </label>
+               </div>
+               </div>
+            </div>
+
+            <div data-section="command">
+               <span class="button" data-action="update-poll" data-command="update" data-table="TPoll">Save Poll</span>
+               <span class="button" data-action="delete-poll" data-command="delete" data-table="TPoll">Delete</span>
+               <span class="button" data-action="new-question-form" data-command="new" data-table="TPollQuestion">Add Question</span>
             </div>
          </div>
-         <div data-section="command">
-            <span class="button" data-action="update-poll" data-command="update" data-table="TPoll">Save Poll</span>
-            <span class="button" data-action="delete-poll" data-command="delete" data-table="TPoll">Delete</span>
-            <span class="button" data-action="new-question-form" data-command="new" data-table="TPollQuestion">Add Question</span>
-         </div>
-      </div>
+         
       <div id="idQuestions"></div>
    </div>
 
@@ -107,10 +113,10 @@ vote-get_answers - Select poll answers for poll
          <div data-section="record" data-table="TPollQuestion" data-key="">
             <h2 class="margin_b-small">Question name</h2>
             <div class="form-group form-row form-row--aside-left">
-               <label class="floating">
+               <div class="floating">
                   <input type="text" placeholder=" " data-field="FName" required>
                   <span>Name</span>
-               </label>
+               </div>
             </div>
             <input type="hidden" data-field="PollK">
          </div>
@@ -136,24 +142,24 @@ vote-get_answers - Select poll answers for poll
                </div>
 
                <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 64px;">
-                  <label class="floating">
+                  <div class="floating">
                      <input type="text" placeholder=" " data-field="FName" required>
                      <span>Name</span>
-                  </label>
-                  <label class="floating">
+                  </div>
+                  <div class="floating">
                      <input type="text" placeholder=" " data-field="FLabel" required>
                      <span>Label</span>
-                  </label>
-                  <label class="floating">
+                  </div>
+                  <div class="floating">
                      <input type="number" step="1" min="0" placeholder=" " data-field="FOrder" value="0">
                      <span>#</span>
-                  </label>
+                  </div>
                </div>
                <div class="form-group">
-                  <label class="floating">
+                  <div class="floating">
                      <textarea placeholder=" " data-field="FDescription" rows="2"></textarea>
                      <span>Description</span>
-                  </label>
+                  </div>
                </div>
                <input type="hidden" data-field="PollK">
                <input type="hidden" data-field="PollQuestionK">

@@ -1,43 +1,88 @@
-
 /*
-
 ## base classes
 
-1. **primary**
-2. **secondary**
-3. **success**
-4. **danger**
-5. **warning**
-6. **info**
-7. **light**
-8. **dark**
+1. primary
+2. secondary
+3. success
+4. danger
+5. warning
+6. info
+7. light
+8. dark
 */
 
 :root {
-   --color-body: #000000; /* Black text for body */
-   --background-body: #ffffff; /* White background for body */
+   /* --- BASE BODY --- */
+   --color-body: #000000;
+   --background-body: #ffffff;
 
-   /* Background and Text Colors */
-   --color-primary: #ffffff; /* text for primary background */
-   --color-secondary: #3a3a3a; /* text for secondary background */
-   --color-success: #ffffff; /* text for success background */
-   --color-danger: #3a3a3a; /* text for danger background */
-   --color-warning: #3a3a3a; /* text for warning background */
-   --color-info: #3a3a3a; /* text for info background */
-   --color-light: #3a3a3a; /* text for light background */
-   --color-dark: #ffffff; /* text for dark background */
-   /* Background Colors (Custom Variants) */
-   --background-primary: #b39ddb; /* Primary - Soft Lavender */
-   --background-secondary: #d4b8e9; /* Secondary - Light Lilac */
-   --background-success: #9c89b8; /* Success - Mauve */
-   --background-danger: #8c6bb1; /* Danger - Plum */
-   --background-warning: #c3b3db; /* Warning - Pale Purple */
-   --background-info: #a685b4; /* Info - Dusty Lavender */
-   --background-light: #e6d8f2; /* Light - Very Light Purple */
-   --background-dark: #765d90; /* Dark - Deep Purple */
-   /* Active and disabled, should work with primary and secondary color for text */
-   --background-active: var(--background-primary); /* background for active elements */
-   --background-disabled: var(--background-secondary); /* background for disabled elements */
-   --color-active: var(--color-primary); /* color for active elements */
-   --color-disabled: var(--color-secondary); /* color for disabled elements */
+   /* --- THEME COLORS (Soft Purple / Lavender Palette) --- */
+
+   /* Primary: Soft Lavender */
+   --color-primary: #ffffff;
+   --background-primary: #b39ddb;
+   --background-primary-hover: #9575cd;
+
+   /* Secondary: Light Lilac */
+   --color-secondary: #3a3a3a;
+   --background-secondary: #d4b8e9;
+   --background-secondary-hover: #c4a4e0;
+
+   /* Success: Mauve */
+   --color-success: #ffffff;
+   --background-success: #9c89b8;
+   --background-success-hover: #8a79a3;
+
+   /* Danger: Plum */
+   --color-danger: #3a3a3a;
+   --background-danger: #8c6bb1;
+   --background-danger-hover: #7a5c9b;
+
+   /* Warning: Pale Purple */
+   --color-warning: #3a3a3a;
+   --background-warning: #c3b3db;
+   --background-warning-hover: #b39ddb;
+
+   /* Info: Dusty Lavender */
+   --color-info: #3a3a3a;
+   --background-info: #a685b4;
+   --background-info-hover: #9676a3;
+
+   /* Light: Very Light Purple */
+   --color-light: #3a3a3a;
+   --background-light: #e6d8f2;
+   --background-light-hover: #d9c6eb;
+
+   /* Dark: Deep Purple */
+   --color-dark: #ffffff;
+   --background-dark: #765d90;
+   --background-dark-hover: #66507d;
+
+   /* Borders */
+   --color-border: #d4b8e9;
+   --color-border-dark: #9575cd;
+
+   /* Muted Text */
+   --color-muted: #6b7280;
+
+   /* Background Form */
+   --background-form: #ffffff;
+
+   /* Background for Sub-forms */
+   --background-form-sub: #f0e6fa;
+
+   /* Inputs */
+   --background-input: #ffffff;
+   --color-input: #000000;
+
+   /* Links */
+   --color-link: #8c6bb1;
+   --color-link-hover: #7a5c9b;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #b39ddb;
+   --color-active: #ffffff;
+
+   --background-disabled: #d4b8e9;
+   --color-disabled: #6b7280;
 }

@@ -1,0 +1,229 @@
+/*
+## Harvest Theme
+Warm earthy golden tones inspired by harvest fields, wheat, and autumn nature.
+Perfect for organic, rustic, or natural-feeling interfaces like your poll editor.
+*/
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #333333;
+   --background-body: #F5DEB3;           /* Soft wheat background */
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Goldenrod */
+   --color-primary: #ffffff;
+   --background-primary: #DAA520;
+   --background-primary-hover: #B8860B;
+
+   /* Secondary: Burlywood / Soft Beige */
+   --color-secondary: #333333;
+   --background-secondary: #DEB887;
+   --background-secondary-hover: #D4C5A9;
+
+   /* Success: Forest Green */
+   --color-success: #ffffff;
+   --background-success: #228B22;
+   --background-success-hover: #1a6b1a;
+
+   /* Danger / Error: Crimson */
+   --color-danger: #ffffff;
+   --background-danger: #DC143C;
+   --background-danger-hover: #b01030;
+
+   /* Warning: Same as Danger (matching your original palette) */
+   --color-warning: #ffffff;
+   --background-warning: #DC143C;
+   --background-warning-hover: #b01030;
+
+   /* Info: Dark Golden Brown */
+   --color-info: #ffffff;
+   --background-info: #B8860B;
+   --background-info-hover: #8b5a08;
+
+   /* Light */
+   --color-light: #333333;
+   --background-light: #F5DEB3;
+   --background-light-hover: #EDE0C8;
+
+   /* Dark */
+   --color-dark: #ffffff;
+   --background-dark: #556655;
+   --background-dark-hover: #445544;
+
+   /* Borders & Lines */
+   --color-border: #CB8553;
+   --color-border-dark: #CD853F;
+
+   /* Muted Text */
+   --color-muted: #929F92;
+
+   /* Background Form */
+   --background-form: #F5DEB3;
+
+   /* Background for Sub-forms / Grouped items (Answers, etc.) */
+   --background-form-sub: #EDE0C8;
+
+   /* Inputs */
+   --background-input: #ffffff;
+   --color-input: #333333;
+
+   /* Links */
+   --color-link: #DAA520;
+   --color-link-hover: #B8860B;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #DAA520;
+   --color-active: #ffffff;
+
+   --background-disabled: #556655;
+   --color-disabled: #929F92;
+
+   /* Extra utility colors from your original palette */
+   --color-even: #929F92;
+   --color-odd: #5D6A5D;
+   --color-footer: #CD853F;
+   --color-header: #DAA520;
+   --color-highlight: #90EE90;
+   --color-brief: #DEB887;
+   --color-default: #D4C5A9;
+   --color-line: #CB8553;
+}
+
+/* ==================== FLOATING LABELS ==================== */
+
+.container-form .floating {
+  display: block;
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.container-form .floating input,
+.container-form .floating textarea {
+  background: var(--background-input);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-input);
+  font-size: 1rem;
+  padding: 14px 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.container-form .floating textarea {
+  min-height: 100px;
+  padding-top: 24px;
+  resize: vertical;
+}
+
+.container-form .floating span {
+  background-color: var(--background-form-sub);
+  color: var(--color-muted);
+  font-weight: normal;
+  left: 14px;
+  padding: 0 8px;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: 0.25s ease all;
+  white-space: nowrap;
+}
+
+.container-form .floating:has(textarea) span {
+  top: 14px;
+  transform: none;
+}
+
+/* Floating animation */
+.container-form .floating:has(input:not(:placeholder-shown)) span,
+.container-form .floating:has(textarea:not(:placeholder-shown)) span,
+.container-form .floating:focus-within span {
+  color: var(--color-link) !important;
+  font-size: 0.85rem;
+  font-weight: 600;
+  top: -9px;
+  transform: translateY(0);
+}
+
+/* Focus styles */
+.container-form .floating input:focus,
+.container-form .floating textarea:focus {
+  border-color: var(--color-link);
+  box-shadow: 0 0 0 3px rgba(218, 165, 32, 0.25);
+  outline: none;
+}
+
+/* Sub-background support */
+.container-form .floating.sub-background span,
+.container-form .floating.sub-background input,
+.container-form .floating.sub-background textarea {
+  background-color: var(--background-form-sub);
+}
+
+/* ==================== BUTTONS ==================== */
+
+.container-form .button {
+  background-color: var(--background-primary);
+  border-radius: 8px;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: 500;
+  min-width: 100px;
+  padding: 9px 18px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.container-form .button:hover {
+  background-color: var(--background-primary-hover);
+}
+
+.container-form .button-sm {
+  padding: 7px 14px;
+  font-size: 0.92rem;
+  min-width: auto;
+}
+
+.container-form .button-danger {
+  background-color: var(--background-danger);
+  color: var(--color-danger);
+}
+
+.container-form .button-danger:hover {
+  background-color: var(--background-danger-hover);
+}
+
+.container-form .button-success { background-color: var(--background-success); color: var(--color-success); }
+.container-form .button-success:hover { background-color: var(--background-success-hover); }
+
+/* ==================== ANSWER CARDS ==================== */
+
+.answer-item {
+  background-color: var(--background-form-sub);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 80px;
+  gap: 14px;
+}
+
+.flex {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* Help text */
+.container-form .help-text {
+  color: var(--color-muted);
+  display: block;
+  font-size: 0.85rem;
+  margin-left: 4px;
+  margin-top: 4px;
+}
