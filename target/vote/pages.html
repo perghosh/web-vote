@@ -143,6 +143,7 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
           const iCount = oCount.count;
           if( iCount === 0 ) {                                                 // no queries means that we need to load them
              SERVER_AddSqlQuery();
+             console.assert( iCount === 0, "Expected 0 queries in the server, but found " + iCount );
           }
           else {
              oToast_g.Show(`${iCount} SQL queries already loaded`, { sType: "info" });

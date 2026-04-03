@@ -68,6 +68,8 @@
 
    /* Background Form */
    --background-form: #ffffff;
+      /* Background for Sub-forms */
+   --background-form-sub: #f8fafd;
 
    /* Inputs */
    --background-input: #ffffff;

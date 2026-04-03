@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poll Editor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    .question-card { transition: all 0.2s; }
+    .answer-item { transition: all 0.2s; }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <div class="max-w-5xl mx-auto p-6">
+
+    <!-- Poll Info Header -->
+    <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 mb-6">
+      <p class="text-xs text-gray-400 mb-1">Poll information loaded for poll: ("PollK":"6DAEC3A0BA3BA74AA700DAAD7F3D1372","FName":"test2","FHeader":"test2 header","FDescription":"test2 description")</p>
+      <h1 class="text-2xl font-semibold">Edit Poll</h1>
+    </div>
+
+    <!-- Poll Details -->
+    <div class="bg-white text-gray-900 rounded-2xl shadow-xl p-6 mb-8">
+      <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-poll"></i> Poll Details
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium mb-1">Name</label>
+          <input id="poll-name" value="test2" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Header</label>
+          <input id="poll-header" value="test2 header" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="md:col-span-3">
+          <label class="block text-sm font-medium mb-1">Description</label>
+          <textarea id="poll-desc" rows="2" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">test2 description</textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button onclick="savePoll()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2">
+          <i class="fa-solid fa-save"></i> Save Poll
+        </button>
+        <button onclick="deletePoll()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2">
+          <i class="fa-solid fa-trash"></i> Delete
+        </button>
+        <button onclick="addQuestion()" class="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> Add Question
+        </button>
+      </div>
+    </div>
+
+    <!-- Questions Section -->
+    <div id="questions-container" class="space-y-6"></div>
+  </div>
+
+  <script>
+    // Data model
+    let poll = {
+      name: "test2",
+      header: "test2 header",
+      description: "test2 description"
+    };
+
+    let questions = [
+      {
+        id: 1,
+        name: "q1",
+        label: "",
+        description: "",
+        answers: [
+          { id: 1, text: "test answer", name: "test" },
+          { id: 2, text: "test 2", name: "test" }
+        ]
+      },
+      {
+        id: 2,
+        name: "q3",
+        label: "",
+        description: "",
+        answers: []
+      },
+      {
+        id: 3,
+        name: "q2",
+        label: "",
+        description: "",
+        answers: []
+      }
+    ];
+
+    let questionCounter = 4; // next ID
+
+    // Render all questions
+    function renderQuestions() {
+      const container = document.getElementById("questions-container");
+      container.innerHTML = "";
+
+      questions.forEach((q, index) => {
+        const qHTML = `
+          <div class="question-card bg-white text-gray-900 rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+            <!-- Question Header -->
+            <div class="px-6 py-4 bg-gray-800 text-white flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">#${index + 1}</span>
+                <h3 class="font-semibold">Question</h3>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="updateQuestion(${q.id})" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-xl flex items-center gap-1">
+                  <i class="fa-solid fa-save"></i> Update question
+                </button>
+                <button onclick="addAnswer(${q.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-xl flex items-center gap-1">
+                  <i class="fa-solid fa-plus"></i> Add Answer
+                </button>
+                <button onclick="deleteQuestion(${q.id})" class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-xl flex items-center gap-1">
+                  <i class="fa-solid fa-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <!-- Question fields -->
+                <div class="md:col-span-4">
+                  <label class="block text-sm font-medium mb-1 text-gray-500">Name</label>
+                  <input id="q-name-${q.id}" value="${q.name}" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="md:col-span-4">
+                  <label class="block text-sm font-medium mb-1 text-gray-500">Label</label>
+                  <input id="q-label-${q.id}" value="${q.label}" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="md:col-span-12">
+                  <label class="block text-sm font-medium mb-1 text-gray-500">Description</label>
+                  <textarea id="q-desc-${q.id}" rows="2" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500">${q.description}</textarea>
+                </div>
+              </div>
+
+              <!-- Answers -->
+              ${q.answers.length > 0 ? `
+              <div class="mt-8">
+                <h4 class="text-sm font-medium text-gray-500 mb-3">Answers</h4>
+                <div class="space-y-4" id="answers-${q.id}">
+                  ${q.answers.map(a => `
+                  <div class="answer-item flex items-center gap-4 bg-gray-100 p-4 rounded-2xl">
+                    <div class="flex-1">
+                      <label class="block text-xs text-gray-500">Answer</label>
+                      <input id="a-text-${q.id}-${a.id}" value="${a.text}" class="w-full px-4 py-2 border border-gray-300 rounded-xl">
+                    </div>
+                    <div class="w-40">
+                      <label class="block text-xs text-gray-500">Name</label>
+                      <input id="a-name-${q.id}-${a.id}" value="${a.name}" class="w-full px-4 py-2 border border-gray-300 rounded-xl">
+                    </div>
+                    <div class="flex items-center gap-3 pt-5">
+                      <span class="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full"> ${a.id} </span>
+                      <button onclick="deleteAnswer(${q.id}, ${a.id})" class="text-red-600 hover:text-red-700">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>`).join("")}
+                </div>
+              </div>` : `
+              <div class="mt-8 text-center py-8 text-gray-400 border border-dashed border-gray-300 rounded-2xl">
+                No answers yet — click "Add Answer"
+              </div>`}
+            </div>
+          </div>`;
+        
+        container.innerHTML += qHTML;
+      });
+    }
+
+    // Save poll metadata (demo)
+    function savePoll() {
+      poll.name = document.getElementById("poll-name").value;
+      poll.header = document.getElementById("poll-header").value;
+      poll.description = document.getElementById("poll-desc").value;
+      alert("✅ Poll saved successfully! (demo)");
+    }
+
+    function deletePoll() {
+      if (confirm("Delete entire poll?")) {
+        alert("🗑️ Poll deleted (demo)");
+      }
+    }
+
+    // Question actions
+    function addQuestion() {
+      const newQ = {
+        id: questionCounter++,
+        name: `q${questionCounter}`,
+        label: "",
+        description: "",
+        answers: []
+      };
+      questions.push(newQ);
+      renderQuestions();
+    }
+
+    function updateQuestion(id) {
+      const q = questions.find(q => q.id === id);
+      if (!q) return;
+      
+      q.name = document.getElementById(`q-name-${id}`).value;
+      q.label = document.getElementById(`q-label-${id}`).value;
+      q.description = document.getElementById(`q-desc-${id}`).value;
+      
+      renderQuestions();
+      alert("✅ Question updated!");
+    }
+
+    function deleteQuestion(id) {
+      if (confirm("Delete this question and all its answers?")) {
+        questions = questions.filter(q => q.id !== id);
+        renderQuestions();
+      }
+    }
+
+    // Answer actions
+    function addAnswer(questionId) {
+      const q = questions.find(q => q.id === questionId);
+      if (!q) return;
+      
+      const newAnswer = {
+        id: Date.now(),
+        text: "New answer",
+        name: "new"
+      };
+      q.answers.push(newAnswer);
+      renderQuestions();
+    }
+
+    function deleteAnswer(questionId, answerId) {
+      const q = questions.find(q => q.id === questionId);
+      if (!q) return;
+      q.answers = q.answers.filter(a => a.id !== answerId);
+      renderQuestions();
+    }
+
+    // Initialize
+    window.onload = function() {
+      // Tailwind script already loaded
+      renderQuestions();
+    };
+  </script>
+</body>
+</html>

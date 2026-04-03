@@ -124,8 +124,17 @@ vote-get_answers - Select poll answers for poll
    <template id="idTemplateQuestion">
       <div class="container-form margin_b-small"data-section="form-list">
          <div data-table="TPollQuestion" data-section="form">
+
             <div data-section="record" data-table="TPollQuestion" data-key="">
-               <h2 class="margin_b-small">Question</h2>
+               <div class="form-group form-row form-row--aside-left">
+                  <h2 class="margin_b-small">Question</h2>
+                  <div data-section="command" style="margin-left: auto;"> <!-- right align buttons for question -->
+                     <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Update question</span>
+                     <span class="button" data-action="new-answer-form" data-command="new" data-table="TPollAnswer">Add Answer</span>
+                     <span class="button button-danger" data-action="delete-pollquestion" data-command="delete" data-table="TPollQuestion">Delete</span>
+                  </div>
+               </div>
+
                <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 64px;">
                   <label class="floating">
                      <input type="text" placeholder=" " data-field="FName" required>
@@ -149,18 +158,13 @@ vote-get_answers - Select poll answers for poll
                <input type="hidden" data-field="PollK">
                <input type="hidden" data-field="PollQuestionK">
             </div>
-            <div data-section="command">
-               <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Update question</span>
-               <span class="button" data-action="new-answer-form" data-command="new" data-table="TPollAnswer">Add Answer</span>
-               <span class="button" data-action="delete-pollquestion" data-command="delete" data-table="TPollQuestion">Delete</span>
-            </div>
          </div>
       </div>
    </template>
 
    <!--  -->
    <template id="idTemplateAnswer">
-      <div class="margin_t-small" data-table="TPollAnswer" data-section="form">
+      <div class="container-form-sub margin_t-small" data-table="TPollAnswer" data-section="form">
          <div data-section="record" data-table="TPollAnswer" data-key="">
             <h3 class="margin_b-small">Answer</h3>
             <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 64px;">
@@ -191,7 +195,7 @@ vote-get_answers - Select poll answers for poll
          </div>
          <div data-section="command">
             <span class="button" data-action="update-pollanswer" data-command="update" data-table="TPollAnswer">Update answer</span>
-            <span class="button" data-action="delete-pollanswer" data-command="delete" data-table="TPollAnswer">Delete</span>
+            <span class="button button-danger" data-action="delete-pollanswer" data-command="delete" data-table="TPollAnswer">Delete</span>
          </div>
       </div>
    </template>
