@@ -89,7 +89,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             <!-- align to right -->
          </div>
          <div class="row" style="justify-content: flex-end; flex: 1;">
-            <button class="button" style="visibility: hidden;" data-action="poll-open" data-table="TPoll" data-idle="poll_key">Add poll questions ...</button>
+            <button class="button" style="visibility: hidden;" data-action="poll-open" data-table="TPoll" data-idle="poll_key">Edit poll ...</button>
+            <button class="button" style="visibility: hidden;" data-action="poll-cast" data-table="TPoll" data-idle="poll_key">Casting ...</button>
          </div>
 
       </form>
@@ -409,6 +410,20 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   const sPollKey = oDBPollRecord.GetKeyValue();               console.assert(sPollKey, "sPollKey is null or empty");
 
                   window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
+            } break;
+            case "poll-open": {
+               // Open poll questions page, pass selected poll key as parameter
+               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+                  const sPollKey = oDBPollRecord.GetKeyValue();               console.assert(sPollKey, "sPollKey is null or empty");
+
+                  window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
+            } break;
+            case "poll-cast": {
+               // Open poll casting page, pass selected poll key as parameter
+               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+                  const sPollKey = oDBPollRecord.GetKeyValue();               console.assert(sPollKey, "sPollKey is null or empty");
+
+                  window.location.href = `page_cast.html?key=${encodeURIComponent(sPollKey)}`;
             } break;
             default:
                console.error("Unknown action:", sAction);
