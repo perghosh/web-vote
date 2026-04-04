@@ -21,6 +21,14 @@
 
 @TASK [project: cast-vote] [description: Render poll and answers in page] [status: open] [tag: ui]
 
+*/
+
+/*
+@PROJECT [name: edit-poll01] [description: Edit poll and connected tables]
+
+@TASK [project: edit-poll01] [description: Change style to more modern looking website] [status: incomplete]
+
+@TASK [project: edit-poll01] [description: Add more functionality] [status: incomplete]
 
 */
 
