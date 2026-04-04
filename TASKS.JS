@@ -32,11 +32,12 @@ Find projects
 "segment" sets what code segments cleaner will look at
 
 Find tasks
-- Find projects: cleaner find "**" --segment comment --pattern "@TASK"
+- Find tasks: cleaner find "**" --segment comment --pattern "@TASK"
+- Find tasks for project: cleaner find "**" --segment comment --pattern "@TASK" --keys "project" --kv-where "project = 'cast-vote'"
 
 Filter tasks by status (use --kv-where to filter on key value pairs in the comment)
 - Find completed tasks: cleaner find "**" --segment comment --pattern "@TASK" --keys "status" --kv-where "status = 'completed'"
-  `keys` is used to specify what cleaner will try to exxtract from the comment, and `kv-where` is used to filter
+  `keys` is used to specify what cleaner will try to extract from the comment, and `kv-where` is used to filter
 
 Add description
 - Add description to task: cleaner find "**" --segment comment --pattern "@TASK" --keys "status;description"  --kv-where "status = 'completed'"

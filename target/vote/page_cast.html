@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/variables-purple-soft.css">
+    <link rel="stylesheet" href="css/variables/variables-purple-soft.css">
     <link rel="stylesheet" href="css/poll.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
@@ -42,9 +42,6 @@ let oDocument_g; // Global document object
 let oToast_g;
 
 // ## Prepare base url .....................................................
-const sBaseUrl = gd.GetBaseUrl();
-gd.SetBaseUrl(sBaseUrl);
-
 const sBaseUrl_g = gd.GetBaseUrl();
 gd.SetBaseUrl(sBaseUrl_g);
 
@@ -67,7 +64,44 @@ function PAGE_Initialize() {
       console.warn("No poll key or invalid poll key provided in URL parameters, fetching first poll");
       sPollKey = null; // Set to null to fetch first poll
    }
-}   
+   else {
+      oDocument_g.SetValue("PollKey", sPollKey);                              // Store poll key in document for later use
+      PAGE_Load();                                                            // Load poll information and display it on the page
+   }
+}
+
+function PAGE_SetListeners() {
+   // ## Set listener for cast vote button
+   const oPage = document.getElementById("idPage");
+}
+
+/**
+ * Load poll information and display it on the page
+ * @TASK [project: cast-vote] [description: Get poll information for key and display it] [status: open] [tag: sql, backend, ui]
+ */
+function PAGE_Load() {
+   // ## Load poll information and display it on the page   
+
+   const sPollKey = oDocument_g.GetValue("PollKey");                                              console.assert(sPollKey, "Poll key is not set in document");
+
+   // ## Send request to server to get poll information, questions, and answers
+   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
+   for( let i = 0; i < aQueryName.length; i++ ) {
+      const sQueryName = aQueryName[i];
+      gd.SendToServer("", "!db/select", "query=#" + sQueryName + "\n" + `values={"PollK":"${sPollKey}"}`).then(function(oResult) {
+         const data_ = oResult.data;
+         const aResult = JSON.parse( data_.querySelector("result").textContent ); // first result holds array
+         const oTable = new Table(aResult);
+
+         // ## Add result to cache
+         if (sQueryName === "cast-poll") { oTable.name = "TPoll"; }
+         else if (sQueryName === "cast-poll_questions") { oTable.name = "TPollQuestion"; }
+         else if (sQueryName === "cast-poll_answers") { oTable.name = "TPollAnswer"; }
+
+         oDocument_g.AddTable(oTable);
+      });
+   }
+}
  
    </script>
 </body>

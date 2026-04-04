@@ -107,8 +107,9 @@ class Table {
       this.sName = options_.sName || ""; // Initialize name to empty string if not provided
    }
 
-   // Getter for name property
+   // Getter/Setter for name property
    get name() { return this.sName; }
+   set name(value) { this.sName = value; }
 
    /** -----------------------------------------------------------------------
     * Get column index for name or alias
