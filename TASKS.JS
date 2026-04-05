@@ -1,17 +1,20 @@
-// ## TASKS.JS file contains all tasks for the project
+// ## TASKS.JS Manage projects and tasks. Main file to track and manage projects and tasks.
+// status: open, in-progress, done, blocked, closed
+// type: bug, feature, documentation, refactor
+// priority: low, medium, high, critical
 
 /*
-@PROJECT [name: edit-poll] [description: Edit poll and connected tables] 
+@PROJECT [name: edit-poll] [description: Edit poll and connected tables] [user: per]
 
-@TASK [project: edit-poll] [description: Get main poll information for context when adding poll information] [status: completed] 
+@TASK [project: edit-poll] [description: Get main poll information for context when adding poll information] [status: done] 
 
-@TASK [project: edit-poll] [description: Jump to edit poll page or cast vote page] [status: completed]
+@TASK [project: edit-poll] [description: Jump to edit poll page or cast vote page] [status: done]
 */
 
 /*
-@PROJECT [name: cast-vote] [description: Page used for casting votes on polls] 
+@PROJECT [name: cast-vote] [description: Page used for casting votes on polls] [user: per]
 
-@TASK [project: cast-vote] [description: Get key to active poll and check that it is valid] [status: completed] [tag: sql, backend]
+@TASK [project: cast-vote] [description: Get key to active poll and check that it is valid] [status: done] [tag: sql, backend]
 
 @TASK [project: cast-vote] [description: Get poll information for key and display it] [status: open] [tag: sql, backend, ui]
 
@@ -24,11 +27,11 @@
 */
 
 /*
-@PROJECT [name: edit-poll01] [description: Edit poll and connected tables]
+@PROJECT [name: edit-poll01] [description: Edit poll and connected tables] [user: kevin]
 
-@TASK [project: edit-poll01] [description: Change style to more modern looking website] [status: incomplete]
+@TASK [project: edit-poll01] [description: Change style to more modern looking website] [status: open]
 
-@TASK [project: edit-poll01] [description: Add more functionality] [status: incomplete]
+@TASK [project: edit-poll01] [description: Add more functionality] [status: open]
 
 */
 
