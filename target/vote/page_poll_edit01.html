@@ -41,26 +41,37 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
 
       button.button { border: none; }
+
+      .group {
+         display: flex;
+         gap: 12px;
+         align-items: flex-end;
+      }
+
+      .row {
+         display: flex;
+         width: 100%;
+      }
    </style>
 </head>
 <body>
    <div id="idContainer" class="page-container">
 
-    <form id="idForm" class="container-form" onsubmit="event.preventDefault();" style="width: 700px; margin-bottom: 20px;">
+    <form id="idFormSearch" class="container-form" onsubmit="event.preventDefault();" style="width: 700px; margin-bottom: 20px;">
 
         <div class="title" style="margin-bottom: 20px;"><h2>Search Polls</h2></div>
 
-        <div data-section="search" class="group" style="margin-bottom: 20px; margin-top: 0;">
+        <div data-section="search" class="group">
             <div class="row">
-                    <div style="flex: 1;">
+                  <div style="flex: 1;">
                     <label class="floating">
                         <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
-                        <span>Search polls</span>
+                        <span>Search</span>
                     </label>
-                    </div>
-                    <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
-                </div>
+                  </div>
+                  <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
             </div>
+         </div>
 
         <div data-section="select-polls" class="container-result"></div>
     </form>
@@ -70,22 +81,29 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
         <div class="title" style="margin-bottom: 20px;"><h2>Edit Poll Details</h2></div>
 
          <div data-section="poll-form">
-            <div class="group" style="width: 50%;">
-               <label class="floating">
-                  <input type="text" placeholder=" " data-field="FName">
-                  <span>Name</span>
-               </label>
+            <div class="group" style="gap: 20px;">
+               <div style="flex: 1">
+                  <label class="floating">
+                     <input type="text" placeholder=" " data-field="FName">
+                     <span>Name</span>
+                  </label>
+               </div>
+
+               <div style="flex: 1">
+                  <label class="floating">
+                     <input type="text" placeholder=" " data-field="FHeader">
+                     <span>Header</span>
+                  </label>
+               </div>
             </div>
 
-            <div class="group" style="margin-top: 20px; width: 50%;">
-               <label class="floating">
-                  <input type="text" placeholder=" " data-field="FHeader">
-                  <span>Header</span>
-               </label>
-            </div>
+            <!--<div class="group" style="margin-top: 20px; width: 50%;">
+
+               
+            </div>-->
 
             <div class="group" style="margin-top: 20px;">
-               <label class="floating">
+               <label class="floating" style="width: 100%;">
                   <textarea placeholder=" " data-field="FDescription"></textarea>
                   <span>Description</span>
                </label>
@@ -114,7 +132,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
    function CreateButtons(eParent)
    {
-      /*
+      
       PAGE_DeleteButtons(eParent);
 
       const eButtonUpdate = document.createElement("button");
@@ -129,7 +147,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       eParent.appendChild(eButtonUpdate);
       eParent.appendChild(eButtonDelete);
-      */
+      
    }
 
    /** ------------------------------------------------------------------------
