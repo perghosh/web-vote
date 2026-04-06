@@ -73,37 +73,65 @@ class Table {
     * If you pass first value in with the format [[]] it is table data.
     * If you pass first value in with the format [] it is column data.
     *
-    * @param {Object} options_
-    * @param {string} [options_.sName=""] used to identify the table with name for finding in lists
-    * @param {Array<Array>} [options_.aTable=[]]
-    * @param {Array<string>} [options_.aColumn=[]]
+    * Column definitions support the same formats as DBRecord:
+    * - Array of strings or objects: ["Name", "Age"] or [{sName:"Name", sType:"string"}]
+    * - Plain comma string:          "Name,Age,Email"
+    * - Semicolon-delimited string:  "Name,alias,type; Age,age,number"
+    *   Each semicolon-separated entry is "name,alias,type" (alias and type are optional)
+    * - Single plain object:         {sName:"Name"} — coerced to [object]
+    *
+    * @param {Array|string|Object} columns_ - Column definitions, or 2D table data
+    * @param {Object} [options_={}]
+    * @param {string} [options_.sName=""] - Name to identify the table in lists
+    * @param {boolean} [options_.bHeader=true] - When columns_ is 2D data, treat first row as header
+    * @param {Array<Array>} [options_.aTable=[]] - Pre-built row data
+    * @param {Array} [options_.aColumn=[]] - Pre-built column array (overrides columns_)
     */
    constructor(columns_ = [], options_ = {}) {
-      if( typeof columns_ === "string" ) { columns_ = columns_.split(","); }
-      if( !Array.isArray(columns_) ) { throw new Error("Invalid argument"); }
-
-      
-      const bIsTableData = columns_.length > 0 && Array.isArray(columns_[0]);  // Check if the first element is an array to identify a 2D table structure
-
+      if( columns_ === undefined || columns_ === null ) { columns_ = []; }
+ 
+      // ## Normalise string input — mirrors DBRecord column-string parsing ....
+      if( typeof columns_ === "string" ) {
+         if( columns_.includes(";") ) {
+            // ## Semicolon-separated entries, each entry is "name,alias,type"
+            columns_ = columns_.split(";").map(s => s.trim()).filter(s => s);
+            columns_ = columns_.map(sColumn => {
+               const aParts = sColumn.split(",").map(s => s.trim());
+               if( aParts.length < 2 ) { aParts[1] = aParts[0]; }             // Default alias to name
+               if( aParts.length < 3 ) { aParts[2] = "string"; }              // Default type to string
+               return { sName: aParts[0], sAlias: aParts[1] || aParts[0], sType: aParts[2] || "string" };
+            });
+         }
+         else { columns_ = columns_.split(",").map(s => s.trim()).filter(s => s); } // Plain comma-separated names
+      }
+ 
+      // ## Coerce a single plain object to a one-element array ....................
+      if( columns_ !== null && columns_.constructor === Object ) { columns_ = [columns_]; }
+ 
+      if( !Array.isArray(columns_) ) { throw new Error("Invalid argument: columns must be array, object, or string"); }
+ 
+      // ## Detect whether columns_ carries 2D table data (first element is array)
+      const bIsTableData = columns_.length > 0 && Array.isArray(columns_[0]);
+ 
       if( bIsTableData ) {
          const bHeader = options_.bHeader !== undefined ? options_.bHeader : true; // Default to true if not specified
-
+ 
          if( bHeader !== true ) {
             this.aTable = columns_;
             this.aColumn = [];
          }
          else {
-            this.aTable = columns_.slice(1);                                  // Data rows start from the second element
+            this.aTable = columns_.slice(1);                                   // Data rows start from the second element
             this.aColumn = columns_[0].map(column => new Table.column(column)); // First row is header
          }
       }
       else {
-         // ## If not table data, assume it's column data
-         const aColumn = Array.isArray( columns_ ) ? columns_.map(column => new Table.column(column)) : [];
+         // ## Column definitions — build Table.column instances ................
+         const aColumn = columns_.map(column => new Table.column(column));
          this.aTable = options_.aTable || [];
          this.aColumn = options_.aColumn || aColumn;
       }
-
+ 
       this.sName = options_.sName || ""; // Initialize name to empty string if not provided
    }
 
@@ -156,6 +184,30 @@ class Table {
       if(iColumn < 0 || iColumn >= this.aColumn.length) { return null; }
       return this.aColumn[iColumn].sType;
    }
+
+   /** -----------------------------------------------------------------------
+    * Create column information for columns to transform between objects
+    *
+    * @example
+    * const table  = new Table("id,alias,number; name,Name,string");
+    * const record = table.ToDBRecord({ sTable: "TUser" });
+    * record.SetValue("id", 42);
+    *
+    * @param {Object} [options_={}] - Passed through to the DBRecord constructor
+    * @param {string} [options_.sTable=""] - Database table name for the record
+    * @returns {Array} Array of column information objects with properties: sName, sAlias, sType, iState, iSpecificType
+    */
+   GetColumnInformation(options_ = {}) {
+      const aColumn = this.aColumn.map(o_ => ({
+         sName:          o_.sName,
+         sAlias:         o_.sAlias,
+         sType:          o_.sType,
+         iState:         o_.iState,
+         iSpecificType:  o_.iSpecificType,
+      }));
+ 
+      return aColumn;
+   }   
 
    /** -----------------------------------------------------------------------
     * Get header row use alias or name in columns and generates a row that is returned
@@ -827,19 +879,6 @@ class Table {
       return this._get_row(iRow);
    }
 
-   /** -----------------------------------------------------------------------
-    * Internal method to get row data, no checks for valid row
-    * @param {number} iRow index for row
-    * @returns {Array<any>} Array of cell values for the row
-    */
-   _get_row(iRow) {
-     const row_ = [];
-     for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {  row_.push(this._get_cell_value(iRow, iColumn)); }
-
-     return row_;
-  }
-
-
    // Check if table is empty ------------------------------------------------
    Empty() { return this.aTable.length === 0; }
 
@@ -988,6 +1027,18 @@ class Table {
 
       this.aColumn = aColumns;
       return this.aColumn;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Internal method to get row data, no checks for valid row
+    * @param {number} iRow index for row
+    * @returns {Array<any>} Array of cell values for the row
+    */
+   _get_row(iRow) {
+      const row_ = [];
+      for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {  row_.push(this._get_cell_value(iRow, iColumn)); }
+
+      return row_;
    }
 
    /** -----------------------------------------------------------------------

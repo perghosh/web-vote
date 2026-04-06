@@ -1,4 +1,5 @@
-// ## TASKS.JS Manage projects and tasks. Main file to track and manage projects and tasks.
+// ## TASKS.JS Manage projects and tasks. Main file to track and manage projects 
+//    and tasks.
 // status: open, in-progress, done, blocked, closed
 // type: bug, feature, documentation, refactor
 // priority: low, medium, high, critical
@@ -39,7 +40,7 @@
 ## Cleaner: How manage projects and tasks
 
 Find projects
-- Find projects: cleaner find "**" --segment comment --pattern "@PROJECT"
+- Find projects: cleaner find "**" --segment comment --pattern "@PROJEC T"
 "segment" sets what code segments cleaner will look at
 
 Find tasks

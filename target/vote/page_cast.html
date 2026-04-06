@@ -85,7 +85,8 @@ function PAGE_Load() {
    const sPollKey = oDocument_g.GetValue("PollKey");                                              console.assert(sPollKey, "Poll key is not set in document");
 
    // ## Send request to server to get poll information, questions, and answers
-   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
+   //const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
+   const aQueryName = ["cast-poll"];
    for( let i = 0; i < aQueryName.length; i++ ) {
       const sQueryName = aQueryName[i];
       gd.SendToServer("", "!db/select", "query=#" + sQueryName + "\n" + `values={"PollK":"${sPollKey}"}`).then(function(oResult) {

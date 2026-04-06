@@ -140,7 +140,6 @@ class DBRecord {
 
          }
          else { columns_ = columns_.split(","); }
-
       }
       else if(columns_.constructor === Object) { columns_ = [columns_]; }
       if(!Array.isArray(columns_)) { throw new Error("Invalid argument: columns must be array, object, or string"); }
