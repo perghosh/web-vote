@@ -304,10 +304,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          {
             e_.stopPropagation();
             const sKey = eTarget.parentNode.dataset.key;
-            const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
-            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+            //const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
+            const sQueryName = "vote-poll_table";
+            const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
 
-            gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
+            gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult)
             {
                const aPollResult = JSON.parse( oResult.data.querySelector("result").textContent );
                const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
@@ -350,9 +351,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          switch(sAction) {
             case "search": {
-               const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR ''%{=header}%'' ORDER BY FName";
+               //const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR ''%{=header}%'' ORDER BY FName";
+               const sQueryName = "vote-poll_search";
                const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
-               const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+               const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
 
                gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult, "select-polls");
