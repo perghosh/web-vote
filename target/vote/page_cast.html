@@ -89,7 +89,7 @@ function PAGE_Load() {
    const aQueryName = ["cast-poll"];
    for( let i = 0; i < aQueryName.length; i++ ) {
       const sQueryName = aQueryName[i];
-      gd.SendToServer("", "!db/select", "query=#" + sQueryName + "\n" + `values={"PollK":"${sPollKey}"}`).then(function(oResult) {
+      gd.SendToServer("", "!db/select?ui=1&", "query=#" + sQueryName + "\n" + `values={"PollK":"${sPollKey}"}`).then(function(oResult) {
          const data_ = oResult.data;
          const aResult = JSON.parse( data_.querySelector("result").textContent ); // first result holds array
          const oTable = new Table(aResult);
