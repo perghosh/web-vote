@@ -20,7 +20,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <link rel="stylesheet" href="css/variables/variables-green.css">
+   <link rel="stylesheet" href="css/variables/variables-purple-soft.css">
    <link rel="stylesheet" href="css/elements.css">
    <link rel="stylesheet" href="css/input-effects.css">
    <script src="js/gd_browser.js"></script>
@@ -28,6 +28,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    <script src="js/gd_ui_tablelite.js"></script>
    <script src="js/gd_db.js"></script>
    <script src="js/gd_data_table.js"></script>
+   <script src="js/document.js"></script>
    <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
@@ -39,42 +40,71 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .container-result td { cursor: pointer; padding: 5px 8px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .container-result th { padding: 6px 8px; text-align: left; font-weight: 600; color: var(--color-body); border-bottom: 2px solid var(--color-border); }
       .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
+
+      button.button { border: none; }
+
+      .group {
+         display: flex;
+         gap: 12px;
+         align-items: flex-end;
+      }
+
+      .row {
+         display: flex;
+         width: 100%;
+      }
    </style>
 </head>
 <body>
    <div id="idContainer" class="page-container">
-      <form id="idForm" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;">
-         <div data-section="search" class="group" style="margin-bottom: 20px; margin-top: 0;">
+
+    <form id="idFormSearch" class="container-form" onsubmit="event.preventDefault();" style="width: 700px; margin-bottom: 20px;">
+
+        <div class="title" style="margin-bottom: 20px;"><h2>Search Polls</h2></div>
+
+        <div data-section="search" class="group">
             <div class="row">
-                 <div style="flex: 1;">
+                  <div style="flex: 1;">
                     <label class="floating">
-                       <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
-                       <span>Search polls</span>
+                        <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
+                        <span>Search</span>
                     </label>
-                 </div>
-                 <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
-              </div>
+                  </div>
+                  <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
+            </div>
          </div>
 
-         <div data-section="select-polls" class="container-result"></div>
+        <div data-section="select-polls" class="container-result"></div>
+    </form>
+
+      <form id="idForm" class="container-form" onsubmit="event.preventDefault();" style="width: 700px;">
+
+        <div class="title" style="margin-bottom: 20px;"><h2>Edit Poll Details</h2></div>
 
          <div data-section="poll-form">
-            <div class="group">
-               <label class="floating">
-                  <input type="text" placeholder=" " data-field="FName">
-                  <span>Name</span>
-               </label>
+            <div class="group" style="gap: 20px;">
+               <div style="flex: 1">
+                  <label class="floating">
+                     <input type="text" placeholder=" " data-field="FName">
+                     <span>Name</span>
+                  </label>
+               </div>
+
+               <div style="flex: 1">
+                  <label class="floating">
+                     <input type="text" placeholder=" " data-field="FHeader">
+                     <span>Header</span>
+                  </label>
+               </div>
             </div>
+
+            <!--<div class="group" style="margin-top: 20px; width: 50%;">
+
+               
+            </div>-->
 
             <div class="group" style="margin-top: 20px;">
-               <label class="floating">
-                  <input type="text" placeholder=" " data-field="FHeader">
-                  <span>Header</span>
-               </label>
-            </div>
-
-            <div class="group">
-               <label class="floating">
+               <label class="floating" style="width: 100%;">
                   <textarea placeholder=" " data-field="FDescription"></textarea>
                   <span>Description</span>
                </label>
@@ -82,7 +112,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          </div>
 
 
-         <div class="row" id="idButtons">
+         <div class="row" id="idButtons" style="margin-top: 20px;">
             <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
             <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll" data-idle="poll_key">Update</button>
             <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll" data-idle="poll_key">Delete</button>
@@ -103,8 +133,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
    function CreateButtons(eParent)
    {
-      /*
-      PAGE_DeleteButtons(eParent);
+      
+      /*PAGE_DeleteButtons(eParent);
 
       const eButtonUpdate = document.createElement("button");
       eButtonUpdate.className = "button";
@@ -163,6 +193,17 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
     */
    function PAGE_Initialize() {
       oDocument_g = new CDocument({});
+      
+      let oTable = new Table(["id", "name", "header"], {sName: "search"} );
+      oDocument_g.AddTable(oTable);
+
+      //const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll ORDER BY FName";
+      const sQueryName = "vote-poll_search_all";
+      //const sArguments = `query=${sQueryName}`;
+
+      gd.SendToServer("", "!db/select", "query=#" + sQueryName).then(function(oResult) {
+         PAGE_ProcessResponse(oResult, "select-polls");
+      });
 
       const fnRead = function(sName, oRecord)
       {
@@ -263,10 +304,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          {
             e_.stopPropagation();
             const sKey = eTarget.parentNode.dataset.key;
-            const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
-            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+            //const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
+            const sQueryName = "vote-poll_table";
+            const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
 
-            gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
+            gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult)
             {
                const aPollResult = JSON.parse( oResult.data.querySelector("result").textContent );
                const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
@@ -309,9 +351,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          switch(sAction) {
             case "search": {
-               const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR ''%{=header}%'' ORDER BY FName";
+               //const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR ''%{=header}%'' ORDER BY FName";
+               const sQueryName = "vote-poll_search";
                const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
-               const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+               const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
 
                gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult, "select-polls");
@@ -530,7 +573,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
    // TODO: CDocument is used to manage data, this needs to be implemented
 
-   class CDocument {
+   /*class CDocument {
 
       static iIdleTimerId_s = null; // Global timer ID for idle callback
 
@@ -561,7 +604,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          return this.aTable.find(oTable => oTable.name === sTable);
       }
 
-   }
+   }*/
 
 
    // ============================================================================
