@@ -28,6 +28,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    <script src="js/gd_ui_tablelite.js"></script>
    <script src="js/gd_db.js"></script>
    <script src="js/gd_data_table.js"></script>
+   <script src="js/document.js"></script>
    <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
@@ -133,7 +134,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    function CreateButtons(eParent)
    {
       
-      PAGE_DeleteButtons(eParent);
+      /*PAGE_DeleteButtons(eParent);
 
       const eButtonUpdate = document.createElement("button");
       eButtonUpdate.className = "button";
@@ -147,7 +148,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       eParent.appendChild(eButtonUpdate);
       eParent.appendChild(eButtonDelete);
-      
+      */
    }
 
    /** ------------------------------------------------------------------------
@@ -192,6 +193,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
     */
    function PAGE_Initialize() {
       oDocument_g = new CDocument({});
+      
+      let oTable = new Table(["id", "name", "header"], {sName: "search"} );
+      oDocument_g.AddTable(oTable);
 
       const fnRead = function(sName, oRecord)
       {
@@ -559,7 +563,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
    // TODO: CDocument is used to manage data, this needs to be implemented
 
-   class CDocument {
+   /*class CDocument {
 
       static iIdleTimerId_s = null; // Global timer ID for idle callback
 
@@ -590,7 +594,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          return this.aTable.find(oTable => oTable.name === sTable);
       }
 
-   }
+   }*/
 
 
    // ============================================================================
