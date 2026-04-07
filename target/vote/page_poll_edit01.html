@@ -197,6 +197,14 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       let oTable = new Table(["id", "name", "header"], {sName: "search"} );
       oDocument_g.AddTable(oTable);
 
+      //const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll ORDER BY FName";
+      const sQueryName = "vote-poll_search_all";
+      //const sArguments = `query=${sQueryName}`;
+
+      gd.SendToServer("", "!db/select", "query=#" + sQueryName).then(function(oResult) {
+         PAGE_ProcessResponse(oResult, "select-polls");
+      });
+
       const fnRead = function(sName, oRecord)
       {
          const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
