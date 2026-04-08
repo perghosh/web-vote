@@ -38,6 +38,8 @@
  * - SetKeyValue()           - Set primary key value
  * - HasKeyValue()           - Check if key has non-null value
  * - GetColumnNames()        - Get array of column names
+ * - SetColumnMember()       - Set one or many members on selected column
+ * - SetColumnMemberByName() - Set one or many members by column sName
  * - AddColumn()             - Add new column(s) to schema
  * - AsJson()                - Convert to JSON object
  */
@@ -88,6 +90,8 @@ class DBRecord {
       is_aligned_right() { return (this.iState & 8) === 8; }
       is_key() { return this.bKey; }
       is_foreign_key() { return this.bFKey; }
+      is_pattern() { return this.pattern_ !== null; }
+      is_match() { return this.aMatch !== null; }
       is_required() { return this.bRequired; }
 
       get name() { return this.sName; }
@@ -290,7 +294,7 @@ class DBRecord {
     * Get all values as an object
     * @returns {Object} Object with column names as keys
     */
-   GetAllValues() {
+   GetAllValues() {                                                                                console.assert( this._verify_values(), "GetAllValues: Value verification failed, some values may be invalid" ); 
       const oResult = {};
       this.mapValues.forEach((value, key) => { oResult[key] = value; });
       return oResult;
@@ -418,7 +422,73 @@ class DBRecord {
     * Get all column names
     * @returns {Array<string>} Array of column names
     */
-   GetColumnNames() { return this.aColumn.map(column => column.sName); }
+   GetColumnNames() { return this.aColumn.map(oColumn => oColumn.sName); }
+
+   /** ------------------------------------------------------------------------
+    * Set one or many members on a selected column
+    * @param {string|number|Object} column_ - Column selector (sName, index, or filter object)
+    * @param {string|Object} member_ - Member name string or object with member/value pairs
+    * @param {*} [value_] - Value to set when member_ is a string
+    * @returns {this} For chaining
+    */
+   SetColumnMember(column_, member_, value_) {
+      const oColumn = this._get_column(column_);
+      if(!oColumn) { throw new Error(`SetColumnMember: Column not found for selector '${JSON.stringify(column_)}'`); }
+
+      if(typeof member_ === "string") {
+         oColumn[member_] = value_;
+         return this;
+      }
+
+      if(member_ && member_.constructor === Object) {
+         Object.keys(member_).forEach(sMemberName => { oColumn[sMemberName] = member_[sMemberName]; });
+         return this;
+      }
+
+      throw new Error("SetColumnMember: member must be string or object");
+   }
+
+   /** ------------------------------------------------------------------------
+    * Convenience wrapper to set member(s) by column sName
+    *
+    * Supported forms:
+    * - SetColumnMemberByName("FAlias", "bRequired", true)
+    * - SetColumnMemberByName(["FAlias", "FFirstName"], "bRequired", true)
+    * - SetColumnMemberByName("FAlias", { bRequired: true, sLabel: "Alias" })
+    * - SetColumnMemberByName({ FAlias: { bRequired: true }, FFirstName: { sLabel: "First name" } })
+    * - SetColumnMemberByName({ sName: "FAlias" }, "bRequired", true)
+    *
+    * @param {string|Array<string>|Object} name_ - Column sName, array of sName, selector object, or map object
+    * @param {string|Object} [member_] - Member name string or object with member/value pairs
+    * @param {*} [value_] - Value to set when member_ is a string
+    * @returns {this} For chaining
+    */
+   SetColumnMemberByName(name_, member_, value_) {
+      if(typeof name_ === "string") { return this.SetColumnMember(name_, member_, value_); }
+
+      if(Array.isArray(name_)) {
+         name_.forEach(sName => { this.SetColumnMember(sName, member_, value_); });
+         return this;
+      }
+
+      if(name_ && name_.constructor === Object) {
+         // Selector object form (e.g. { sName: "FAlias" }, { bKey: true })
+         if(member_ !== undefined) { return this.SetColumnMember(name_, member_, value_);}
+
+         // Map form: { FAlias: {...}, FFirstName: {...} }
+         Object.keys(name_).forEach(sName => {
+            const oMember = name_[sName];
+            if(oMember && oMember.constructor === Object) {
+               this.SetColumnMember(sName, oMember);
+               return;
+            }
+            throw new Error(`SetColumnMemberByName: expected object member map for '${sName}'`);
+         });
+         return this;
+      }
+
+      throw new Error("SetColumnMemberByName: name must be string, array, or object");
+   }
 
    /** ------------------------------------------------------------------------
     * Add new column(s) to the record schema with optional property mapping
@@ -573,6 +643,37 @@ class DBRecord {
          this._aKeyColumns = this.aColumn.filter(col => col.bKey === true);
       }
       return this._aKeyColumns;
+   }
+
+   /** ------------------------------------------------------------------------
+    * Verify all values in the record, required fields, and pattern matching
+    * @returns {boolean} True if all values are valid, false otherwise
+    * @private
+    */
+   _verify_values() {
+      for(const column of this.aColumn) {
+         const value_ = this.mapValues.get(column.sName);
+         if(column.is_required()) {
+            if(value_ === null || value_ === undefined || value_ === "") {
+               console.warn(`Validation failed: Column '${column.sName}' is required but has empty value`);
+               return false;
+            }
+         }
+         if(column.is_pattern()) {
+            const pattern = column.pattern_ instanceof RegExp ? column.pattern_ : new RegExp(column.pattern_);
+            if(!pattern.test(value_)) {
+               console.warn(`Validation failed: Column '${column.sName}' value '${value_}' does not match pattern ${pattern}`);
+               return false;
+            }
+         }
+         if(column.is_match()) {
+            if(!column.aMatch.includes(value_)) {
+               console.warn(`Validation failed: Column '${column.sName}' value '${value_}' does not match any of ${JSON.stringify(column.aMatch)}`);
+               return false;
+            }
+         }
+      }
+      return true;
    }
 }
 

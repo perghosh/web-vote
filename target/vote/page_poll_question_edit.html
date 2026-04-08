@@ -225,12 +225,15 @@ function PAGE_Initialize() {
 
    // TPollQuestion
    let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header;FDescription,Description;FOrder,Order;PollK");
+   oRCPollQuestion.SetColumnMemberByName(["FName", "PollK"], "bRequired", true); // set to required 
    oRCPollQuestion.table = "TPollQuestion";
+
    oDocument_g.AddRecord(oRCPollQuestion);
 
    // TPollAnswer
    let oRCPollAnswer = new DBRecordContainer("FName,Name;FLabel,Label;FAnswer,Answer;FAnswerMore,More;FDescription,Description;FOrder,Order;PollK;PollQuestionK;PollAnswerK");
    oRCPollAnswer.table = "TPollAnswer";
+   oRCPollAnswer.SetColumnMemberByName(["FName", "PollK", "PollQuestionK"], "bRequired", true); // set to required 
    oDocument_g.AddRecord(oRCPollAnswer);
 
 
