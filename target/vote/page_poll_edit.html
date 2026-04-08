@@ -197,10 +197,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       let oTable = new Table(["id", "name", "header"], {sName: "search"} );
       oDocument_g.AddTable(oTable);
 
-      //const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll ORDER BY FName";
-      const sQueryName = "vote-poll_search_all";
-      //const sArguments = `query=${sQueryName}`;
-
+      const sQueryName = "vote-poll_search";
       gd.SendToServer("", "!db/select", "query=#" + sQueryName).then(function(oResult) {
          PAGE_ProcessResponse(oResult, "select-polls");
       });
@@ -351,7 +348,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          switch(sAction) {
             case "search": {
-               //const sSelect = "SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR ''%{=header}%'' ORDER BY FName";
                const sQueryName = "vote-poll_search";
                const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
                const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
@@ -361,9 +357,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                });
             } break;
             case "poll-add": {
-               //const sInsert = "INSERT INTO TPoll (FName, FHeader, FDescription) VALUES ({FName}, {FHeader}, {FDescription}) RETURNING PollK AS 'key', 'TPoll' AS 'table'";
-
-
                const sValues = JSON.stringify(oDBRecord.GetFilledValues());
                const sJson = `{ "table": "TPoll", "values": ${sValues}, "returning": "PollK" }`;
 
@@ -376,39 +369,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                });
             } break;
             case "poll-update": {
-               //const sUpdate = "UPDATE TPoll SET FName = {FName}, FHeader = {FHeader}, FDescription = {FDescription} WHERE PollK = x''{=PollK}''";
-
-               //const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-
-
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
                oDBPollRecord.ReadValues();
                const oArguments = oDBPollRecord.GetRecordAsArguments();
-
-               /*
-               const sValues = JSON.stringify(oDBPollRecord.GetAllValues());
-               const sKey = oDBPollRecord.GetKeyValue();
-               const sWhere = `{"PollK": "${sKey}"}`;
-               const sJson = `{ "table": "TUser", "values": ${sValues}, "where": ${sWhere} }`;
-               const sArguments = `record=${sJson}`;
-               */
-
-               // sArguments = oDBPollRecord.GetRecordAsArguments();
-
                console.log(sArguments);
-
-
-
-
-               //oFields.PollK = oDocument_g.key_;
-               //const sValues = JSON.stringify(oFields);
-
-               //const sArguments = `query=${sUpdate}` + `\n` + `values=${sValues}`;
-
-
                gd.SendToServer("", "!db/update?echo=user", sArguments).then(function(oResult) {
-                  //PAGE_ProcessResponse(oResult);
-                  //CreateButtons(document.querySelector("#idButtons"));
                   let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
 
                   if( iCount !== 0) { oToast_g.Show("Updaterad!"); }
@@ -563,49 +528,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   eRow.dataset.key = sKey;
                }
             };
-
-            //const oUITable = new UITableLite(eSelectPoll, oTable, { iSort: 0, aColumns: [1, 2], bHeader: true, bIndices: true, fnCallback: fnSelectPoll});
-            //oUITable.Render();
          }
       }
    }
-
-
-   // TODO: CDocument is used to manage data, this needs to be implemented
-
-   /*class CDocument {
-
-      static iIdleTimerId_s = null; // Global timer ID for idle callback
-
-      constructor( oOptions = {} ) {
-         this.bModified = false; // Initialize modified flag to false
-         this.aRecords = [];
-         this.aTable = [];
-         this.key_ = null;
-      }
-
-      // Check if document has been modified ------------------------------
-      IsModified() { return this.bModified; }
-      // Set modified flag to true or false -------------------------------
-      SetModified(bModified) { this.bModified = bModified; }
-
-      // Add a record to the document --------------------------------------------
-      AddRecord(oRecord) { this.aRecords.push(oRecord); }
-
-      // Get a record by table name ----------------------------------------------
-      GetRecord( sTable ) {
-         return this.aRecords.find(oRecord => oRecord.table === sTable);
-      }
-
-      AddTable( oTable ) { this.aTable.push(oTable); }
-
-      GetTable( sTable )
-      {
-         return this.aTable.find(oTable => oTable.name === sTable);
-      }
-
-   }*/
-
 
    // ============================================================================
    // DBRecord custom methods - loaded once, available on all instances
