@@ -79,14 +79,14 @@ function PAGE_SetListeners() {
  * Load poll information and display it on the page
  * @TASK [project: cast-vote] [description: Get poll information for key and display it] [status: open] [tag: sql, backend, ui]
  */
+/*
 function PAGE_Load() {
    // ## Load poll information and display it on the page   
 
    const sPollKey = oDocument_g.GetValue("PollKey");                                              console.assert(sPollKey, "Poll key is not set in document");
 
    // ## Send request to server to get poll information, questions, and answers
-   //const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
-   const aQueryName = ["cast-poll"];
+   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"]; // Queries to fetch poll information
    for( let i = 0; i < aQueryName.length; i++ ) {
       const sQueryName = aQueryName[i];
       gd.SendToServer("", "!db/select?ui=1&", "query=#" + sQueryName + "\n" + `values={"PollK":"${sPollKey}"}`).then(function(oResult) {
@@ -99,10 +99,54 @@ function PAGE_Load() {
          else if (sQueryName === "cast-poll_questions") { oTable.name = "TPollQuestion"; }
          else if (sQueryName === "cast-poll_answers") { oTable.name = "TPollAnswer"; }
 
-         oDocument_g.AddTable(oTable);
+         oDocument_g.AddTable(oTable);                                         // DOcument is used to store tables
       });
    }
 }
+*/
+
+
+async function PAGE_Load() {
+   const sPollKey = oDocument_g.GetValue("PollKey");
+   console.assert(sPollKey, "Poll key is not set in document");
+
+   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
+   
+   try {
+      // ## Execute all queries in parallel
+      const aTable = await Promise.all(aQueryName.map(async (sQueryName) => {
+         const oResult = await gd.SendToServer("", "!db/select?ui=1&", `query=#${sQueryName}\nvalues={"PollK":"${sPollKey}"}`);
+         const data_ = oResult.data;
+
+         const eResult = data_.querySelector("result") || console.error("No result element found in response for query:", sQueryName, "Response data:", data_);
+         const sResultName = eResult.getAttribute("name");
+         const sResultId = eResult.getAttribute("id");
+         const sResultUi = eResult.getAttribute("ui");
+
+         const aResult = JSON.parse(eResult.textContent);
+         const oTable = new Table(aResult);
+         
+         if (sQueryName === "cast-poll") { oTable.name = "TPoll"; }
+         else if (sQueryName === "cast-poll_questions") { oTable.name = "TPollQuestion"; }
+         else if (sQueryName === "cast-poll_answers") { oTable.name = "TPollAnswer"; }
+         
+         oDocument_g.AddTable(oTable);
+         return oTable;
+      }));
+
+      console.log("All poll data loaded:", aTable);
+      
+      // All done - render
+      PAGE_RenderPoll();
+      
+   } 
+   catch(error) { console.error("Failed to load poll data:", error); }
+}
+
+function PAGE_RenderPoll() {
+   // ## Render poll information on the page 
+}
+
  
    </script>
 </body>
