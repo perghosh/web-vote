@@ -43,6 +43,19 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       button.button { border: none; }
 
+      .divider {
+         border-top: 2px solid var(--color-border);
+         border-radius: 5px;
+      }
+
+      .label-text {
+         color: var(--color-muted);
+      }
+
+      .label-number {
+         color: var(--background-success);
+      }
+
       .group {
          display: flex;
          gap: 12px;
@@ -111,7 +124,18 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             </div>
          </div>
 
+         <div class="group" id="idFieldLabels" style="gap: 20px;">
+            <div class="row" style="flex: 1; margin-top: 20px;">
+               <label class="label-text" style="visibility: collapse; width: 100%;" data-field="text">Questions:</label>
+               <label class="label-number" style="visibility: collapse; width: 100%;" data-field="question-number"><b>?</b></label>
+               
+               <label class="label-text" style="visibility: collapse; width: 100%;" data-field="text">Answers:</label>
+               <label class="label-number" style="visibility: collapse; width: 100%;" data-field="answer-number"><b>?</b></label>
+            </div>
+         </div>
 
+         <hr class="divider" style="margin-top: 20px">
+         
          <div class="row" id="idButtons" style="margin-top: 20px;">
             <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
             <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll" data-idle="poll_key">Update</button>
@@ -174,6 +198,37 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             eButton.remove();
          }
       });
+   }
+
+   function PAGE_UpdateFieldLabels(eParent)
+   {
+      const aFields = eParent.querySelectorAll("[data-field]"); 
+
+      const sKey = oDocument_g.key_;
+      const sQueryName = "vote-count_questions";
+      const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+
+      gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult)
+      {
+         const aResult = JSON.parse( oResult.data.querySelector("result").textContent );
+         console.log(aResult);
+
+         const iQuestionCount = aResult[1]; //?? 0;
+
+         aFields.forEach((eField) => {
+            const sField = eField.dataset.field;
+            if(sField == "question-number")
+            {
+                 eField.innerHTML = `<b>${iQuestionCount}</b>`;
+                 eField.style.visibility = "visible";
+            }
+            else if(sField == "text")
+            {
+                 eField.style.visibility = "visible"; 
+            }
+         });
+      });
+
    }
 
    // Start page initialization -----------------------------------------------
@@ -318,6 +373,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   oDocument_g.key_ = sKey;
 
                   oDBRecord.WriteValues();
+
+                  PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
                }
 
                PAGE_Update();
