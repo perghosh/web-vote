@@ -51,6 +51,9 @@ document.addEventListener('DOMContentLoaded', function() {
    PAGE_SetListeners();
 });
 
+/** --------------------------------------------------------------------------- PAGE_Initialize
+ * Initialize the page by creating necessary objects and loading initial data
+ */
 function PAGE_Initialize() {
    oDocument_g = new CDocument({});                                           // Create new document
    oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
@@ -75,42 +78,20 @@ function PAGE_SetListeners() {
    const oPage = document.getElementById("idPage");
 }
 
-/**
- * Load poll information and display it on the page
- * @TASK [project: cast-vote] [description: Get poll information for key and display it] [status: open] [tag: sql, backend, ui]
+/** --------------------------------------------------------------------------- PAGE_Load
+ * Load poll information from the server and store it in the document
+ * 
+ * This function fetches all necessary information for the poll, including poll
+ * details, questions, and answers. It executes multiple queries in parallel to
+ * optimize loading time. The results are stored in the document for later use
+ * when rendering the poll on the page.
  */
-/*
-function PAGE_Load() {
-   // ## Load poll information and display it on the page   
-
-   const sPollKey = oDocument_g.GetValue("PollKey");                                              console.assert(sPollKey, "Poll key is not set in document");
-
-   // ## Send request to server to get poll information, questions, and answers
-   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"]; // Queries to fetch poll information
-   for( let i = 0; i < aQueryName.length; i++ ) {
-      const sQueryName = aQueryName[i];
-      gd.SendToServer("", "!db/select?ui=1&", "query=#" + sQueryName + "\n" + `values={"PollK":"${sPollKey}"}`).then(function(oResult) {
-         const data_ = oResult.data;
-         const aResult = JSON.parse( data_.querySelector("result").textContent ); // first result holds array
-         const oTable = new Table(aResult);
-
-         // ## Add result to cache
-         if (sQueryName === "cast-poll") { oTable.name = "TPoll"; }
-         else if (sQueryName === "cast-poll_questions") { oTable.name = "TPollQuestion"; }
-         else if (sQueryName === "cast-poll_answers") { oTable.name = "TPollAnswer"; }
-
-         oDocument_g.AddTable(oTable);                                         // DOcument is used to store tables
-      });
-   }
-}
-*/
-
-
 async function PAGE_Load() {
    const sPollKey = oDocument_g.GetValue("PollKey");
    console.assert(sPollKey, "Poll key is not set in document");
 
-   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
+   //const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
+   const aQueryName = ["cast-poll"];
    
    try {
       // ## Execute all queries in parallel
@@ -123,8 +104,14 @@ async function PAGE_Load() {
          const sResultId = eResult.getAttribute("id");
          const sResultUi = eResult.getAttribute("ui");
 
-         const aResult = JSON.parse(eResult.textContent);
-         const oTable = new Table(aResult);
+         let oTable; // Generated table from result
+
+         if( sResultUi ) { oTable = new Table(sResultUi); }
+         else if( eResult.textContent ) {
+            const aResult = JSON.parse(eResult.textContent);
+            oTable = new Table(aResult);
+         }
+         else { console.error("No data found in result for query:", sQueryName, "Result element:", eResult); }
          
          if (sQueryName === "cast-poll") { oTable.name = "TPoll"; }
          else if (sQueryName === "cast-poll_questions") { oTable.name = "TPollQuestion"; }
@@ -134,7 +121,7 @@ async function PAGE_Load() {
          return oTable;
       }));
 
-      console.log("All poll data loaded:", aTable);
+      // console.log("All poll data loaded:", aTable);
       
       // All done - render
       PAGE_RenderPoll();
@@ -145,6 +132,12 @@ async function PAGE_Load() {
 
 function PAGE_RenderPoll() {
    // ## Render poll information on the page 
+
+   const oTable = oDocument_g.GetTable("TPoll");
+   const aColumnInformation = oTable.GetColumnInformation();
+   const oRecord = new DBRecordContainer(aColumnInformation);
+
+
 }
 
  

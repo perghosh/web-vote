@@ -224,7 +224,7 @@ function PAGE_Initialize() {
    oDocument_g.AddRecord(oRCPoll);                                                        // add record to document
 
    // TPollQuestion
-   let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header;FDescription,Description;FOrder,Order;FPollK");
+   let oRCPollQuestion = new DBRecordContainer("FName,Name,string;FLabel,Header;FDescription,Description;FOrder,Order;PollK");
    oRCPollQuestion.table = "TPollQuestion";
    oDocument_g.AddRecord(oRCPollQuestion);
 
@@ -407,7 +407,7 @@ function PAGE_SetListeners() {
                eNewQuestion.querySelector(`[data-field="PollK"]`).value = oDocument_g.GetValue("PollK"); // Set poll key value in hidden input field for new question form
             } break;
             case "insert": { // ## Create new question and replace the html form to question section that are able to connect answers.
-               const oValues = oDBRecord.GetAllValues();
+               const oValues = oDBRecord.GetAllValues();                                           console.assert( oValues.PollK, "Poll key value is not set in form values" );
                const [ oDocument, eValues ]  = XML_AppendObject(null, oValues, "values", "value"); // Convert values to XML format for sending to server
                XML_AppendElement(eValues, { name: "PollQuestionK" },undefined, "returning"); // append returning field.
                eValues.setAttribute("table", "TPollQuestion");

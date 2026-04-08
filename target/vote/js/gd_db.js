@@ -854,26 +854,23 @@ class DBRecordContainer extends DBRecord {
     * @returns {this} For chaining
     */
    ReadValues(target_) {
-
       // ── 1. Resolve a container when a string or Element is passed ──────────
       if(typeof target_ === "string" || target_ instanceof Element) {
 
-         let oContainer = null;
+         let eContainer = null;
 
          if(typeof target_ === "string") {
-            oContainer = document.getElementById(target_) ?? document.querySelector(target_);
-            if(!oContainer) {
+            eContainer = document.getElementById(target_) ?? document.querySelector(target_);
+            if(!eContainer) {
                console.assert(`ReadValues: Could not find container for '${target_}'`);
                return this;
             }
          }
-         else {
-            oContainer = target_;
-         }
-
+         else { eContainer = target_; }                                       // Use the provided element directly
+                                                                                                   console.assert( !!eContainer || this.mapElements.size > 0, "ReadValues: No bound elements, falling back to callback for all columns" );
          // Use the strategy chain already stored on the bound container, or fall
          // back to the class-level defaults when no container has been bound yet.
-         const aStrategies = (this.container_ && this.container_.aStrategies) || DBRecordContainer.aStrategiesDefault;
+         const aReadStrategy = (this.container_ && this.container_.aStrategies) || DBRecordContainer.aStrategiesDefault;
 
          this.aColumn.forEach(oColumn => {
             const sName = oColumn.sName;
@@ -885,12 +882,12 @@ class DBRecordContainer extends DBRecord {
                return;
             }
 
-            // Walk the strategy chain to find an element inside oContainer.
-            for(const fnStrategy of aStrategies) {
+            // Walk the strategy chain to find an element inside eContainer.
+            for(const fnStrategy of aReadStrategy) {
                try {
-                  const el = fnStrategy(oContainer, oColumn);
-                  if(el instanceof Element) {
-                     this._set_value_internal(sName, this._read_element({ element: el, fnGet: null, fnSet: null }));
+                  const eElement = fnStrategy(eContainer, oColumn);
+                  if(eElement instanceof Element) {
+                     this._set_value_internal(sName, this._read_element({ element: eElement, fnGet: null, fnSet: null }));
                      break;
                   }
                }

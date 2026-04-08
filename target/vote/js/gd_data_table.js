@@ -24,10 +24,32 @@
  * - **Cell Access:** Use `GetCellValue(row, column)` or `SetCellValue(row, column, value)`.
  *
  * **Common Methods:**
- * - `GetData(options)` - Retrieve data with optional sorting, headers, or index column
  * - `Add(row)` - Add single row or multiple rows
+ * - `AsJson(options)` - Convert table to JSON
+ * - `AsObject()` - Convert table to object
+ * - `AsString()` - Convert table to string
+ * - `AsXml(options)` - Convert table to XML
+ * - `Clear()` - Remove all rows
+ * - `Clone(options)` - Clone table with row range
+ * - `Data()` - Get raw data array
  * - `Delete(position, length)` - Remove rows
+ * - `Empty()` - Check if table is empty
+ * - `FindAll(criteria)` - Find rows matching criteria
+ * - `GetCell(row, column)` - Get cell value at position
+ * - `GetColumnCount()` - Get number of columns
  * - `GetColumnIndex(name)` - Find column by name or alias
+ * - `GetColumnInformation()` - Get column details
+ * - `GetColumnType(column)` - Get type of a column
+ * - `GetCellValue(row, column)` - Get cell value at row/column
+ * - `GetData(options)` - Retrieve data with sorting/filtering
+ * - `GetHeaderRow()` - Get header row data
+ * - `GetRow(index)` - Get row at index
+ * - `GetRowCount()` - Get number of rows
+ * - `GetRowData(options)` - Get row data with formatting
+ * - `ParseRowTypesToColumns()` - Parse types from first row
+ * - `PrepareColumns()` - Create columns from header row
+ * - `SetCellValue(row, column, value)` - Set cell value at position
+ * - `Size()` - Get table size
  */
 class Table {
 
@@ -89,7 +111,7 @@ class Table {
     */
    constructor(columns_ = [], options_ = {}) {
       if( columns_ === undefined || columns_ === null ) { columns_ = []; }
- 
+
       // ## Normalise string input — mirrors DBRecord column-string parsing ....
       if( typeof columns_ === "string" ) {
          if( columns_.includes(";") ) {
@@ -104,18 +126,18 @@ class Table {
          }
          else { columns_ = columns_.split(",").map(s => s.trim()).filter(s => s); } // Plain comma-separated names
       }
- 
+
       // ## Coerce a single plain object to a one-element array ....................
       if( columns_ !== null && columns_.constructor === Object ) { columns_ = [columns_]; }
- 
+
       if( !Array.isArray(columns_) ) { throw new Error("Invalid argument: columns must be array, object, or string"); }
- 
+
       // ## Detect whether columns_ carries 2D table data (first element is array)
       const bIsTableData = columns_.length > 0 && Array.isArray(columns_[0]);
- 
+
       if( bIsTableData ) {
          const bHeader = options_.bHeader !== undefined ? options_.bHeader : true; // Default to true if not specified
- 
+
          if( bHeader !== true ) {
             this.aTable = columns_;
             this.aColumn = [];
@@ -131,7 +153,7 @@ class Table {
          this.aTable = options_.aTable || [];
          this.aColumn = options_.aColumn || aColumn;
       }
- 
+
       this.sName = options_.sName || ""; // Initialize name to empty string if not provided
    }
 
@@ -205,9 +227,9 @@ class Table {
          iState:         o_.iState,
          iSpecificType:  o_.iSpecificType,
       }));
- 
+
       return aColumn;
-   }   
+   }
 
    /** -----------------------------------------------------------------------
     * Get header row use alias or name in columns and generates a row that is returned
@@ -477,7 +499,7 @@ class Table {
             const iCol = typeof col_ === "number" ? col_ : this.GetColumnIndex(col_);
             if(iCol >= 0 && iCol < this.aColumn.length) { aIndices.push(iCol); }
          }
-      } 
+      }
       else {
          aIndices = Array.from({ length: this.aColumn.length }, (_, i) => i);  // All columns
       }
@@ -494,7 +516,7 @@ class Table {
          const oRow = {};
          for (const i of aIndices) { oRow[this.aColumn[i].sName] = this._get_cell_value(iRow, i); }
 
-         // ### Merge into append if provided 
+         // ### Merge into append if provided
          if(oOptions.append !== null && typeof oOptions.append === "object") {
             if(oOptions.append_key) { oOptions.append[oOptions.append_key] = oRow; } // Attach under specified key
             else { Object.assign(oOptions.append, oRow); }                     // Merge at top level
