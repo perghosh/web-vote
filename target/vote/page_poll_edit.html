@@ -126,11 +126,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          <div class="group" id="idFieldLabels" style="gap: 20px;">
             <div class="row" style="flex: 1; margin-top: 20px;">
-               <label class="label-text" style="visibility: collapse; width: 100%;" data-field="text">Questions:</label>
-               <label class="label-number" style="visibility: collapse; width: 100%;" data-field="question-number"><b>?</b></label>
+               <label class="label-text" style="visibility: collapse; width: 100%;" data-field="question">Questions:</label>
                
-               <label class="label-text" style="visibility: collapse; width: 100%;" data-field="text">Answers:</label>
-               <label class="label-number" style="visibility: collapse; width: 100%;" data-field="answer-number"><b>?</b></label>
+               
+               <label class="label-text" style="visibility: collapse; width: 100%;" data-field="answer">Answers:</label>
+               
             </div>
          </div>
 
@@ -217,9 +217,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          aFields.forEach((eField) => {
             const sField = eField.dataset.field;
-            if(sField == "question-number")
+            if(sField == "question")
             {
-                 eField.innerHTML = `<b>${iQuestionCount}</b>`;
+                 eField.innerHTML = `Questions: ${iQuestionCount}`;
                  eField.style.visibility = "visible";
             }
             else if(sField == "text")
