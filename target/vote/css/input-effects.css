@@ -80,6 +80,8 @@
 .container-form .button { background-color: var(--background-primary); border-radius: 8px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; transition: background-color 0.2s, color 0.2s; }
 .container-form .button-small { padding: 5px 14px; font-size: 0.9rem; }
 .container-form .button:hover { background-color: var(--background-primary-hover); }
+.container-form .button-primary { background-color: var(--background-primary); color: var(--color-primary); }
+.container-form .button-primary:hover { background-color: var(--background-primary-hover); }
 .container-form .button-success { background-color: var(--background-success); color: var(--color-success); }
 .container-form .button-success:hover { background-color: var(--background-success-hover); }
 .container-form .button-warning { background-color: var(--background-warning); color: var(--color-warning); }

@@ -26,6 +26,10 @@
       .vote-answer-option { align-items: center; cursor: pointer; display: flex; gap: 12px; user-select: none; width: 100%; }
       .vote-answer-text { color: var(--color-body); font-size: 1rem; line-height: 1.4; }
       .vote-answer:hover { border-color: var(--color-border-dark); transform: translateY(-1px); }
+
+      .page-command { align-items: center; border: none; border-radius: 80px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); cursor: pointer; display: flex; font-family: inherit; font-size: 1.2rem; font-weight: 600; gap: 12px; justify-content: center; padding: 1rem 0; transition: all 0.2s ease; width: 100%; }
+
+
       @media (max-width: 640px) { .vote-answer-box { margin-top: 1px; } .vote-answer-option { align-items: flex-start; } }
     </style>
 </head>
@@ -40,6 +44,9 @@
          <p data-field="FDescription">Poll description goes here...</p>
       </div>
 
+      <div id="idPollCommand" class="container-form">
+         <button class="button-primary page-command">Send votes to server</button>
+      </div>
    </div>
 
    

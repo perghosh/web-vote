@@ -258,7 +258,7 @@ CREATE INDEX I_TPollLimit_PollQuestionK ON TPollLimit (PollQuestionK);
 
 CREATE TABLE TPollQuestion (
 	PollQuestionK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
-	,PollK BLOB
+   ,PollK BLOB
    ,SuperK BLOB             -- owner question when used in hierarchical structure
    ,PollSectionK BLOB
    ,CreateD DATETIME
@@ -272,6 +272,8 @@ CREATE TABLE TPollQuestion (
    ,FDescription VARCHAR(2000)-- Describe question if there is a need to describe in some way
    ,FWeight INTEGER         -- Poll question weight, if different answers is weighted
    ,FOrder INTEGER          -- order question in poll
+   ,FMaxSelect INTEGER DEFAULT 1 -- Max number of selectable answers for this question, 0 or null means no limit
+   ,FMinSelect INTEGER DEFAULT 1 -- Min number of selectable answers for this question, 0 or null means no limit
    ,CONSTRAINT FK_TPollQuestion_PollK FOREIGN KEY (PollK) REFERENCES TPoll(PollK) ON DELETE CASCADE
 );
 CREATE INDEX IC_TPollQuestion_PollK ON TPollQuestion (PollK);
