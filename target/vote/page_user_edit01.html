@@ -57,45 +57,28 @@ data-action="user-update" - Command for updating a user
         .container-result td { cursor: pointer; padding: 5px 8px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .container-result th { padding: 6px 8px; text-align: left; font-weight: 600; color: var(--color-body); border-bottom: 2px solid var(--color-border); }
         .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
-
-        button.button { border: none; }
-
-        .divider {
-            border-top: 2px solid var(--color-border);
-            border-radius: 5px;
-        }
     </style>
 </head>
 <body>
     <div id="idPage" class="page-container" data-section="container">
 
-        <form id="idSearch" class="container-form" onsubmit="event.preventDefault();" style="width: 500px; margin-bottom: 20px;" novalidate>
-            <div class="title" style="margin-bottom: 20px;"><h2>Search Users</h2></div>
-            <!-- Search Bar -->
-            <div data-section="user-search" class="group" style="margin-bottom: 20px; margin-top: 0;">
-                <div class="row">
-                    <div style="flex: 1;">
-                    <label class="floating">
-                        <input type="text" placeholder=" " id="idSearchInput" data-field-type="user-search">
-                        <span>Search users</span>
-                    </label>
-                    </div>
-                    <button class="button" data-action="user-search" style="margin-left: 10px;">Search</button>
-                </div>
-            </div>
-
-            <div data-section="select-users" class="container-result"></div>
-        </form>
-
         <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;" novalidate>
-            
-            <div class="title" style="margin-bottom: 20px;"><h2>Edit User Details</h2></div>
+           <!-- Search Bar -->
+           <div data-section="user-search" class="group" style="margin-bottom: 20px; margin-top: 0;">
+              <div class="row">
+                 <div style="flex: 1;">
+                    <label class="floating">
+                       <input type="text" placeholder=" " id="idSearchInput" data-field-type="user-search">
+                       <span>Search users</span>
+                    </label>
+                 </div>
+                 <button class="button" data-action="user-search" style="margin-left: 10px;">Search</button>
+              </div>
+           </div>
 
+           <div data-section="select-users" class="container-result"></div>
            <div data-section="user-form"></div>
-
-           <hr class="divider" style="margin-top: 20px">
-
-           <div class="row" data-section="edit-user-command" style="justify-content: flex-end; margin-top: 20px;">
+           <div class="row" data-section="edit-user-command" style="justify-content: flex-end;">
                <button class="button" data-action="user-clear-active" data-table="TUser">Clear</button>
                <button class="button" data-action="user-add" data-table="TUser">Save as new</button>
                <button class="button" style="visibility: hidden;" data-action="user-update" data-idle="user_key" data-table="TUser">Update</button>
@@ -137,11 +120,9 @@ function PAGE_initialize() {
    // Initialize document object
    oDocument_g = new CDocument;
 
-   
-
    const fnRead = function(sName, oRecord) {
       const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
-      const eField = eUserForm.querySelector(`[data-field="${sName}"]`);
+      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
       if( eField ) { this.SetValue( sName, eField.value ); }
    };
 
@@ -220,16 +201,15 @@ function PAGE_SetListeners() {
 
    // ## Initialize page work area listener .............................
 
-   const eUserContainer = document.getElementById('idPage');
+   const eUserContainer = document.getElementById('idUser');
    eUserContainer.addEventListener("click", function(e_) {
       const eTarget = e_.target;
 
       if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key ) {
          e_.stopPropagation();
          const sKey = eTarget.parentNode.dataset.key;
-         //const sSelect = "SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}";
-         const sQueryName = "user-edit_table";
-         const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ UserK: sKey })}`;
+         const sSelect = "SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}";
+         const sArguments = `query=${sSelect}`+ "\n" + `values=${JSON.stringify({ UserK: sKey })}`;
          gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
             const aUserResult = JSON.parse( oResult.data.querySelector("result").textContent );
             const oDBRecord = oDocument_g.GetRecord( "TUser" );                                    console.assert( oDBRecord, "oDBRecord is null" );
@@ -258,10 +238,9 @@ function PAGE_SetListeners() {
 
       switch(sAction) {
          case "user-search": {
-            //const sSelect = "SELECT hex(UserK) id, FAlias alias, FFirstName name, FLastName lastname FROM TUser WHERE FAlias LIKE ''%{=name}%'' OR FFirstName LIKE ''%{=name}%'' OR FLastName LIKE ''%{=name}%'' ORDER BY FAlias";
-            const sQueryName = "user-edit_search";
+            const sSelect = "SELECT hex(UserK) id, FAlias alias, FFirstName name, FLastName lastname FROM TUser WHERE FAlias LIKE ''%{=name}%'' OR FFirstName LIKE ''%{=name}%'' OR FLastName LIKE ''%{=name}%'' ORDER BY FAlias";
             const sSearchValue = eContainer.querySelector('[data-field-type="user-search"]').value;
-            const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
 
             oToast_g.Show('Skickar sökning!');
             gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult) {
@@ -433,7 +412,7 @@ function PAGE_Update( sType ) {
    if( sType === undefined || sType === "user-search" ) {
       const oTable = oDocument_g.GetTable("user-search");
       if( oTable ) {
-         const eSelectUser = document.getElementById("idSearch").querySelector('[data-section="select-users"]');
+         const eSelectUser = document.getElementById("idUser").querySelector('[data-section="select-users"]');
          eSelectUser.innerHTML = "";
 
          // callback used for selecting a user

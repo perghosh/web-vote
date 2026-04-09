@@ -23,6 +23,9 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
          FROM TPoll LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK LEFT JOIN TPollAnswer ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK 
          WHERE TPoll.PollK = X{PollK} ORDER BY 1,TPollQuestion.FOrder, 2,TPollAnswer.FOrder]]></statement>
 
+      <statement name="user-edit_search" format="jinja" type="select">SELECT hex(UserK) id, FAlias alias, FFirstName name, FLastName lastname FROM TUser {?? exists( args::exists( args, "name" ), "WHERE FAlias LIKE ''%{=name}%'' OR FFirstName LIKE ''%{=name}%'' OR FLastName LIKE ''%{=name}%''" ) ??} ORDER BY FAlias</statement>
+      <statement name="user-edit_table" format="jinja" type="select">SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}</statement>
+
       <!-- @API [tag: TPollVote] [description: Statements for voting, there are many tables involved but the main one is TPollVote where votes are stored]
        | - cast-poll: Select poll header for vote
        | - cast-poll_questions: Select poll questions for vote
