@@ -31,10 +31,15 @@
 
    </div>
 
-   <template id="idTemplatePoll" data-description="template for generating poll information">
-   </template>
-
+   
    <template id="idTemplateQuestion" data-description="template for generating question information based on possible questions added to poll">
+      <div class="container-view margin_b-large" data-table="TPollQuestion" data-section="form">
+         <div data-section="record" data-table="TPollQuestion" data-key="">
+            <h2 class="margin_b-small" data-field="FName">Question name</h2>
+            <p class="margin_b-small" data-field="FQuestion">Question text goes here...</p>
+         </div>
+         <input type="hidden" data-field="PollQuestionK" value="">
+      </div>
    </template>
 
    <template id="idTemplateAnswer" data-description="template for generating answer information based on possible answers added to question"> 
@@ -96,9 +101,9 @@ async function PAGE_Load() {
    const sPollKey = oDocument_g.GetValue("PollKey");
    console.assert(sPollKey, "Poll key is not set in document");
 
-   //const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
-   const aQueryName = ["cast-poll"];
-   
+   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
+   // const aQueryName = ["cast-poll"];
+      
    try {
       // ## Execute all queries in parallel
       const aTable = await Promise.all(aQueryName.map(async (sQueryName) => {
@@ -144,20 +149,39 @@ async function PAGE_Load() {
 }
 
 function PAGE_RenderPoll() {
-   // ## Render poll information on the page 
+   // ## Render poll information on the page ..................................
+   {
+      const oTable = oDocument_g.GetTable("TPoll");
+      const aColumnInformation = oTable.GetColumnInformation();
+      const oRecord = new DBRecordContainer(aColumnInformation);
 
-   const oTable = oDocument_g.GetTable("TPoll");
-   const aColumnInformation = oTable.GetColumnInformation();
-   const oRecord = new DBRecordContainer(aColumnInformation);
+      // Get first row with data from table
+      const oRow = oTable.AsObject(0);
+      oRecord.AddValue(oRow);                                                  // Add values from row to record container
 
-   // Get first row with data from table
-   const oRow = oTable.AsObject(0);
-   oRecord.AddValue(oRow);                                                   // Add values from row to record container
+      const ePollContainer = document.getElementById("idPoll");
+      oRecord.WriteValues(ePollContainer);                                     // Write values from record to page elements with matching data-field attributes
+   }
 
-   const ePollContainer = document.getElementById("idPoll");
-   oRecord.WriteValues(ePollContainer);                                       // Write values from record to page elements with matching data-field attributes
+   // ## Render questions for poll ............................................
+   // Iterate rows for question result and generate one question element for each row
+   {
+      const oTable = oDocument_g.GetTable("TPollQuestion");
+      const aColumnInformation = oTable.GetColumnInformation();
+      const oRecord = new DBRecordContainer(aColumnInformation);
 
+      const ePollContainer = document.getElementById("idPoll");
 
+      for( let i = 0; i < oTable.GetRowCount(); i++ ) {
+         const oRow = oTable.AsObject(i);
+         oRecord.AddValue(oRow);
+
+         // ### Geneate html for new question
+         const eQuestion =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
+         oRecord.WriteValues(eQuestion);                                      // Write values from record to page elements with matching data-field attributes
+         ePollContainer.appendChild(eQuestion);
+      }
+   }
 }
 
  

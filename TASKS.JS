@@ -1,10 +1,10 @@
 // ## TASKS.JS Manage projects and tasks. Main file to track and manage projects 
 //    and tasks.
-// status: open, in-progress, done, blocked, closed
+// status: open, active, done, blocked, closed
 // type: bug, feature, documentation, refactor
 // priority: low, medium, high, critical
 
-/*
+/* ## Edit poll, page to edit main poll information
 @PROJECT [name: edit-poll] [description: Edit poll and connected tables] [user: per]
 
 @TASK [project: edit-poll] [description: Get main poll information for context when adding poll information] [status: done] 
@@ -12,29 +12,21 @@
 @TASK [project: edit-poll] [description: Jump to edit poll page or cast vote page] [status: done]
 */
 
-/*
+/* ## Cast vote, page to cast votes on polls, a bit more complex page
 @PROJECT [name: cast-vote] [description: Page used for casting votes on polls] [user: per]
 
-@TASK [project: cast-vote] [description: Get key to active poll and check that it is valid] [status: done] [tag: sql, backend]
+@TASK [project: cast-vote] [description: Load Questions for the poll, place them in document] [status: done] [tag: sql, data]
 
-@TASK [project: cast-vote] [description: Get poll information for key and display it] [status: open] [tag: sql, backend, ui]
+@TASK [project: cast-vote] [description: Load answers for each question, place them in document] [status: done] [tag: sql, data]
 
-@TASK [project: cast-vote] [description: Load Questions for the poll, place them in document] [status: open] [tag: sql, data]
+@TASK [project: cast-vote] [description: Render poll and answers in page] [status: active] [tag: ui]
 
-@TASK [project: cast-vote] [description: Load answers for each question, place them in document] [status: open] [tag: sql, data]
+@TASK [project: cast-vote] [description: Add functionality to submit vote and save it in database] [status: open] [tag: sql, backend, ui]
 
-@TASK [project: cast-vote] [description: Render poll and answers in page] [status: open] [tag: ui]
-
-*/
-
-/*
-@PROJECT [name: edit-poll01] [description: Edit poll and connected tables] [user: kevin]
-
-@TASK [project: edit-poll01] [description: Change style to more modern looking website] [status: open]
-
-@TASK [project: edit-poll01] [description: Add more functionality] [status: open]
+@TASK [project: cast-vote] [description: Generate thread key to connect all votes] [status: open] [tag: sql, backend]
 
 */
+
 
 /*
 ## Cleaner: How manage projects and tasks
