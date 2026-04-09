@@ -21,6 +21,37 @@
 */
 
 
+.container-view { background: var(--background-form); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 20px; }
+.container-view-sub { background: var(--background-form-sub); border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 12px; }
+
+.container-view .col-span-2 { grid-column: span 2; }
+.container-view .col-span-3 { grid-column: span 3; }
+.container-view .col-span-4 { grid-column: span 4; }
+.container-view .cols-2 { grid-template-columns: repeat(2, 1fr); }
+.container-view .cols-3 { grid-template-columns: repeat(3, 1fr); }
+.container-view .cols-4 { grid-template-columns: repeat(4, 1fr); }
+.container-view .field { margin-bottom: 16px; }
+.container-view .field:last-child { margin-bottom: 0; }
+.container-view .field-label { color: var(--color-muted); display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 4px; }
+.container-view .field-value { background: var(--background-input); border: 2px solid var(--color-border); border-radius: 6px; color: var(--color-input); font-size: 1rem; min-height: 1.5em; padding: 12px 14px; width: 100%; word-break: break-word; }
+.container-view .field-value.multi-line { min-height: 80px; white-space: pre-wrap; }
+.container-view .field-value.readonly { background: var(--background-form); cursor: default; }
+.container-view .fill { flex: 1 1 0; }
+.container-view .grid-row { display: grid; gap: 12px; margin-bottom: 16px; }
+.container-view .half { flex: 0 0 50%; }
+.container-view .help-text { color: var(--color-muted); display: block; font-size: 0.8rem; margin-left: 2px; margin-top: 5px; }
+.container-view .quarter { flex: 0 0 25%; }
+.container-view .row { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
+.container-view .row:last-child { margin-bottom: 0; }
+.container-view .rows { margin-bottom: 16px; }
+.container-view .third { flex: 0 0 33.333%; }
+
+@media (max-width: 640px) {
+  .container-view .grid-row { grid-template-columns: 1fr !important; }
+  .container-view .half, .container-view .quarter, .container-view .third { flex: 1 1 100%; }
+}
+
+
 
 .container-form { background: var(--background-form); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 20px; }
 .container-form-sub { background: var(--background-form-sub); border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 12px; }

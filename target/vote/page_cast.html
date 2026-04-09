@@ -23,8 +23,14 @@
     | ## Page Container for casting votes
     -->
    <div id="idPage" class="page-container container page" data-section="page">
+      <!-- Poll information -->
+      <div id="idPoll" class="container-view margin_b-small">
+         <h1 data-field="FName">Poll Title</h1>
+         <p data-field="FDescription">Poll description goes here...</p>
+      </div>
 
    </div>
+
    <template id="idTemplatePoll" data-description="template for generating poll information">
    </template>
 
@@ -102,13 +108,20 @@ async function PAGE_Load() {
          const eResult = data_.querySelector("result") || console.error("No result element found in response for query:", sQueryName, "Response data:", data_);
          const sResultName = eResult.getAttribute("name");
          const sResultId = eResult.getAttribute("id");
-         const sResultUi = eResult.getAttribute("ui");
+         let sResultUi = eResult.getAttribute("ui");
 
          let oTable; // Generated table from result
+         const aResult = JSON.parse(eResult.textContent);
 
-         if( sResultUi ) { oTable = new Table(sResultUi); }
+         if( sResultUi ) { 
+            if( sResultUi.charAt(0) === "{" ) { // If ui attribute is a JSON string, parse it to get table configuration
+               const oUiConfig = JSON.parse(sResultUi);
+               sResultUi = oUiConfig.table; // Get table name from UI configuration for later use
+            }
+            oTable = new Table(sResultUi); 
+            oTable.Add(aResult.slice(1)); // Parse rows from UI format if available
+         }
          else if( eResult.textContent ) {
-            const aResult = JSON.parse(eResult.textContent);
             oTable = new Table(aResult);
          }
          else { console.error("No data found in result for query:", sQueryName, "Result element:", eResult); }
@@ -136,6 +149,13 @@ function PAGE_RenderPoll() {
    const oTable = oDocument_g.GetTable("TPoll");
    const aColumnInformation = oTable.GetColumnInformation();
    const oRecord = new DBRecordContainer(aColumnInformation);
+
+   // Get first row with data from table
+   const oRow = oTable.AsObject(0);
+   oRecord.AddValue(oRow);                                                   // Add values from row to record container
+
+   const ePollContainer = document.getElementById("idPoll");
+   oRecord.WriteValues(ePollContainer);                                       // Write values from record to page elements with matching data-field attributes
 
 
 }

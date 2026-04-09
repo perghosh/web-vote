@@ -725,7 +725,8 @@ class Table {
    AsObject(iRow) {
       const o = {};
       for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
-         o[this.aColumn[iColumn].name] = this._get_cell_value(iRow, iColumn);
+         const sName = this.aColumn[iColumn].name;
+         o[sName] = this._get_cell_value(iRow, iColumn);
       }
       return o;
    }
