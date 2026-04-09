@@ -15,7 +15,18 @@
     <script src="js/document.js"></script>
     <title>Login - Web Vote</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      .vote-answer { border: 1px solid var(--color-border); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+      .vote-answer-box { background: var(--background-light); border: 2px solid var(--color-border-dark); border-radius: 6px; flex: 0 0 22px; height: 22px; position: relative; transition: all 0.2s ease; width: 22px; }
+      .vote-answer-box::after { border: solid var(--color-primary); border-width: 0 2px 2px 0; content: ""; height: 10px; left: 7px; opacity: 0; position: absolute; top: 2px; transform: rotate(45deg) scale(0.8); transition: opacity 0.2s ease, transform 0.2s ease; width: 5px; }
+      .vote-answer-input { height: 1px; opacity: 0; position: absolute; width: 1px; }
+      .vote-answer-input:checked + .vote-answer-box { background: var(--background-primary); border-color: var(--background-primary-hover); box-shadow: 0 0 0 3px color-mix(in srgb, var(--background-primary) 35%, transparent); }
+      .vote-answer-input:checked + .vote-answer-box::after { opacity: 1; transform: rotate(45deg) scale(1); }
+      .vote-answer-input:focus-visible + .vote-answer-box { box-shadow: 0 0 0 3px color-mix(in srgb, var(--background-info) 45%, transparent); }
+      .vote-answer-option { align-items: center; cursor: pointer; display: flex; gap: 12px; user-select: none; width: 100%; }
+      .vote-answer-text { color: var(--color-body); font-size: 1rem; line-height: 1.4; }
+      .vote-answer:hover { border-color: var(--color-border-dark); transform: translateY(-1px); }
+      @media (max-width: 640px) { .vote-answer-box { margin-top: 1px; } .vote-answer-option { align-items: flex-start; } }
     </style>
 </head>
 <body>
@@ -34,8 +45,8 @@
    
    <template id="idTemplateQuestion" data-description="template for generating question information based on possible questions added to poll">
       <div class="container-view margin_b-large" data-table="TPollQuestion">
-         <div data-field="PollQuestionK" data-value="" data-description="key for question">
-            <div data-section="record" data-table="TPollQuestion" data-key="">
+         <div data-table="TPollQuestion" data-field="PollQuestionK" data-value="" data-description="key for question">
+            <div data-section="record" data-table="TPollQuestion">
                <h2 class="margin_b-small" data-field="FName">Question name</h2>
                <p class="margin_b-small" data-field="FQuestion">Question text goes here...</p>
             </div>
@@ -47,6 +58,14 @@
    </template>
 
    <template id="idTemplateAnswer" data-description="template for generating answer information based on possible answers added to question"> 
+      <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer">
+         <label class="vote-answer-option" data-description="single selectable answer option">
+            <input class="vote-answer-input" type="checkbox" data-value="" value="" data-field="PollAnswerK">
+            <span class="vote-answer-box" aria-hidden="true"></span>
+            <span class="vote-answer-text" data-field="FAnswer">Answer text goes here...</span>
+         </label>
+         <input type="hidden" value="" data-field="PollQuestionK">
+      </div>
    </template>
 
 
@@ -153,6 +172,8 @@ async function PAGE_Load() {
 }
 
 function PAGE_RenderPoll() {
+   const ePollContainer = document.getElementById("idPoll");
+
    // ## Render poll information on the page ..................................
    {
       const oTable = oDocument_g.GetTable("TPoll");
@@ -163,7 +184,6 @@ function PAGE_RenderPoll() {
       const oRow = oTable.AsObject(0);
       oRecord.AddValue(oRow);                                                  // Add values from row to record container
 
-      const ePollContainer = document.getElementById("idPoll");
       oRecord.WriteValues(ePollContainer);                                     // Write values from record to page elements with matching data-field attributes
    }
 
@@ -202,10 +222,12 @@ function PAGE_RenderPoll() {
          const eAnswer =  document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
          oRecord.WriteValues(eAnswer);                                      // Write values from record to page elements with matching data-field attributes
 
-         // ### Find question container for this answer and append answer element to it @CRITICAL 
+         // ### Find question container for this answer and append answer element to it @CRITICAL [description: get key to question that marks question container]
          const sQuestionKey = oRecord.GetValue("PollQuestionK");
-         const eQuestionContainer = eQuestionContainer.querySelector(`[data-table="TPollQuestion"][data-key="${sQuestionKey}"]`);
-         if( eQuestionContainer ) { eQuestionContainer.appendChild(eAnswer); }
+         const eQuestionContainer = ePollContainer.querySelector(`[data-field="PollQuestionK"][data-value="${sQuestionKey}"]`); console.assert(eQuestionContainer, "Could not find question container for answer:", oRow);
+         // #### Get anser section and add answer to it
+         const eAnswerSection = eQuestionContainer.querySelector(`[data-section="answer"]`);
+         if( eAnswerSection ) { eAnswerSection.appendChild(eAnswer); }
       }
    }
 }

@@ -1126,6 +1126,7 @@ class DBRecordContainer extends DBRecord {
     * Write a value to a DOM element based on its type, or use a custom setter if provided.
     * 
     * Writes to any element based on following rules:
+      * - If the element has `data-write="false"`, the write is skipped.
     * - If a custom setter (fnSet) is provided in the binding, it is used exclusively.
     * - For checkboxes and radio buttons, the 'checked' property is set to a boolean value.
     * - For other input types, textarea, and select elements, the 'value' property is set.
@@ -1136,21 +1137,26 @@ class DBRecordContainer extends DBRecord {
     * @param {*} value_ 
     */
    _write_element(oBinding, value_) {
-      if(oBinding.fnSet) { oBinding.fnSet(oBinding.element, value); return; }
-
       const eElement = oBinding.element;
       const v_       = value_ ?? "";
       const sTag     = eElement.tagName.toLowerCase();
       const sType    = (eElement.type || "").toLowerCase();
+      const sWrite   = (eElement.getAttribute("data-write") || "").toLowerCase();
 
-      if(sTag === "input" && (sType === "checkbox" || sType === "radio")) { eElement.checked = !!value; return; }
-      if(sTag === "input" || sTag === "textarea" || sTag === "select")    { eElement.value = v_; return; }
+      if(sWrite === "false") { return; }
 
       // ## If element has a data-value attribute, write to that instead of textContent (e.g. for custom components)
-      if(eElement.hasAttribute("data-value")) {
+      if(eElement.hasAttribute("data-value")) { 
          eElement.setAttribute("data-value", v_);
+         return;
       }
-      else { eElement.textContent = v_;}
+
+      if(oBinding.fnSet) { oBinding.fnSet(eElement, v_); return; }
+
+      if(sTag === "input" && (sType === "checkbox" || sType === "radio")) { eElement.checked = !!v_; return; } // checkbox
+      if(sTag === "input" || sTag === "textarea" || sTag === "select")    { eElement.value = v_; return; } // text-based elements
+
+      eElement.textContent = v_;
    }
 }
 
