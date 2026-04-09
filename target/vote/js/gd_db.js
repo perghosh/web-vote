@@ -1052,18 +1052,13 @@ class DBRecordContainer extends DBRecord {
       // ── 1. Resolve a container when a string or Element is passed ──────────
       if(typeof target_ === "string" || target_ instanceof Element) {
 
-         let oContainer = null;
+         let eContainer = null;
 
          if(typeof target_ === "string") {
-            oContainer = document.getElementById(target_) ?? document.querySelector(target_);
-            if(!oContainer) {
-               console.warn(`WriteValues: Could not find container for '${target_}'`);
-               return this;
-            }
+            eContainer = document.getElementById(target_) ?? document.querySelector(target_);
+            if(!eContainer) { console.warn(`WriteValues: Could not find container for '${target_}'`); return this;}
          }
-         else {
-            oContainer = target_;
-         }
+         else { eContainer = target_; }
 
          // Use the strategy chain already stored on the bound container, or fall
          // back to the class-level defaults when no container has been bound yet.
@@ -1074,24 +1069,22 @@ class DBRecordContainer extends DBRecord {
             const value  = this.mapValues.get(sName) ?? null;
 
             // Manual bindings always win — write through the stored binding.
-            const binding = this.mapElements.get(sName);
-            if(binding?._manual) {
-               this._write_element(binding, value);
+            const oBinding = this.mapElements.get(sName);                      // oBinding is { element, fnGet, fnSet, _manual }
+            if(oBinding?._manual) {
+               this._write_element(oBinding, value);
                return;
             }
 
-            // Walk the strategy chain to find an element inside oContainer.
+            // Walk the strategy chain to find an element inside eContainer.
             for(const fnStrategy of aStrategies) {
                try {
-                  const el = fnStrategy(oContainer, oColumn);
-                  if(el instanceof Element) {
-                     this._write_element({ element: el, fnGet: null, fnSet: null }, value);
+                  const eElement = fnStrategy(eContainer, oColumn); // get element for this column using the strategy
+                  if(eElement instanceof Element) {
+                     this._write_element({ element: eElement, fnGet: null, fnSet: null }, value);
                      break;
                   }
                }
-               catch(e) {
-                  console.warn(`WriteValues: Strategy threw for column '${sName}':`, e);
-               }
+               catch(e) { console.warn(`WriteValues: Strategy threw for column '${sName}':`, e); }
             }
          });
 
@@ -1129,17 +1122,35 @@ class DBRecordContainer extends DBRecord {
       return el.textContent;
    }
 
-   _write_element(binding, value) {
-      if(binding.fnSet) { binding.fnSet(binding.element, value); return; }
+   /** ------------------------------------------------------------------------
+    * Write a value to a DOM element based on its type, or use a custom setter if provided.
+    * 
+    * Writes to any element based on following rules:
+    * - If a custom setter (fnSet) is provided in the binding, it is used exclusively.
+    * - For checkboxes and radio buttons, the 'checked' property is set to a boolean value.
+    * - For other input types, textarea, and select elements, the 'value' property is set.
+    * - For elements with a 'data-value' attribute, the attribute is updated instead of textContent.
+    * - For all other elements, the textContent is updated.
+    *
+    * @param {*} oBinding - { element, fnGet, fnSet, _manual } 
+    * @param {*} value_ 
+    */
+   _write_element(oBinding, value_) {
+      if(oBinding.fnSet) { oBinding.fnSet(oBinding.element, value); return; }
 
-      const el    = binding.element;
-      const v     = value ?? "";
-      const sTag  = el.tagName.toLowerCase();
-      const sType = (el.type || "").toLowerCase();
+      const eElement = oBinding.element;
+      const v_       = value_ ?? "";
+      const sTag     = eElement.tagName.toLowerCase();
+      const sType    = (eElement.type || "").toLowerCase();
 
-      if(sTag === "input" && (sType === "checkbox" || sType === "radio")) { el.checked = !!value; return; }
-      if(sTag === "input" || sTag === "textarea" || sTag === "select")    { el.value = v; return; }
-      el.textContent = v;
+      if(sTag === "input" && (sType === "checkbox" || sType === "radio")) { eElement.checked = !!value; return; }
+      if(sTag === "input" || sTag === "textarea" || sTag === "select")    { eElement.value = v_; return; }
+
+      // ## If element has a data-value attribute, write to that instead of textContent (e.g. for custom components)
+      if(eElement.hasAttribute("data-value")) {
+         eElement.setAttribute("data-value", v_);
+      }
+      else { eElement.textContent = v_;}
    }
 }
 

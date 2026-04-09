@@ -33,12 +33,16 @@
 
    
    <template id="idTemplateQuestion" data-description="template for generating question information based on possible questions added to poll">
-      <div class="container-view margin_b-large" data-table="TPollQuestion" data-section="form">
-         <div data-section="record" data-table="TPollQuestion" data-key="">
-            <h2 class="margin_b-small" data-field="FName">Question name</h2>
-            <p class="margin_b-small" data-field="FQuestion">Question text goes here...</p>
+      <div class="container-view margin_b-large" data-table="TPollQuestion">
+         <div data-field="PollQuestionK" data-value="" data-description="key for question">
+            <div data-section="record" data-table="TPollQuestion" data-key="">
+               <h2 class="margin_b-small" data-field="FName">Question name</h2>
+               <p class="margin_b-small" data-field="FQuestion">Question text goes here...</p>
+            </div>
+            <div data-section="answer" class="margin_b-small">
+               <!-- Answer options will be appended here based on answers linked to this question -->
+            </div>
          </div>
-         <input type="hidden" data-field="PollQuestionK" value="">
       </div>
    </template>
 
@@ -180,6 +184,28 @@ function PAGE_RenderPoll() {
          const eQuestion =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
          oRecord.WriteValues(eQuestion);                                      // Write values from record to page elements with matching data-field attributes
          ePollContainer.appendChild(eQuestion);
+      }
+   }
+
+   // ## Render answers for questions .........................................
+   {
+      const oTable = oDocument_g.GetTable("TPollAnswer");
+      const uRowCount = oTable.GetRowCount();
+      const aColumnInformation = oTable.GetColumnInformation();
+      const oRecord = new DBRecordContainer(aColumnInformation);
+
+      for( let i = 0; i < uRowCount; i++ ) {
+         const oRow = oTable.AsObject(i);
+         oRecord.AddValue(oRow);
+
+         // ### Geneate html for new answer
+         const eAnswer =  document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
+         oRecord.WriteValues(eAnswer);                                      // Write values from record to page elements with matching data-field attributes
+
+         // ### Find question container for this answer and append answer element to it @CRITICAL 
+         const sQuestionKey = oRecord.GetValue("PollQuestionK");
+         const eQuestionContainer = eQuestionContainer.querySelector(`[data-table="TPollQuestion"][data-key="${sQuestionKey}"]`);
+         if( eQuestionContainer ) { eQuestionContainer.appendChild(eAnswer); }
       }
    }
 }
