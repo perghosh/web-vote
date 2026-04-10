@@ -45,6 +45,18 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
 
       .page-command { align-items: center; border: none; border-radius: 80px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); cursor: pointer; display: flex; font-family: inherit; font-size: 1.2rem; font-weight: 600; gap: 12px; justify-content: center; padding: 1rem 0; transition: all 0.2s ease; width: 100%; }
 
+      .page-label { background: color-mix(in srgb, var(--background-secondary) 78%, transparent); border: 1px solid color-mix(in srgb, var(--color-border-dark) 55%, transparent); border-left: 4px solid var(--background-primary); border-radius: 6px; color: var(--color-secondary); display: inline-flex; font-size: 0.9rem; font-weight: 700; line-height: 1; margin: 0; padding: 0.22rem 0.5rem 0.2rem 0.42rem; }
+      .page-question-header { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+      .page-question-title-row { align-items: baseline; column-gap: 8px; display: flex; flex-wrap: wrap; }
+      .page-question-tag { letter-spacing: 0; margin: 0; }
+      .page-question-title { color: var(--color-body); font-size: 1.35rem; font-weight: 700; line-height: 1.2; margin: 0; }
+      .page-question-description { color: var(--color-secondary); font-size: 1rem; line-height: 1.45; margin: 0; max-width: 72ch; }
+      .page-question-frame { border: 1px solid var(--color-border); border-radius: 16px;  }
+      .page-poll-frame { border: 1px solid var(--color-border); border-radius: 32px;  }
+      .page-poll-header { display: flex; flex-direction: column; gap: 8px; }
+      .page-poll-title { color: var(--color-body); font-size: 2rem; font-weight: 800; letter-spacing: 0.01em; line-height: 1.12; margin: 0; }
+      .page-poll-description { border-left: 3px solid color-mix(in srgb, var(--background-primary) 60%, transparent); color: var(--color-secondary); font-size: 1.03rem; line-height: 1.5; margin: 0; max-width: 76ch; padding-left: 12px; }
+
 
       @media (max-width: 640px) { .vote-answer-box { margin-top: 1px; } .vote-answer-option { align-items: flex-start; } }
     </style>
@@ -55,9 +67,9 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
     -->
    <div id="idPage" class="page-container container page" data-section="page">
       <!-- Poll information -->
-      <div id="idPoll" class="container-view margin_b-small">
-         <h1 data-field="FName">Poll Title</h1>
-         <p data-field="FDescription">Poll description goes here...</p>
+      <div id="idPoll" class="container-view margin_b-small page-poll-frame page-poll-header">
+         <h1 class="page-poll-title" data-field="FName">Poll Title</h1>
+         <p class="page-poll-description" data-field="FDescription">Poll description goes here...</p>
       </div>
 
       <div id="idPollCommand">
@@ -67,11 +79,16 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
 
    
    <template id="idTemplateQuestion" data-description="template for generating question information based on possible questions added to poll">
-      <div class="container-view margin_b-large" data-table="TPollQuestion">
+      <div class="container-view margin_b-large page-question-frame" data-table="TPollQuestion">
          <div data-table="TPollQuestion" data-field="PollQuestionK" data-value="" data-description="key for question">
             <div data-section="record" data-table="TPollQuestion">
-               <h2 class="margin_b-small" data-field="FName">Question name</h2>
-               <p class="margin_b-small" data-field="FQuestion">Question text goes here...</p>
+               <div class="page-question-header">
+                  <div class="page-question-title-row">
+                     <span class="page-label page-question-tag" data-field="FLabel">-</span>
+                     <h3 class="margin_b-small page-question-title" data-field="FName">Question name</h3>
+                  </div>
+                  <p class="margin_b-small page-question-description" data-field="FQuestion">Question text goes here...</p>
+               </div>
                <input type="hidden" value="1" data-field="FMinSelect"> <!-- Min selectable answers for this question -->
                <input type="hidden" value="1" data-field="FMaxSelect"> <!-- Max selectable answers for this question -->
             </div>
@@ -168,8 +185,7 @@ function PAGE_SetListeners() {
                gd.SendToServer("", "!db/execute?&table=TPollVote", oDocument).then((oResult) => {
                   const oData = XML_GetFirstValue( oResult );
                   const iCount = oData.count;
-                  const sMessage = `Successfully cast ${iCount} votes.`;
-                  oToast_g.Show(sMessage);
+                  oToast_g.Show(`Successfully cast ${iCount} votes.`);
                }).catch((error) => {
                   console.error("Failed to cast votes:", error);
                   const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";

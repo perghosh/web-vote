@@ -35,8 +35,8 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
          <ui>{ "table": "PollK;FName,Name;FHeader,Header;FDescription,Description" }</ui>
          <![CDATA[SELECT hex(PollK) AS PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}]]></statement>
       <statement name="cast-poll_questions" format="jinja" type="select" description="Select poll questions for vote">
-         <ui>{ "table": "PollQuestionK;FName,Name;FQuestion,Question;FQuestionMore,More;FDescription,Description" }</ui>
-         <![CDATA[SELECT hex(PollQuestionK) AS PollQuestionK, FName, FQuestion, FQuestionMore, FDescription FROM TPollQuestion WHERE PollK = X{PollK} ORDER BY FOrder]]></statement>
+         <ui>{ "table": "PollQuestionK;FLabel;FName,Name;FQuestion,Question;FQuestionMore,More;FDescription,Description" }</ui>
+         <![CDATA[SELECT hex(PollQuestionK) AS PollQuestionK, FLabel, FName, FQuestion, FQuestionMore, FDescription FROM TPollQuestion WHERE PollK = X{PollK} ORDER BY FOrder]]></statement>
       <statement name="cast-poll_answers" format="jinja" type="select" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = X{PollK}</statement>
    </statements>
    
