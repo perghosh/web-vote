@@ -160,15 +160,15 @@ function PAGE_SetListeners() {
                      const sAnswerKey = eAnswer.getAttribute("data-value");
 
                      const eValues = oDocument.createElement("values");
-                     //eValues.setAttribute("PollK", oDocument_g.GetValue("PollKey"));
-                     //eValues.setAttribute("PollQuestionK", sQuestionKey);
                      eValues.setAttribute("PollAnswerK", sAnswerKey);
                      oDocument.documentElement.appendChild(eValues);
                   });
                });
 
-               gd.SendToServer("", "!db/execute?format=xml&node=values&table=TPollVote", oDocument).then((oResult) => {
-                  const sMessage = oResult.data?.message || "Votes cast successfully!";
+               gd.SendToServer("", "!db/execute?&table=TPollVote", oDocument).then((oResult) => {
+                  const oData = XML_GetFirstValue( oResult );
+                  const iCount = oData.count;
+                  const sMessage = `Successfully cast ${iCount} votes.`;
                   oToast_g.Show(sMessage);
                }).catch((error) => {
                   console.error("Failed to cast votes:", error);
