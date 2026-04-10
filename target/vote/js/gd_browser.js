@@ -101,6 +101,9 @@ oNS.SendToServer = function(sBaseUrl, sEndpoint, arguments_, body_) {
    
    let sBody;
    let sContentType = 'application/xml'; // Default content type
+   
+   if( typeof arguments_ === "object" ) { body_ = arguments_; arguments_ = ""; } // no string that this should be some sort of body
+   
    const sArguments = typeof arguments_ === "string" ? arguments_ : ""; // Ensure arguments is a string, default to empty if undefined
 
    // ## Set body as text, if body_ is xml document or json then convert to string based on these types

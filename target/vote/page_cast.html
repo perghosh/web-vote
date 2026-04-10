@@ -151,7 +151,7 @@ function PAGE_SetListeners() {
                //    <values PollK="" PollQuestionK="" PollAnswerK="" /> each value element holds the keys for one vote, there will be one value element for each selected answer
                const ePollContainer = document.getElementById("idPoll");
                const aQuestionContainers = ePollContainer.querySelectorAll(`[data-field="PollQuestionK"]`);
-               const oDocument = document.createElement("document");
+               const oDocument = document.implementation.createDocument(null, "document");
                aQuestionContainers.forEach((eQuestionContainer) => {
                   const sQuestionKey = eQuestionContainer.getAttribute("data-value");
 
@@ -159,15 +159,15 @@ function PAGE_SetListeners() {
                   aSelected.forEach((eAnswer) => {
                      const sAnswerKey = eAnswer.getAttribute("data-value");
 
-                     const eValue = document.createElement("values");
-                     eValue.setAttribute("PollK", oDocument_g.GetValue("PollKey"));
-                     eValue.setAttribute("PollQuestionK", sQuestionKey);
-                     eValue.setAttribute("PollAnswerK", sAnswerKey);
-                     oDocument.appendChild(eValue);
+                     const eValues = oDocument.createElement("values");
+                     //eValues.setAttribute("PollK", oDocument_g.GetValue("PollKey"));
+                     //eValues.setAttribute("PollQuestionK", sQuestionKey);
+                     eValues.setAttribute("PollAnswerK", sAnswerKey);
+                     oDocument.documentElement.appendChild(eValues);
                   });
                });
 
-               gd.SendToServer("", "!vote/cast?", `values=${oDocument.innerHTML}`).then((oResult) => {
+               gd.SendToServer("", "!db/execute?format=xml&node=values&table=TPollVote", oDocument).then((oResult) => {
                   const sMessage = oResult.data?.message || "Votes cast successfully!";
                   oToast_g.Show(sMessage);
                }).catch((error) => {
