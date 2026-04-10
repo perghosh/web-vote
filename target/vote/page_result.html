@@ -1,0 +1,355 @@
+<!--
+## Edit poll questions and answers for each question.
+
+Importanbt data attributes are data-action, data-section. These are both used for
+command and simplify navigation in page.
+
+PAGE_ Method documentation:
+=========================
+
+PAGE_Initialize - Initialize the page by creating necessary objects and loading initial data
+PAGE_SetListeners - Set event listeners for user interactions on the page
+PAGE_Load - Load poll information from the server and store it in the document
+PAGE_RenderPoll - Render poll information, questions, and answers on the page based on data stored in the document
+PAGE_Validate - Validate user input before sending votes to server, ensuring required number of answers are selected for each question
+
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/variables/variables-purple-soft.css">
+    <link rel="stylesheet" href="css/poll.css">
+    <link rel="stylesheet" href="css/elements.css">
+    <link rel="stylesheet" href="css/input-effects.css">
+    <script src="js/gd_ui_toast.js"></script>
+    <script src="js/gd_ui_tablelite.js"></script>
+    <script src="js/gd_data_table.js"></script>
+    <script src="js/gd_db.js"></script>
+    <script src="js/gd_browser.js"></script>
+    <script src="js/document.js"></script>
+    <title>Login - Web Vote</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      .vote-answer { border: 1px solid var(--color-border); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+      
+      
+      .vote-answer-input { height: 1px; opacity: 0; position: absolute; width: 1px; }
+      
+      
+      
+      .vote-answer-option { align-items: center; justify-content: center; cursor: pointer; display: flex; gap: 12px; user-select: none; width: 100%; }
+      .vote-answer-text { color: var(--color-body); font-size: 1rem; line-height: 1.4; }
+      .vote-answer:hover { border-color: var(--color-border-dark); transform: translateY(-1px); }
+
+      .page-command { align-items: center; border: none; border-radius: 80px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); cursor: pointer; display: flex; font-family: inherit; font-size: 1.2rem; font-weight: 600; gap: 12px; justify-content: center; padding: 1rem 0; transition: all 0.2s ease; width: 100%; }
+
+
+      @media (max-width: 640px) { .vote-answer-box { margin-top: 1px; } .vote-answer-option { align-items: flex-start; } }
+    </style>
+</head>
+<body>
+   <!--
+    | ## Page Container for casting votes
+    -->
+   <div id="idPage" class="page-container container page" data-section="page">
+      <!-- Poll information -->
+      <div id="idPoll" class="container-view margin_b-small">
+         <h1 data-field="FName">Poll Title</h1>
+         <p data-field="FDescription">Poll description goes here...</p>
+      </div>
+   </div>
+
+   
+   <template id="idTemplateQuestion" data-description="template for generating question information based on possible questions added to poll">
+      <div class="container-view margin_b-large" data-table="TPollQuestion">
+         <div data-table="TPollQuestion" data-field="PollQuestionK" data-value="" data-description="key for question">
+            <div data-section="record" data-table="TPollQuestion">
+               <h2 class="margin_b-small" data-field="FName">Question name</h2>
+               <p class="margin_b-small" data-field="FQuestion">Question text goes here...</p>
+               <input type="hidden" value="1" data-field="FMinSelect"> <!-- Min selectable answers for this question -->
+               <input type="hidden" value="1" data-field="FMaxSelect"> <!-- Max selectable answers for this question -->
+            </div>
+            <div data-section="answer" class="margin_b-small">
+               <!-- Answer options will be appended here based on answers linked to this question -->
+            </div>
+         </div>
+      </div>
+   </template>
+
+   <template id="idTemplateAnswer" data-description="template for generating answer information based on possible answers added to question"> 
+    <div class="row" style="display: flex; gap: 10px;">
+        <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer" style="width: 60%;">
+            <label class="vote-answer-option" data-description="single selectable answer option">
+            <!--<input class="vote-answer-input" type="checkbox" data-value="" value="" data-field="PollAnswerK">
+            <span class="vote-answer-box" aria-hidden="true"></span>-->
+            <span class="vote-answer-text" data-field="FAnswer">Answer text goes here...</span>
+            </label>
+            <input type="hidden" value="" data-field="PollQuestionK">
+        </div>
+
+        <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer" style="width: 15%;">
+            <label class="vote-answer-option" data-description="single answer count">
+
+            <span class="vote-answer-text" data-field="count">000%</span>
+            </label>
+        </div>
+
+        <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer" style="width: 25%;">
+            <label class="vote-answer-option" data-description="single answer count">
+
+            <span class="vote-answer-text" data-field="count">? Votes</span>
+            </label>
+        </div>
+    </div>  
+    
+   </template>
+
+
+   <script>
+'use strict';
+
+let oDocument_g; // Global document object
+let oToast_g;
+
+// ## Prepare base url .....................................................
+const sBaseUrl_g = gd.GetBaseUrl();
+gd.SetBaseUrl(sBaseUrl_g);
+
+// ## Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+   PAGE_Initialize();
+   PAGE_SetListeners();
+});
+
+/** --------------------------------------------------------------------------- PAGE_Initialize
+ * Initialize the page by creating necessary objects and loading initial data
+ */
+function PAGE_Initialize() {
+   oDocument_g = new CDocument({});                                           // Create new document
+   oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
+
+   let sPollKey = null; // Get poll key from url parameters if available, otherwise use null to fetch first poll
+
+   // try to get poll key from url parameters, if not available use null to fetch first poll
+   const oUrlParameter = new URLSearchParams(window.location.search);
+   sPollKey = oUrlParameter.get("PollK") || oUrlParameter.get("key") || null;
+   if( !sPollKey || sPollKey.length !== 32 ) {
+      console.warn("No poll key or invalid poll key provided in URL parameters, fetching first poll");
+      sPollKey = null; // Set to null to fetch first poll
+   }
+   else {
+      oDocument_g.SetValue("PollKey", sPollKey);                              // Store poll key in document for later use
+      PAGE_Load();                                                            // Load poll information and display it on the page
+   }
+}
+
+function PAGE_SetListeners() {
+   // ## Set listener for cast vote button
+   const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
+   ePage.addEventListener("click", function(e_) {
+      const eTarget = e_.target;
+
+      const sCommand = eTarget.dataset.command;
+      if( !sCommand ) return;                                                 // If no command is defined, return
+
+      const sAction = eTarget.dataset.action;                                                      console.assert( sAction, "Action is not defined in data-action attribute" );
+      const sTableName = eTarget.dataset.table;                                                    console.assert( sTableName, "Table name is not defined in data-table attribute" );
+      if( sTableName === "TPoll" ) {
+         if( sAction === "cast-vote" ) {
+            if( PAGE_Validate("cast") == true ) {
+               // ## Generate xml for votes based on selected answers and send to server
+               //    Values are placed in <fields fieldname1="value" fieldname2="value" /> each attributes holds one value where the name is the field name in database
+               //    <values PollK="" PollQuestionK="" PollAnswerK="" /> each value element holds the keys for one vote, there will be one value element for each selected answer
+               const ePollContainer = document.getElementById("idPoll");
+               const aQuestionContainers = ePollContainer.querySelectorAll(`[data-field="PollQuestionK"]`);
+               const oDocument = document.implementation.createDocument(null, "document");
+               aQuestionContainers.forEach((eQuestionContainer) => {
+                  const sQuestionKey = eQuestionContainer.getAttribute("data-value");
+
+                  const aSelected = eQuestionContainer.querySelectorAll(`.vote-answer-input:checked`);
+                  aSelected.forEach((eAnswer) => {
+                     const sAnswerKey = eAnswer.getAttribute("data-value");
+
+                     const eValues = oDocument.createElement("values");
+                     //eValues.setAttribute("PollK", oDocument_g.GetValue("PollKey"));
+                     //eValues.setAttribute("PollQuestionK", sQuestionKey);
+                     eValues.setAttribute("PollAnswerK", sAnswerKey);
+                     oDocument.documentElement.appendChild(eValues);
+                  });
+               });
+
+               gd.SendToServer("", "!db/execute?format=xml&node=values&table=TPollVote", oDocument).then((oResult) => {
+                  const sMessage = oResult.data?.message || "Votes cast successfully!";
+                  oToast_g.Show(sMessage);
+               }).catch((error) => {
+                  console.error("Failed to cast votes:", error);
+                  const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";
+                  oToast_g.Show(sMessage);
+               });
+            }
+         }
+      }
+   });
+}
+
+/** --------------------------------------------------------------------------- PAGE_Load
+ * Load poll information from the server and store it in the document
+ * 
+ * This function fetches all necessary information for the poll, including poll
+ * details, questions, and answers. It executes multiple queries in parallel to
+ * optimize loading time. The results are stored in the document for later use
+ * when rendering the poll on the page.
+ */
+async function PAGE_Load() {
+   const sPollKey = oDocument_g.GetValue("PollKey");
+   console.assert(sPollKey, "Poll key is not set in document");
+
+   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
+   // const aQueryName = ["cast-poll"];
+      
+   try {
+      // ## Execute all queries in parallel
+      const aTable = await Promise.all(aQueryName.map(async (sQueryName) => {
+         const oResult = await gd.SendToServer("", "!db/select?ui=1&", `query=#${sQueryName}\nvalues={"PollK":"${sPollKey}"}`);
+         const data_ = oResult.data;
+
+         const eResult = data_.querySelector("result") || console.error("No result element found in response for query:", sQueryName, "Response data:", data_);
+         const sResultName = eResult.getAttribute("name");
+         const sResultId = eResult.getAttribute("id");
+         let sResultUi = eResult.getAttribute("ui");
+
+         let oTable; // Generated table from result
+         const aResult = JSON.parse(eResult.textContent);
+
+         if( sResultUi ) { 
+            if( sResultUi.charAt(0) === "{" ) { // If ui attribute is a JSON string, parse it to get table configuration
+               const oUiConfig = JSON.parse(sResultUi);
+               sResultUi = oUiConfig.table; // Get table name from UI configuration for later use
+            }
+            oTable = new Table(sResultUi); 
+            oTable.Add(aResult.slice(1)); // Parse rows from UI format if available
+         }
+         else if( eResult.textContent ) {
+            oTable = new Table(aResult);
+         }
+         else { console.error("No data found in result for query:", sQueryName, "Result element:", eResult); }
+         
+         if (sQueryName === "cast-poll") { oTable.name = "TPoll"; }
+         else if (sQueryName === "cast-poll_questions") { oTable.name = "TPollQuestion"; }
+         else if (sQueryName === "cast-poll_answers") { oTable.name = "TPollAnswer"; }
+         
+         oDocument_g.AddTable(oTable);
+         return oTable;
+      }));
+
+      // console.log("All poll data loaded:", aTable);
+      
+      // All done - render
+      PAGE_RenderPoll();
+      
+   } 
+   catch(error) { console.error("Failed to load poll data:", error); }
+}
+
+function PAGE_RenderPoll() {
+   const ePollContainer = document.getElementById("idPoll");
+
+   // ## Render poll information on the page ..................................
+   {
+      const oTable = oDocument_g.GetTable("TPoll");
+      const aColumnInformation = oTable.GetColumnInformation();
+      const oRecord = new DBRecordContainer(aColumnInformation);
+
+      // Get first row with data from table
+      const oRow = oTable.AsObject(0);
+      oRecord.AddValue(oRow);                                                  // Add values from row to record container
+
+      oRecord.WriteValues(ePollContainer);                                     // Write values from record to page elements with matching data-field attributes
+   }
+
+   // ## Render questions for poll ............................................
+   // Iterate rows for question result and generate one question element for each row
+   {
+      const oTable = oDocument_g.GetTable("TPollQuestion");
+      const aColumnInformation = oTable.GetColumnInformation();
+      const oRecord = new DBRecordContainer(aColumnInformation);
+
+      const ePollContainer = document.getElementById("idPoll");
+
+      for( let i = 0; i < oTable.GetRowCount(); i++ ) {
+         const oRow = oTable.AsObject(i);
+         oRecord.AddValue(oRow);
+
+         // ### Geneate html for new question
+         const eQuestion =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
+         oRecord.WriteValues(eQuestion);                                      // Write values from record to page elements with matching data-field attributes
+         ePollContainer.appendChild(eQuestion);
+      }
+   }
+
+   // ## Render answers for questions .........................................
+   {
+      const oTable = oDocument_g.GetTable("TPollAnswer");
+      const uRowCount = oTable.GetRowCount();
+      const aColumnInformation = oTable.GetColumnInformation();
+      const oRecord = new DBRecordContainer(aColumnInformation);
+
+      for( let i = 0; i < uRowCount; i++ ) {
+         const oRow = oTable.AsObject(i);
+         oRecord.AddValue(oRow);
+
+         // ### Geneate html for new answer
+         const eAnswer =  document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
+         oRecord.WriteValues(eAnswer);                                      // Write values from record to page elements with matching data-field attributes
+
+         // ### Find question container for this answer and append answer element to it @CRITICAL [description: get key to question that marks question container]
+         const sQuestionKey = oRecord.GetValue("PollQuestionK");
+         const eQuestionContainer = ePollContainer.querySelector(`[data-field="PollQuestionK"][data-value="${sQuestionKey}"]`); console.assert(eQuestionContainer, "Could not find question container for answer:", oRow);
+         // #### Get anser section and add answer to it
+         const eAnswerSection = eQuestionContainer.querySelector(`[data-section="answer"]`);
+         if( eAnswerSection ) { eAnswerSection.appendChild(eAnswer); }
+      }
+   }
+}
+
+/** --------------------------------------------------------------------------- PAGE_Validate
+ * Validate user input before sending votes to server
+ * 
+ * This function checks that the user has selected the required number of answers for each question based on the FMinSelect and FMaxSelect values defined for each question. If any validation fails, it shows an appropriate message to the user and prevents the form from being submitted.
+ * 
+ * @param {string} sType - The type of validation to perform, in this case "cast" for casting votes
+ * @returns {boolean} - Returns true if validation passes, false otherwise
+ */
+function PAGE_Validate( sType ) {
+   let bValid = true;
+   if( sType === "cast" ) {
+      // ## Validate that at least one answer is selected for each question
+      const ePollContainer = document.getElementById("idPoll");
+      const aQuestion = ePollContainer.querySelectorAll(`div[data-field="PollQuestionK"]`);
+      aQuestion.forEach((eQuestion) => {
+         const eRecord = eQuestion.querySelector(`[data-section="record"]`); 
+         const sQuestionKey = eRecord.getAttribute("data-value");
+         const uMinSelect = parseInt(eRecord.querySelector(`[data-field="FMinSelect"]`).value) || 0;
+         const uMaxSelect = parseInt(eRecord.querySelector(`[data-field="FMaxSelect"]`).value) || 0;
+
+         const aSelectedAnswers = eQuestion.querySelectorAll(`.vote-answer-input:checked`);
+         const uSelectedCount = aSelectedAnswers.length;
+         if( uSelectedCount < uMinSelect ) {
+            bValid = false;
+            oToast_g.Show(`Please select at least ${uMinSelect} answer(s) for question "${eQuestion.querySelector(`[data-field="FName"]`).textContent}"`);
+         }
+         else if( uMaxSelect > 0 && uSelectedCount > uMaxSelect ) {
+            bValid = false;
+            oToast_g.Show(`Please select no more than ${uMaxSelect} answer(s) for question "${eQuestion.querySelector(`[data-field="FName"]`).textContent}"`);
+         }
+      });
+   }
+
+   return bValid;
+}
+ 
+   </script>
+</body>
+</html>
