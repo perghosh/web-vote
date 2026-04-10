@@ -1,3 +1,19 @@
+<!--
+## Edit poll questions and answers for each question.
+
+Importanbt data attributes are data-action, data-section. These are both used for
+command and simplify navigation in page.
+
+PAGE_ Method documentation:
+=========================
+
+PAGE_Initialize - Initialize the page by creating necessary objects and loading initial data
+PAGE_SetListeners - Set event listeners for user interactions on the page
+PAGE_Load - Load poll information from the server and store it in the document
+PAGE_RenderPoll - Render poll information, questions, and answers on the page based on data stored in the document
+PAGE_Validate - Validate user input before sending votes to server, ensuring required number of answers are selected for each question
+
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -44,8 +60,8 @@
          <p data-field="FDescription">Poll description goes here...</p>
       </div>
 
-      <div id="idPollCommand" class="container-form">
-         <button class="button-primary page-command">Send votes to server</button>
+      <div id="idPollCommand">
+         <button class="button-primary page-command" data-command="insert" data-action="cast-vote" data-table="TPoll">Send votes to server</button>
       </div>
    </div>
 
@@ -56,6 +72,8 @@
             <div data-section="record" data-table="TPollQuestion">
                <h2 class="margin_b-small" data-field="FName">Question name</h2>
                <p class="margin_b-small" data-field="FQuestion">Question text goes here...</p>
+               <input type="hidden" value="1" data-field="FMinSelect"> <!-- Min selectable answers for this question -->
+               <input type="hidden" value="1" data-field="FMaxSelect"> <!-- Max selectable answers for this question -->
             </div>
             <div data-section="answer" class="margin_b-small">
                <!-- Answer options will be appended here based on answers linked to this question -->
@@ -116,7 +134,51 @@ function PAGE_Initialize() {
 
 function PAGE_SetListeners() {
    // ## Set listener for cast vote button
-   const oPage = document.getElementById("idPage");
+   const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
+   ePage.addEventListener("click", function(e_) {
+      const eTarget = e_.target;
+
+      const sCommand = eTarget.dataset.command;
+      if( !sCommand ) return;                                                 // If no command is defined, return
+
+      const sAction = eTarget.dataset.action;                                                      console.assert( sAction, "Action is not defined in data-action attribute" );
+      const sTableName = eTarget.dataset.table;                                                    console.assert( sTableName, "Table name is not defined in data-table attribute" );
+      if( sTableName === "TPoll" ) {
+         if( sAction === "cast-vote" ) {
+            if( PAGE_Validate("cast") == true ) {
+               // ## Generate xml for votes based on selected answers and send to server
+               //    Values are placed in <fields fieldname1="value" fieldname2="value" /> each attributes holds one value where the name is the field name in database
+               //    <values PollK="" PollQuestionK="" PollAnswerK="" /> each value element holds the keys for one vote, there will be one value element for each selected answer
+               const ePollContainer = document.getElementById("idPoll");
+               const aQuestionContainers = ePollContainer.querySelectorAll(`[data-field="PollQuestionK"]`);
+               const oDocument = document.createElement("document");
+               aQuestionContainers.forEach((eQuestionContainer) => {
+                  const sQuestionKey = eQuestionContainer.getAttribute("data-value");
+
+                  const aSelected = eQuestionContainer.querySelectorAll(`.vote-answer-input:checked`);
+                  aSelected.forEach((eAnswer) => {
+                     const sAnswerKey = eAnswer.getAttribute("data-value");
+
+                     const eValue = document.createElement("values");
+                     eValue.setAttribute("PollK", oDocument_g.GetValue("PollKey"));
+                     eValue.setAttribute("PollQuestionK", sQuestionKey);
+                     eValue.setAttribute("PollAnswerK", sAnswerKey);
+                     oDocument.appendChild(eValue);
+                  });
+               });
+
+               gd.SendToServer("", "!vote/cast?", `values=${oDocument.innerHTML}`).then((oResult) => {
+                  const sMessage = oResult.data?.message || "Votes cast successfully!";
+                  oToast_g.Show(sMessage);
+               }).catch((error) => {
+                  console.error("Failed to cast votes:", error);
+                  const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";
+                  oToast_g.Show(sMessage);
+               });
+            }
+         }
+      }
+   });
 }
 
 /** --------------------------------------------------------------------------- PAGE_Load
@@ -239,6 +301,41 @@ function PAGE_RenderPoll() {
    }
 }
 
+/** --------------------------------------------------------------------------- PAGE_Validate
+ * Validate user input before sending votes to server
+ * 
+ * This function checks that the user has selected the required number of answers for each question based on the FMinSelect and FMaxSelect values defined for each question. If any validation fails, it shows an appropriate message to the user and prevents the form from being submitted.
+ * 
+ * @param {string} sType - The type of validation to perform, in this case "cast" for casting votes
+ * @returns {boolean} - Returns true if validation passes, false otherwise
+ */
+function PAGE_Validate( sType ) {
+   let bValid = true;
+   if( sType === "cast" ) {
+      // ## Validate that at least one answer is selected for each question
+      const ePollContainer = document.getElementById("idPoll");
+      const aQuestion = ePollContainer.querySelectorAll(`div[data-field="PollQuestionK"]`);
+      aQuestion.forEach((eQuestion) => {
+         const eRecord = eQuestion.querySelector(`[data-section="record"]`); 
+         const sQuestionKey = eRecord.getAttribute("data-value");
+         const uMinSelect = parseInt(eRecord.querySelector(`[data-field="FMinSelect"]`).value) || 0;
+         const uMaxSelect = parseInt(eRecord.querySelector(`[data-field="FMaxSelect"]`).value) || 0;
+
+         const aSelectedAnswers = eQuestion.querySelectorAll(`.vote-answer-input:checked`);
+         const uSelectedCount = aSelectedAnswers.length;
+         if( uSelectedCount < uMinSelect ) {
+            bValid = false;
+            oToast_g.Show(`Please select at least ${uMinSelect} answer(s) for question "${eQuestion.querySelector(`[data-field="FName"]`).textContent}"`);
+         }
+         else if( uMaxSelect > 0 && uSelectedCount > uMaxSelect ) {
+            bValid = false;
+            oToast_g.Show(`Please select no more than ${uMaxSelect} answer(s) for question "${eQuestion.querySelector(`[data-field="FName"]`).textContent}"`);
+         }
+      });
+   }
+
+   return bValid;
+}
  
    </script>
 </body>

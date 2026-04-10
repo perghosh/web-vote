@@ -20,6 +20,21 @@
    10. **form-sub**
 */
 
+.button { background-color: var(--background-primary); border-radius: 8px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; transition: background-color 0.2s, color 0.2s; }
+.button-small { padding: 5px 14px; font-size: 0.9rem; }
+.button:hover { background-color: var(--background-primary-hover); }
+.button-primary { background-color: var(--background-primary); color: var(--color-primary); }
+.button-primary:hover { background-color: var(--background-primary-hover); }
+.button-success { background-color: var(--background-success); color: var(--color-success); }
+.button-success:hover { background-color: var(--background-success-hover); }
+.button-warning { background-color: var(--background-warning); color: var(--color-warning); }
+.button-warning:hover { background-color: var(--background-warning-hover); }
+.button-danger { background-color: var(--background-danger); color: var(--color-danger); }
+.button-danger:hover { background-color: var(--background-danger-hover); }
+.button-secondary { background-color: var(--background-secondary); color: var(--color-secondary); }
+.button-secondary:hover { background-color: var(--background-secondary-hover); }
+.button-info { background-color: var(--background-info); color: var(--color-info); }
+.button-info:hover { background-color: var(--background-info-hover); }
 
 .container-view { background: var(--background-form); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 20px; }
 .container-view-sub { background: var(--background-form-sub); border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 12px; }
@@ -75,23 +90,6 @@
 .container-form .col-span-2 { grid-column: span 2; }
 .container-form .col-span-3 { grid-column: span 3; }
 .container-form .col-span-4 { grid-column: span 4; }
-
-
-.container-form .button { background-color: var(--background-primary); border-radius: 8px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; transition: background-color 0.2s, color 0.2s; }
-.container-form .button-small { padding: 5px 14px; font-size: 0.9rem; }
-.container-form .button:hover { background-color: var(--background-primary-hover); }
-.container-form .button-primary { background-color: var(--background-primary); color: var(--color-primary); }
-.container-form .button-primary:hover { background-color: var(--background-primary-hover); }
-.container-form .button-success { background-color: var(--background-success); color: var(--color-success); }
-.container-form .button-success:hover { background-color: var(--background-success-hover); }
-.container-form .button-warning { background-color: var(--background-warning); color: var(--color-warning); }
-.container-form .button-warning:hover { background-color: var(--background-warning-hover); }
-.container-form .button-danger { background-color: var(--background-danger); color: var(--color-danger); }
-.container-form .button-danger:hover { background-color: var(--background-danger-hover); }
-.container-form .button-secondary { background-color: var(--background-secondary); color: var(--color-secondary); }
-.container-form .button-secondary:hover { background-color: var(--background-secondary-hover); }
-.container-form .button-info { background-color: var(--background-info); color: var(--color-info); }
-.container-form .button-info:hover { background-color: var(--background-info-hover); }
 
 
 

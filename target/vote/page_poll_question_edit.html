@@ -358,7 +358,7 @@ function PAGE_SetListeners() {
       const eForm = eTarget.closest('[data-section="form"]');                 // Container element for form based on command
       const eFormList = eTarget.closest('[data-section="form-list"]');        // Continer list for forms based on command
 
-      const sTableName = eTarget.dataset.table;                                                 console.assert( sTableName, "Table name is not defined in data-table attribute" );
+      const sTableName = eTarget.dataset.table;                                                    console.assert( sTableName, "Table name is not defined in data-table attribute" );
       const sAction = eTarget.dataset.action;                                                      console.assert( sAction, "Action is not defined in data-action attribute" );
 
       let oDBRecord = oDocument_g.GetRecord(sTableName);                                           console.assert( oDBRecord, `No record found for table ${sTableName}` );
