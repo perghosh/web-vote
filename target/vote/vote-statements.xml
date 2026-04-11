@@ -38,6 +38,9 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
          <ui>{ "table": "PollQuestionK;FLabel;FName,Name;FQuestion,Question;FQuestionMore,More;FDescription,Description" }</ui>
          <![CDATA[SELECT hex(PollQuestionK) AS PollQuestionK, FLabel, FName, FQuestion, FQuestionMore, FDescription FROM TPollQuestion WHERE PollK = X{PollK} ORDER BY FOrder]]></statement>
       <statement name="cast-poll_answers" format="jinja" type="select" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = X{PollK}</statement>
+
+      <statement name="cast-poll_votes" format="jinja" type="select">SELECT hex(TPollVote.PollAnswerK) AS PollAnswerK, COUNT(*) AS count FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK WHERE TPollAnswer.PollK = X{PollK} GROUP BY TPollVote.PollAnswerK</statement>
+
    </statements>
    
 </document>
