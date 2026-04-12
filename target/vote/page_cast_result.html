@@ -27,7 +27,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
     <script src="js/gd_ui_tablelite.js"></script>
     <script src="js/gd_data_table.js"></script>
     <script src="js/gd_db.js"></script>
-    <script src="js/gd_browser.js"></script>
+    <script src="js/gd_server.js"></script>
     <script src="js/document.js"></script>
     <title>Login - Web Vote</title>
     <style>
@@ -92,14 +92,14 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
         <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer" style="width: 15%;">
             <label class="vote-answer-option" data-description="single answer count">
 
-            <span class="vote-answer-text" data-field="percent">000%</span>
+            <span class="vote-answer-text" data-field="percent">0.00%</span>
             </label>
         </div>
 
         <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer" style="width: 25%;">
             <label class="vote-answer-option" data-description="single answer count">
 
-            <span class="vote-answer-text" data-field="count">? Votes</span>
+            <span class="vote-answer-text" data-field="count">0 Votes</span>
             </label>
         </div>
     </div>  
@@ -316,27 +316,93 @@ function PAGE_RenderPoll() {
       const oTable = oDocument_g.GetTable("TPollAnswer");
       const oVoteTable = oDocument_g.GetTable("TPollVote");
       const uRowCount = oTable.GetRowCount();
-      let sCurrentQuestion;
+
+      if( !oTable || !oVoteTable ) { return; }
 
       for( let i = 0; i < uRowCount; i++ ) {
          const oRow = oTable.AsObject(i); 
          const sQuestionK = oRow.PollQuestionK;
 
-         if( oVoteTable )
+         for( let i2 = 0; i2 < oVoteTable.GetRowCount(); i2++)
          {
-            for( let i2 = 0; i2 < oVoteTable.GetRowCount(); i2++)
-            {
-               const oRowVote = oVoteTable.AsObject(i2);
-               const uCount = oRowVote.count || 0;
-               const sAnswerKey = oRowVote.PollAnswerK;
+            const oRowVote = oVoteTable.AsObject(i2);
+            const uCount = Number(oRowVote.count) || 0;
+            const sAnswerKey = oRowVote.PollAnswerK;
 
-               if(sAnswerKey == oRow.PollAnswerK)
-               {
-                  oVoteData.push({votes: uCount, AnswerKey: sAnswerKey, QuestionKey: sQuestionK});
-               }
+            if(sAnswerKey == oRow.PollAnswerK)
+            {
+               oVoteData.push({count: uCount, answerKey: sAnswerKey, questionKey: sQuestionK});
             }
          }
       }
+      console.log(oVoteData);
+   }
+
+   {
+      //let sCurrentQuestion;
+      let oGroups = {};
+      
+      //let uTotalVotes = 0;
+      //let uVotes = 0;
+      //let iCount = 0;
+
+      oVoteData.forEach(oAnswer => {
+         const sQuestionKey = oAnswer.questionKey;
+
+         if( !oGroups[sQuestionKey] )
+         {
+            oGroups[sQuestionKey] = {
+               total: 0,
+               votes: []
+            };  
+         }
+
+         oGroups[sQuestionKey].votes.push(oAnswer);
+         oGroups[sQuestionKey].total += oAnswer.count;
+      });
+
+      Object.values(oGroups).forEach(oGroup => {
+         oGroup.votes.forEach(oVote => {
+            oVote.percent = ((oVote.count / oGroup.total) * 100).toFixed(2);
+         });
+      });
+
+      /*oVoteData.forEach(oAnswer => {
+         
+         if( iCount === 0 )
+         {
+            sCurrentQuestion = oAnswer.questionKey;
+         }
+         
+         if( sCurrentQuestion != oAnswer.questionKey )
+         {
+            let uLength = aVotes.length;
+            for(let i = 0; i < uLength; i++)
+            {
+               const uPercent = aVotes[i] / uVotes;
+               oVoteData[(iCount - uLength) + i].percent = uPercent;
+            }
+            uVotes = 0;
+            aVotes = [];
+         }
+         else
+         {
+            aVotes.push(oAnswer.count);
+            uVotes += oAnswer.count;  
+         }
+
+
+         iCount++;
+      });
+
+      let uLength = aVotes.length;
+      for(let i = 0; i < uLength; i++)
+      {
+         const uPercent = aVotes[i] / uVotes;
+         oVoteData[(iCount - uLength) + i].percent = uPercent;
+      }*/
+
+      //console.log(aVotes + uVotes);
       console.log(oVoteData);
    }
    
@@ -392,6 +458,24 @@ function PAGE_RenderPoll() {
          eAnswer.querySelector('[data-field="count"]').textContent = `${uCount} Votes`;
          eAnswer.querySelector('[data-field="percent"]').textContent = `${uPercent}%`;
          */
+
+         
+         /*oVoteData.forEach(oVote => {
+            
+            if( oVote.answerKey == oRow.PollAnswerK );
+            {
+               eAnswer.querySelector('[data-field="count"]').textContent = `${oVote.count} Votes`;
+               eAnswer.querySelector('[data-field="percent"]').textContent = `${oVote.percent}%`; 
+            }
+         });*/
+
+         if( oVoteData[i] )
+         {
+            eAnswer.querySelector('[data-field="count"]').textContent = `${oVoteData[i].count} Votes`;
+            eAnswer.querySelector('[data-field="percent"]').textContent = `${oVoteData[i].percent}%`; 
+         }
+
+         
          // ------
 
          // ### Find question container for this answer and append answer element to it @CRITICAL [description: get key to question that marks question container]
