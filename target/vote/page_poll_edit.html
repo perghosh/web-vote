@@ -23,7 +23,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    <link rel="stylesheet" href="css/variables/variables-purple-soft.css">
    <link rel="stylesheet" href="css/elements.css">
    <link rel="stylesheet" href="css/input-effects.css">
-   <script src="js/gd_browser.js"></script>
+   <script src="js/gd_server.js"></script>
    <script src="js/gd_ui_toast.js"></script>
    <script src="js/gd_ui_tablelite.js"></script>
    <script src="js/gd_db.js"></script>
@@ -282,7 +282,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
 
       // ## Start idle timer - call PAGE_OnIdle() once per second
-      CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+      //CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
 
       PAGE_SetListeners();
    }
@@ -362,7 +362,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
             gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult)
             {
-               const aPollResult = JSON.parse( oResult.data.querySelector("result").textContent );
+               const oData = oResult.data;
+               //const aPollResult = JSON.parse( oData.querySelector("result").textContent );
+               const aPollResult = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
                const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
                oDBRecord.ClearValues();
 

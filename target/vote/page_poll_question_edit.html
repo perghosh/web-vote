@@ -56,11 +56,38 @@ vote-get_answers - Select poll answers for poll
     <script src="js/gd_ui_tablelite.js"></script>
     <script src="js/gd_data_table.js"></script>
     <script src="js/gd_db.js"></script>
-    <script src="js/gd_browser.js"></script>
+    <script src="js/gd_server.js"></script>
     <script src="js/document.js"></script>
     <title>Login - Web Vote</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      [data-status-modified="1"] {
+         border-left: 4px solid var(--background-warning);
+         background-color: color-mix(in srgb, var(--background-warning) 10%, transparent);
+      }
+
+      /* Update button reacts to parent answer-form modified state */
+      [data-table="TPollAnswer"][data-status-modified]:not([data-status-modified="1"]) [data-action="update-pollanswer"] {
+         opacity: 0.55;
+      }
+
+      [data-table="TPollAnswer"][data-status-modified="1"] [data-action="update-pollanswer"] {
+         background-color: var(--background-warning);
+         color: var(--color-warning);
+         box-shadow: 0 0 0 2px color-mix(in srgb, var(--background-warning) 35%, transparent);
+      }
+
+      /* Update button reacts to parent question-form modified state */
+      [data-table="TPollQuestion"][data-status-modified]:not([data-status-modified="1"]) [data-action="update-pollquestion"] {
+         opacity: 0.55;
+      }
+
+      [data-table="TPollQuestion"][data-status-modified="1"] [data-action="update-pollquestion"] {
+         background-color: var(--background-warning);
+         color: var(--color-warning);
+         box-shadow: 0 0 0 2px color-mix(in srgb, var(--background-warning) 35%, transparent);
+      }
     </style>
 </head>
 <body>
@@ -68,39 +95,36 @@ vote-get_answers - Select poll answers for poll
     | ## Section for main poll, at top of page show the poll for questions and answers to questions
     -->
    <div id="idPage" class="page-container container page" data-section="page">
-      <div id="idMessage" class="container-form margin_b-small"></div>
-      <hr>
-        
-         <!-- Poll Details -->
-         <div id="idPoll" class="container-form margin_b-small">
-            <div data-section="record" data-table="TPoll">
-               <h2 class="margin_b-large">Poll Details</h2>
-               
-               <div class="form-group form-row form-row--aside-left">
-               <div class="floating">
-                  <input type="text" placeholder=" " data-field="FName" required>
-                  <span>Name</span>
-               </div>
-               <div class="floating">
-                  <input type="text" placeholder=" " data-field="FHeader" required>
-                  <span>Header</span>
-               </div>
-               </div>
-
-               <div class="form-group">
-               <div class="floating">
-                  <textarea placeholder=" " data-field="FDescription" rows="3"></textarea>
-                  <span>Description</span>
-               </div>
-               </div>
+      <!-- Poll Details -->
+      <div id="idPoll" class="container-form margin_b-small">
+         <div data-section="record" data-table="TPoll">
+            <h2 class="margin_b-large">Poll Details</h2>
+            
+            <div class="form-group form-row form-row--aside-left">
+            <div class="floating">
+               <input type="text" placeholder=" " data-field="FName" required>
+               <span>Name</span>
+            </div>
+            <div class="floating">
+               <input type="text" placeholder=" " data-field="FHeader" required>
+               <span>Header</span>
+            </div>
             </div>
 
-            <div data-section="command">
-               <span class="button" data-action="update-poll" data-command="update" data-table="TPoll">Save Poll</span>
-               <span class="button" data-action="delete-poll" data-command="delete" data-table="TPoll">Delete</span>
-               <span class="button" data-action="new-question-form" data-command="new" data-table="TPollQuestion">Add Question</span>
+            <div class="form-group">
+            <div class="floating">
+               <textarea placeholder=" " data-field="FDescription" rows="3"></textarea>
+               <span>Description</span>
+            </div>
             </div>
          </div>
+
+         <div data-section="command">
+            <span class="button" data-action="update-poll" data-command="update" data-table="TPoll">Save Poll</span>
+            <span class="button" data-action="delete-poll" data-command="delete" data-table="TPoll">Delete</span>
+            <span class="button" data-action="new-question-form" data-command="new" data-table="TPollQuestion">Add Question</span>
+         </div>
+      </div>
          
       <div id="idQuestions"></div>
    </div>
@@ -109,8 +133,8 @@ vote-get_answers - Select poll answers for poll
     | Templates to clone
    -->
    <template id="idTemplateNewQuestion">
-      <div class="container-form margin_b-large" data-table="TPollQuestion" data-section="form">
-         <div data-section="record" data-table="TPollQuestion" data-key="">
+      <div class="container-form" data-table="TPollQuestion" data-section="form" data-status-modified="">
+         <div data-section="form" data-table="TPollQuestion" data-key="">
             <h2 class="margin_b-small">Question name</h2>
             <div class="form-group form-row form-row--aside-left">
                <div class="floating">
@@ -119,17 +143,17 @@ vote-get_answers - Select poll answers for poll
                </div>
             </div>
             <input type="hidden" data-field="PollK">
-         </div>
-         <div data-section="command">
-            <span class="button" data-action="insert-pollquestion" data-command="insert" data-table="TPollQuestion">Add Question</span>
-            <span class="button" data-action="cancel-pollquestion" data-command="cancel" data-table="TPollQuestion">Cancel</span>
+            <div class="margin_l-small" data-section="command">
+               <span class="button" data-action="insert-pollquestion" data-command="insert" data-table="TPollQuestion">Add Question</span>
+               <span class="button" data-action="cancel-pollquestion" data-command="cancel" data-table="TPollQuestion">Cancel</span>
+            </div>
          </div>
       </div>
    </template>
 
    <template id="idTemplateQuestion">
-      <div class="container-form margin_b-small"data-section="form-list">
-         <div data-table="TPollQuestion" data-section="form">
+      <div class="container-form margin_b-small" data-section="form-list">
+         <div data-table="TPollQuestion" data-section="form" data-status-modified="">
 
             <div data-section="record" data-table="TPollQuestion" data-key="">
                <div class="form-group form-row form-row--aside-left">
@@ -170,7 +194,7 @@ vote-get_answers - Select poll answers for poll
 
    <!--  -->
    <template id="idTemplateAnswer">
-      <div class="container-form-sub margin_tb-small" data-table="TPollAnswer" data-section="form">
+      <div class="container-form-sub margin_tb-small" data-table="TPollAnswer" data-section="form" data-status-modified="">
          <div data-section="record" data-table="TPollAnswer" data-key="">
             <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 80px;">
                <label class="floating sub-background">
@@ -277,8 +301,6 @@ function PAGE_LoadPollInformation() {
       const tableVote = new Table(aTable); // Convert the XML response to a Table object for easier data manipulation
       const oPoll = tableVote.AsJson(0, 1)[0];  // Get poll information as json
 
-      Message_d(`Poll information loaded for poll: ${JSON.stringify(oPoll)}`); // Display message that poll information is loaded
-
       // ## Set poll information in document values and render form
       oDocument_g.GetRecord("TPoll").SetValue(oPoll);
       const oDBRecordContainer = oDocument_g.GetRecord("TPoll");
@@ -350,6 +372,16 @@ function PAGE_LoadPollInformation() {
  */
 function PAGE_SetListeners() {
    const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
+
+   ePage.addEventListener("input", function(e_) {
+      const eTarget = e_.target;
+      const sField = eTarget.dataset.field;
+      if( !sField ) return;                                                   // If no data-field attribute, return
+
+      const eContainer = eTarget.closest('[data-table][data-section="form"]');
+      if( eContainer ) { eContainer.setAttribute("data-status-modified", "1");} // Set attribute for modified status
+   });   
+
    ePage.addEventListener("click", function(e_) {
       const eTarget = e_.target;
 
@@ -434,6 +466,7 @@ function PAGE_SetListeners() {
                eValues.setAttribute("table", sTableName);
                gd.SendToServer("", "!db/update", `table=${sTableName}`, oDocument).then(function(oResponse) {
                   PAGE_Message( "Question updated successfully" ); // Process response and show message
+                  eForm.setAttribute("data-status-modified", ""); // Reset modified status on form after successful insert
                }).catch(function(error) {
                   PAGE_Message({table: sTableName, command: "update", response: oResponse, status: "error" }); // Process response and show message
                });
@@ -469,6 +502,7 @@ function PAGE_SetListeners() {
                      const sNewAnswerK = XML_GetFirstValue(oResponse);
                      eForm.querySelector(`[data-field="PollAnswerK"]`).value = sNewAnswerK;
                      PAGE_Message("Answer added successfully", "success");
+                     eForm.setAttribute("data-status-modified", ""); // Reset modified status on form after successful insert
                   })
                   .catch((error) => { PAGE_Message("Error adding answer", "danger"); });
                   return;
@@ -477,6 +511,7 @@ function PAGE_SetListeners() {
                   const sPollQuestionK = eForm.querySelector(`[data-field="PollAnswerK"]`).value;
                   gd.DB.Update("TPollAnswer", oValues, { PollAnswerK: sPollAnswerK } ).then(oResponse => {
                      PAGE_Message("Answer updated successfully", "success");
+                     eForm.setAttribute("data-status-modified", ""); // Reset modified status on form after successful insert
                   })
                   .catch((error) => { PAGE_Message("Error updating answer", "danger"); });
                }
@@ -569,15 +604,7 @@ function PAGE_Message( response_, sType = "info" ) {
 
 // For development, display message in page
 function Message_d( message_, sType = "info" ) {
-   if( typeof message_ === "string" && message_.length < 80 ) {
-      PAGE_Message( message_, sType );
-      return;
-   }
-   const eMessage = document.getElementById("idMessage");
-   let sMessage = "Message: ";
-   if( typeof message_ === "object" ) { sMessage += JSON.stringify(message_); }
-   else { sMessage = message_; }
-   eMessage.textContent = sMessage;
+   PAGE_Message( message_, sType );
 }
 
    </script>

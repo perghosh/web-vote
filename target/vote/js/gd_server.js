@@ -100,7 +100,7 @@ oNS.EncodeToBase64 = function(sText) {
 oNS.SendToServer = function(sBaseUrl, sEndpoint, arguments_, body_) {
    
    let sBody;
-   let sContentType = 'application/xml'; // Default content type
+   let sContentType = 'application/xml; charset=utf-8'; // Default content type
    
    if( typeof arguments_ === "object" ) { body_ = arguments_; arguments_ = ""; } // no string that this should be some sort of body
    
@@ -111,7 +111,7 @@ oNS.SendToServer = function(sBaseUrl, sEndpoint, arguments_, body_) {
       if(typeof body_ === "object" && !(body_ instanceof Document)) {
          // Convert object to json as sBody
          sBody = JSON.stringify(body_);
-         sContentType = 'application/json';                                      // Set content type to JSON when sending an object
+         sContentType = 'application/json; charset=utf-8';                     // Set content type to JSON when sending an object
       }
       else if(body_ instanceof Document) { sBody = new XMLSerializer().serializeToString(body_);}
       else if(typeof body_ === "string") { sBody = body_;}
@@ -151,7 +151,7 @@ oNS.SendToServer = function(sBaseUrl, sEndpoint, arguments_, body_) {
    else if(typeof arguments_ === "object" && !(arguments_ instanceof Document)) {
       // Convert object to json as sBody
       sBody = JSON.stringify(arguments_);
-      sContentType = 'application/json';                                      // Set content type to JSON when sending an object
+      sContentType = 'application/json; charset=utf-8';                                      // Set content type to JSON when sending an object
    }
    else if(arguments_ instanceof Document) {
       // Handle XML document arguments
