@@ -92,7 +92,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
         <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer" style="width: 15%;">
             <label class="vote-answer-option" data-description="single answer count">
 
-            <span class="vote-answer-text" data-field="count">000%</span>
+            <span class="vote-answer-text" data-field="percent">000%</span>
             </label>
         </div>
 
@@ -157,7 +157,7 @@ function PAGE_SetListeners() {
       const sAction = eTarget.dataset.action;                                                      console.assert( sAction, "Action is not defined in data-action attribute" );
       const sTableName = eTarget.dataset.table;                                                    console.assert( sTableName, "Table name is not defined in data-table attribute" );
       if( sTableName === "TPoll" ) {
-         if( sAction === "cast-vote" ) {
+         /*if( sAction === "cast-vote" ) {
             if( PAGE_Validate("cast") == true ) {
                // ## Generate xml for votes based on selected answers and send to server
                //    Values are placed in <fields fieldname1="value" fieldname2="value" /> each attributes holds one value where the name is the field name in database
@@ -189,7 +189,7 @@ function PAGE_SetListeners() {
                   oToast_g.Show(sMessage);
                });
             }
-         }
+         }*/
       }
    });
 }
@@ -206,7 +206,7 @@ async function PAGE_Load() {
    const sPollKey = oDocument_g.GetValue("PollKey");
    console.assert(sPollKey, "Poll key is not set in document");
 
-   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
+   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers", "cast-poll_votes"];
    // const aQueryName = ["cast-poll"];
       
    try {
@@ -239,6 +239,7 @@ async function PAGE_Load() {
          if (sQueryName === "cast-poll") { oTable.name = "TPoll"; }
          else if (sQueryName === "cast-poll_questions") { oTable.name = "TPollQuestion"; }
          else if (sQueryName === "cast-poll_answers") { oTable.name = "TPollAnswer"; }
+         else if (sQueryName === "cast-poll_votes") { oTable.name = "TPollVote"; }
          
          oDocument_g.AddTable(oTable);
          return oTable;
@@ -255,6 +256,7 @@ async function PAGE_Load() {
 
 function PAGE_RenderPoll() {
    const ePollContainer = document.getElementById("idPoll");
+   
 
    // ## Render poll information on the page ..................................
    {
@@ -289,12 +291,64 @@ function PAGE_RenderPoll() {
       }
    }
 
+
+   // Count number of votes for each answer
+      /*const oVoteTable = oDocument_g.GetTable("TPollVote");
+
+      const oVoteCount = {};
+      let uTotalVotes = 0;
+
+      if( oVoteTable )
+      {
+         for( let i = 0; i < oVoteTable.GetRowCount(); i++)
+         {
+            const oRow = oVoteTable.AsObject(i);
+            const sAnswerKey = oRow.PollAnswerK;
+            
+            oVoteCount[sAnswerKey] = (oVoteCount[sAnswerKey] || 0) + 1;
+            uTotalVotes++;
+         }
+      }*/
+   
+   let oVoteData = [];
+
+   {
+      const oTable = oDocument_g.GetTable("TPollAnswer");
+      const oVoteTable = oDocument_g.GetTable("TPollVote");
+      const uRowCount = oTable.GetRowCount();
+      let sCurrentQuestion;
+
+      for( let i = 0; i < uRowCount; i++ ) {
+         const oRow = oTable.AsObject(i); 
+         const sQuestionK = oRow.PollQuestionK;
+
+         if( oVoteTable )
+         {
+            for( let i2 = 0; i2 < oVoteTable.GetRowCount(); i2++)
+            {
+               const oRowVote = oVoteTable.AsObject(i2);
+               const uCount = oRowVote.count || 0;
+               const sAnswerKey = oRowVote.PollAnswerK;
+
+               if(sAnswerKey == oRow.PollAnswerK)
+               {
+                  oVoteData.push({votes: uCount, AnswerKey: sAnswerKey, QuestionKey: sQuestionK});
+               }
+            }
+         }
+      }
+      console.log(oVoteData);
+   }
+   
+
    // ## Render answers for questions .........................................
    {
       const oTable = oDocument_g.GetTable("TPollAnswer");
       const uRowCount = oTable.GetRowCount();
       const aColumnInformation = oTable.GetColumnInformation();
       const oRecord = new DBRecordContainer(aColumnInformation);
+
+      
 
       for( let i = 0; i < uRowCount; i++ ) {
          const oRow = oTable.AsObject(i);
@@ -303,6 +357,42 @@ function PAGE_RenderPoll() {
          // ### Geneate html for new answer
          const eAnswer =  document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
          oRecord.WriteValues(eAnswer);                                      // Write values from record to page elements with matching data-field attributes
+
+         // ------
+         /*const sQuestionK = oRow.PollQuestionK;
+         if( sQuestionK !== sCurrentQuestion )
+         {
+            sCurrentQuestion = sQuestionK;
+         }
+
+         const oVoteTable = oDocument_g.GetTable("TPollVote");
+
+         if( oVoteTable )
+         {
+            for( let i = 0; i < oVoteTable.GetRowCount(); i++)
+            {
+               const oRowVote = oVoteTable.AsObject(i);
+               const uCount = oRowVote.count || 0;
+               const sAnswerKey = oRowVote.PollAnswerK;
+
+               if(sAnswerKey == oRow.PollAnswerK)
+               {
+                  eAnswer.querySelector('[data-field="count"]').textContent = `${uCount} Votes`;
+               }
+            }
+         }*/
+
+         // Display vote count
+         
+         /*const sAnswerKey = oRecord.GetValue("PollAnswerK");
+
+         const uCount = oVoteCount[sAnswerKey] || 0;
+         const uPercent = (uCount / uTotalVotes) * 100;
+
+         eAnswer.querySelector('[data-field="count"]').textContent = `${uCount} Votes`;
+         eAnswer.querySelector('[data-field="percent"]').textContent = `${uPercent}%`;
+         */
+         // ------
 
          // ### Find question container for this answer and append answer element to it @CRITICAL [description: get key to question that marks question container]
          const sQuestionKey = oRecord.GetValue("PollQuestionK");
