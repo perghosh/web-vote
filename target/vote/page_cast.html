@@ -182,8 +182,8 @@ function PAGE_SetListeners() {
                   });
                });
                gd.SendToServer("", "!db/insert?table=TPollVote&query=%23cast-add_vote", oDocument).then((oResult) => {
-                  const oData = XML_GetFirstValue( oResult );
-                  const iCount = oData.count;
+                  const count_ = XML_GetFirstValue( oResult );
+                  const iCount = parseInt(count_) || 0;
                   oToast_g.Show(`Successfully cast ${iCount} votes.`);
                }).catch((error) => {
                   console.error("Failed to cast votes:", error);
@@ -193,8 +193,8 @@ function PAGE_SetListeners() {
 
 /*
                gd.SendToServer("", "!db/execute?&table=TPollVote", oDocument).then((oResult) => {
-                  const oData = XML_GetFirstValue( oResult );
-                  const iCount = oData.count;
+                  const count_ = XML_GetFirstValue( oResult );
+                  const iCount = parseInt(count_) || 0;
                   oToast_g.Show(`Successfully cast ${iCount} votes.`);
                }).catch((error) => {
                   console.error("Failed to cast votes:", error);
