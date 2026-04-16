@@ -172,17 +172,22 @@ function XML_GetFirstValue(xml_ , sNode = "result") {
 
    // ## Select the first node
    let oNode = null; // First node value
+   
    if( aResultNodes.length === 1 ) { oNode = aResultNodes[0]; }
    else if( aResultNodes.length > 1 ) { oNode = oDocument.querySelector(sNode + "[command='select']"); }
 
    if( !oNode ) { throw new Error("No result node with command='select' found"); }
 
-   // ## Extract CDATA content and parse JSON
+   const bCData = oNode.firstChild?.nodeType === Node.CDATA_SECTION_NODE; // Check if the first child of the node is a CDATA section
 
-   const sCData = oNode.textContent; // Extract CDATA content from the selected node, result is placed in cdata
-   let data_; // Initialize variable to hold parsed JSON data
-   try { data_ = JSON.parse(sCData); }
-   catch (oError) { throw new Error("CDATA is not valid JSON: " + oError.message); }
+   let data_; // variable to hold first value data
+
+   if( bCData === false ) { data_ = oNode.textContent; }                      // If not CDATA, use text content directly
+   else {
+      const sCData = oNode.textContent; // Extract CDATA content from the selected node, result is placed in cdata
+      try { data_ = JSON.parse(sCData); }
+      catch (oError) { throw new Error("CDATA is not valid JSON: " + oError.message); }
+   }
 
    // ## Handle different formats of node content and try to pick the first value or first object
 
@@ -191,6 +196,13 @@ function XML_GetFirstValue(xml_ , sNode = "result") {
       if(aData.length < 2 || !aData[1][0]) { return null; }
       else { return aData[1][0]; }                                         // Return the first value in the second row; it's wrapped as an array
    }
+   else if(typeof data_ === 'object' && data_ !== null) {
+      // It's an object, pick the first value
+      const key_ = Object.keys(data_)[0];
+      const value_ = data_[key_];
+      if(value_ === undefined) { throw new Error("First value in object is undefined"); }
+      return value_;
+   }   
 
    return data_;
 };
