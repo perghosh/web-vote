@@ -77,7 +77,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
       </div>
    </div>
 
-   
+
    <template id="idTemplateQuestion" data-description="template for generating question information based on possible questions added to poll">
       <div class="container-view margin_b-large page-question-frame" data-table="TPollQuestion">
          <div data-table="TPollQuestion" data-field="PollQuestionK" data-value="" data-description="key for question">
@@ -99,7 +99,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
       </div>
    </template>
 
-   <template id="idTemplateAnswer" data-description="template for generating answer information based on possible answers added to question"> 
+   <template id="idTemplateAnswer" data-description="template for generating answer information based on possible answers added to question">
       <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer">
          <label class="vote-answer-option" data-description="single selectable answer option">
             <input class="vote-answer-input" type="checkbox" data-value="" value="" data-field="PollAnswerK">
@@ -181,7 +181,17 @@ function PAGE_SetListeners() {
                      oDocument.documentElement.appendChild(eValues);
                   });
                });
+               gd.SendToServer("", "!db/insert?table=TPollVote&query=%23cast-add_vote", oDocument).then((oResult) => {
+                  const oData = XML_GetFirstValue( oResult );
+                  const iCount = oData.count;
+                  oToast_g.Show(`Successfully cast ${iCount} votes.`);
+               }).catch((error) => {
+                  console.error("Failed to cast votes:", error);
+                  const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";
+                  oToast_g.Show(sMessage);
+               });
 
+/*
                gd.SendToServer("", "!db/execute?&table=TPollVote", oDocument).then((oResult) => {
                   const oData = XML_GetFirstValue( oResult );
                   const iCount = oData.count;
@@ -191,6 +201,7 @@ function PAGE_SetListeners() {
                   const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";
                   oToast_g.Show(sMessage);
                });
+               */
             }
          }
       }
@@ -199,7 +210,7 @@ function PAGE_SetListeners() {
 
 /** --------------------------------------------------------------------------- PAGE_Load
  * Load poll information from the server and store it in the document
- * 
+ *
  * This function fetches all necessary information for the poll, including poll
  * details, questions, and answers. It executes multiple queries in parallel to
  * optimize loading time. The results are stored in the document for later use
@@ -211,7 +222,7 @@ async function PAGE_Load() {
 
    const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
    // const aQueryName = ["cast-poll"];
-      
+
    try {
       // ## Execute all queries in parallel
       const aTable = await Promise.all(aQueryName.map(async (sQueryName) => {
@@ -226,33 +237,33 @@ async function PAGE_Load() {
          let oTable; // Generated table from result
          const aResult = JSON.parse(eResult.textContent);
 
-         if( sResultUi ) { 
+         if( sResultUi ) {
             if( sResultUi.charAt(0) === "{" ) { // If ui attribute is a JSON string, parse it to get table configuration
                const oUiConfig = JSON.parse(sResultUi);
                sResultUi = oUiConfig.table; // Get table name from UI configuration for later use
             }
-            oTable = new Table(sResultUi); 
+            oTable = new Table(sResultUi);
             oTable.Add(aResult.slice(1)); // Parse rows from UI format if available
          }
          else if( eResult.textContent ) {
             oTable = new Table(aResult);
          }
          else { console.error("No data found in result for query:", sQueryName, "Result element:", eResult); }
-         
+
          if (sQueryName === "cast-poll") { oTable.name = "TPoll"; }
          else if (sQueryName === "cast-poll_questions") { oTable.name = "TPollQuestion"; }
          else if (sQueryName === "cast-poll_answers") { oTable.name = "TPollAnswer"; }
-         
+
          oDocument_g.AddTable(oTable);
          return oTable;
       }));
 
       // console.log("All poll data loaded:", aTable);
-      
+
       // All done - render
       PAGE_RenderPoll();
-      
-   } 
+
+   }
    catch(error) { console.error("Failed to load poll data:", error); }
 }
 
@@ -319,9 +330,9 @@ function PAGE_RenderPoll() {
 
 /** --------------------------------------------------------------------------- PAGE_Validate
  * Validate user input before sending votes to server
- * 
+ *
  * This function checks that the user has selected the required number of answers for each question based on the FMinSelect and FMaxSelect values defined for each question. If any validation fails, it shows an appropriate message to the user and prevents the form from being submitted.
- * 
+ *
  * @param {string} sType - The type of validation to perform, in this case "cast" for casting votes
  * @returns {boolean} - Returns true if validation passes, false otherwise
  */
@@ -332,7 +343,7 @@ function PAGE_Validate( sType ) {
       const ePollContainer = document.getElementById("idPoll");
       const aQuestion = ePollContainer.querySelectorAll(`div[data-field="PollQuestionK"]`);
       aQuestion.forEach((eQuestion) => {
-         const eRecord = eQuestion.querySelector(`[data-section="record"]`); 
+         const eRecord = eQuestion.querySelector(`[data-section="record"]`);
          const sQuestionKey = eRecord.getAttribute("data-value");
          const uMinSelect = parseInt(eRecord.querySelector(`[data-field="FMinSelect"]`).value) || 0;
          const uMaxSelect = parseInt(eRecord.querySelector(`[data-field="FMaxSelect"]`).value) || 0;
@@ -352,7 +363,7 @@ function PAGE_Validate( sType ) {
 
    return bValid;
 }
- 
+
    </script>
 </body>
 </html>
