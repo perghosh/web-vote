@@ -28,8 +28,8 @@ CREATE TABLE table_number (
 -- tie us used to connect votes that belongs together, for example when a voter votes for multiple questions in a poll, those votes can be connected with a tie, this can then be used to analyze how voters have voted across questions and maybe use this information to weight votes in some way.
 CREATE TABLE tie (
    tie_k BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
-   ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP-- when tie was created
    ,FIp VARCHAR(100)
+   ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP-- when tie was created
 );
 
 -- CREATE TABLE TGroup, group codes
@@ -165,7 +165,7 @@ CREATE TABLE TVoter (
    ,UserK BLOB
    ,CreateD         DATETIME DEFAULT CURRENT_TIMESTAMP
    ,UpdateD         DATETIME
-   ,FIp             VARCHAR(100) -- IP address for voter, this can be used to block voters or analyze from where voters are coming from
+   ,FIp             TEXT    -- IP address for voter, this can be used to block voters or analyze from where voters are coming from
    ,FUserAgent      VARCHAR(100) -- User agent string for tracking device/browser information
    ,FName           VARCHAR(100)
    ,FAlias          VARCHAR(100)
@@ -174,7 +174,7 @@ CREATE TABLE TVoter (
    ,FPassword BLOB
    ,FPhone          VARCHAR(100)
    ,FLastVote       DATETIME
-   ,FDescription    VARCHAR(1000)
+   ,FDescription    VARCHAR(1000)  
    ,FUnlock         TEXT
    ,FValidated      INTEGER -- 0 = not validated, 1 = validated, 2 = blocked
    ,FDeleted        INTEGER DEFAULT 0
