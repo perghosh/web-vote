@@ -17,7 +17,7 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/variables/variables-corporate-blue.css">
+    <link rel="stylesheet" href="css/variables/variables-color-default.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
     <script src="js/gd_server.js"></script>
@@ -39,6 +39,10 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
         .page-link span { color: var(--color-muted); font-size: 12px; margin-top: 4px; }
         .page-link-arrow { color: #667eea; font-size: 20px; font-weight: bold; transition: transform 0.3s ease; }
         .page-link:hover .page-link-arrow { transform: translateX(4px); }
+        .theme-controls { align-items: center; display: flex; gap: 10px; margin-top: 8px; }
+        .theme-controls select { border: 1px solid var(--color-border); border-radius: 6px; min-width: 220px; padding: 6px 8px; }
+        .theme-controls label { align-items: center; display: inline-flex; gap: 6px; }
+        .theme-controls label span { color: var(--color-body); font-size: 12px; margin-top: 0; }
     </style>
 </head>
 <body>
@@ -94,6 +98,18 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
                   <div><span>Load SQL queries</span>&nbsp;<span style="text-decoration: underline;" data-value="value-statement-count"></span></div>
                </div>
             </span>
+            <div class="page-link" data-command="theme-select">
+                <div class="page-link-title">
+                    <h2>Theme</h2>
+                    <div class="theme-controls">
+                        <select data-value="select-theme-color"></select>
+                        <label>
+                            <input type="checkbox" data-value="check-theme-persist">
+                            <span>Persist</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -113,11 +129,53 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
         oDocument_g = new CDocument({});
         oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
 
+        PAGE_InitializeThemeSelector();
         SERVER_LoadSqlQueries();
 
         // ## Start idle timer - call PAGE_OnIdle() once per second
         //CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
     }
+
+     /** --------------------------------------------------------------------- @API [tag: initialize_theme_selector]
+      * Creates and wires the color-theme selector and persistence checkbox
+      */
+     function PAGE_InitializeThemeSelector() {
+         const eThemeSelect = document.querySelector("[data-value='select-theme-color']");
+         const eThemePersist = document.querySelector("[data-value='check-theme-persist']");
+         if( !eThemeSelect || !eThemePersist ) { return; }
+
+         const aThemeKey = THEME_Select("color", {}, true);
+         const sStoredTheme = String(localStorage.getItem("vote.theme.color") || "").trim().toLowerCase();
+         const sInitialTheme = sStoredTheme || "candy-light";
+         const bPersistTheme = sStoredTheme !== "";
+
+         eThemeSelect.innerHTML = "";
+         aThemeKey.forEach( sThemeKey_ => {
+             const eOption = document.createElement("option");
+             eOption.value = sThemeKey_;
+             eOption.textContent = sThemeKey_;
+             eThemeSelect.appendChild(eOption);
+         });
+
+         eThemeSelect.value = aThemeKey.includes(sInitialTheme) ? sInitialTheme : "color-default";
+         eThemePersist.checked = bPersistTheme;
+
+         THEME_Select("color", { sValue: eThemeSelect.value, bPersist: bPersistTheme });
+
+         eThemeSelect.addEventListener("change", function() {
+             const sThemeSelected = eThemeSelect.value;
+             const bPersistSelected = eThemePersist.checked;
+             THEME_Select("color", { sValue: sThemeSelected, bPersist: bPersistSelected });
+             if( !bPersistSelected ) { localStorage.removeItem("vote.theme.color"); }
+         });
+
+         eThemePersist.addEventListener("change", function() {
+             const sThemeSelected = eThemeSelect.value;
+             const bPersistSelected = eThemePersist.checked;
+             THEME_Select("color", { sValue: sThemeSelected, bPersist: bPersistSelected });
+             if( !bPersistSelected ) { localStorage.removeItem("vote.theme.color"); }
+         });
+     }
 
 
     // Start page initialization ----------------------------------------------

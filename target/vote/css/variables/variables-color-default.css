@@ -1,0 +1,83 @@
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #333333;
+   --background-body: #ffffff;
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Classic Blue */
+   --color-primary: #ffffff;
+   --background-primary: #0056b3;
+   --background-primary-hover: #004494;
+
+   /* Secondary: Steel Gray */
+   --color-secondary: #ffffff;
+   --background-secondary: #6c757d;
+   --background-secondary-hover: #5a6268;
+
+   /* Success: Standard Green */
+   --color-success: #ffffff;
+   --background-success: #28a745;
+   --background-success-hover: #218838;
+
+   /* Danger: Standard Red */
+   --color-danger: #ffffff;
+   --background-danger: #dc3545;
+   --background-danger-hover: #c82333;
+
+   /* Warning: Standard Yellow/Orange (Dark text for readability) */
+   --color-warning: #212529;
+   --background-warning: #ffc107;
+   --background-warning-hover: #e0a800;
+
+   /* Info: Cyan/Sky Blue */
+   --color-info: #ffffff;
+   --background-info: #17a2b8;
+   --background-info-hover: #138496;
+
+   /* Light (light for sections) */
+   --color-light: #212529;
+   --background-light: #f8f9fa;
+   --background-light-hover: #e2e6ea;
+
+   /* Dark */
+   --color-dark: #ffffff;
+   --background-dark: #343a40;
+   --background-dark-hover: #23272b;
+
+   /* --- INTERFACES & FEEDBACK --- */
+   
+   /* Borders: Subtle gray tones */
+   --color-border: #dee2e6;
+   --color-border-dark: #adb5bd;
+
+   /* Muted Text: For help texts or dates */
+   --color-muted: #6c757d;
+
+   /* Forms & Inputs */
+   --background-form: #ffffff;
+   --background-form-sub: #f8fafd;
+   --background-input: #ffffff;
+   --color-input: #495057;
+   --color-placeholder: #adb5bd;
+   
+   /* Links: MatchPrimary */
+   --color-link: #0056b3;
+   --color-link-hover: #004085;
+
+   /* State: Active / Selected */
+   --background-active: #e7f1ff; /* light blue highlight */
+   --color-active: #0056b3;
+
+   /* State: Disabled */
+   --background-disabled: #e9ecef;
+   --color-disabled: #6c757d;
+   --border-disabled: #dee2e6;
+
+   /* Focus Rings */
+   --focus-ring-color: rgba(0, 86, 179, 0.25);
+   
+   /* Shadows */
+   --shadow-sm: 0 .125rem .25rem rgba(0,0,0,.075);
+   --shadow-md: 0 .5rem 1rem rgba(0,0,0,.15);
+}

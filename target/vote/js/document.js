@@ -436,3 +436,98 @@ function FIELD_CopyValues( source_, target_, aName )
       }
    });
 }
+
+/** --------------------------------------------------------------------------- THEME_Select
+ * Selects a theme file based on sTheme name, this is files with CSS variables.
+ * 
+ * Use localStorage to save the selected theme so it can be applied on next page load.
+ * 
+ * Selectable themes are hardcoded.
+ * 
+ */
+function THEME_Select( sTheme, options_ = {}, bReturnKeys = false ) {
+   // ## Build the URL with encoded arguments .................................
+   const oTypeDefault = {
+      color: {
+         sStorageKey: "vote.theme.color",
+         sDefaultValue: "color-default",
+         sApplyMode: "stylesheet",
+         sThemePath: "css/variables/",
+         sSelector: "link[href*='variables-color-']",
+         oValue: {
+            "candy-light": "variables-color-candy-light.css",
+            "corporate-blue": "variables-color-corporate-blue.css",
+            "green-food": "variables-color-green-food.css",
+            "green": "variables-color-green.css",
+            "grey": "variables-color-grey.css",
+            "harvest": "variables-color-harvest.css",
+            "midnight-gold": "variables-color-midnight-gold.css",
+            "modern-emerald": "variables-color-modern-emerald.css",
+            "orange": "variables-color-orange.css",
+            "purple-soft": "variables-color-purple-soft.css",
+            "red-black": "variables-color-red-black.css",
+            "royal-violet": "variables-color-royal-violet.css",
+            "soft-candy": "variables-color-soft-candy.css",
+            "test": "variables-color-test.css",
+            "color-default": "variables-color-default.css"
+         }
+      }
+   };
+
+   const oDefault = {
+      sValue: "",       // If set then take this theme, otherwise use saved/default value
+      bPersist: false,  // If true then save selected theme to localStorage
+      eTarget: null,    // Optional DOM target override (stylesheet link or element)
+      oThemeByType: {}  // Optional external per-type config extensions/overrides
+   };
+
+   let oOptions = options_;
+   if( typeof options_ === "string") { oOptions = { sValue: options_ }; }
+
+   const o_ = Object.assign( oDefault, oOptions );
+
+   const sThemeType = String( sTheme || "" ).trim().toLowerCase();            // Get theme type that matches key to theme config
+   if( Object.keys( oTypeDefault ).includes( sThemeType ) === false  ) { throw new Error( `Unknown theme type: ${sThemeType}.` ); }
+
+   const oThemeByType = Object.assign( {}, oTypeDefault, o_.oThemeByType || {} );
+
+   const oTheme = oThemeByType[sThemeType]; // active theme config, this should now be a valid object in config
+
+   const sThemeValue = String( localStorage.getItem( oTheme.sStorageKey ) || "" ).trim().toLowerCase(); // Get saved theme value from localStorage
+
+   let sSelectedValue = o_.sValue || sThemeValue; // Determine selected theme value: explicit value from options takes precedence over saved value
+   if( !sSelectedValue ) { sSelectedValue = oTheme.sDefaultValue; }           // If no explicit or saved value, use default from config
+
+   const oValue = oTheme.oValue || {};
+   let sResolved = oValue[sSelectedValue];
+
+   if( !sResolved ) {
+      sSelectedValue = oTheme.sDefaultValue;
+      sResolved = oValue[sSelectedValue] || sSelectedValue;
+   }
+
+   if( oTheme.sApplyMode === "stylesheet" ) {
+      // ## Apply theme by updating stylesheet link href, try to find existing link and update it, if not found then throw error
+      const eThemeLink = o_.eTarget || document.querySelector( oTheme.sSelector );
+      if( !eThemeLink ) { throw new Error( `Theme stylesheet link not found for type: ${sThemeType}` ); }
+
+      const sCurrentHref = String( eThemeLink.getAttribute( "href" ) || "" );
+      let sThemeHref = `${oTheme.sThemePath || ""}${sResolved}`;
+
+      if( /variables-[^/\\]+\.css/i.test( sCurrentHref ) ) {
+         sThemeHref = sCurrentHref.replace( /variables-[^/\\]+\.css/i, sResolved );
+      }
+
+      eThemeLink.setAttribute( "href", sThemeHref );
+   }
+   else {
+      const eTarget = o_.eTarget || document.documentElement;
+      eTarget.setAttribute( `data-theme-${sThemeType}`, sResolved );
+   }
+
+   if( o_.bPersist ) { localStorage.setItem( oTheme.sStorageKey, sSelectedValue );}
+
+   if( bReturnKeys === true ) { return Object.keys( oValue ); }
+
+   return sSelectedValue;
+}

@@ -40,12 +40,10 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
       <statement name="cast-poll_answers" format="jinja" type="select" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = X{PollK}</statement>
       <statement name="cast-add_vote" type="insert" description="Add vote for user">
          <code><![CDATA[-- #lua v1;
-         local document = app:GetDocument()
-         local database = document:GetDatabase()
-         local sKey = database:ExecuteReturn("INSERT INTO tie DEFAULT VALUES RETURNING tie_k");
-         print("Inserted tie with key: " .. sKey)
-         --req:SetGlobalVariable("FTie", sKey, "uuid")
-         req:SetGlobalVariable("FTie", sKey)
+local database = doc:GetDatabase()
+local sKey = database:ExecuteReturn("INSERT INTO tie DEFAULT VALUES RETURNING tie_k");
+--req:SetGlobalVariable("FTie", sKey, "uuid")
+req:SetGlobalVariable("FTie", sKey)
       ]]></code>
          <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>   
       </statement>
