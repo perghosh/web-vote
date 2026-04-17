@@ -21,6 +21,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <link rel="stylesheet" href="css/variables/variables-purple-soft.css">
+   <link rel="stylesheet" href="css/poll.css">
    <link rel="stylesheet" href="css/elements.css">
    <link rel="stylesheet" href="css/input-effects.css">
    <script src="js/gd_server.js"></script>
@@ -69,28 +70,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    </style>
 </head>
 <body>
-   <div id="idContainer" class="page-container">
+   <div id="idContainer" class="page-container container page">
 
-    <form id="idFormSearch" class="container-form" onsubmit="event.preventDefault();" style="width: 700px; margin-bottom: 20px;">
 
-        <div class="title" style="margin-bottom: 20px;"><h2>Search Polls</h2></div>
 
-        <div data-section="search" class="group">
-            <div class="row">
-                  <div style="flex: 1;">
-                    <label class="floating">
-                        <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
-                        <span>Search</span>
-                    </label>
-                  </div>
-                  <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
-            </div>
-         </div>
-
-        <div data-section="select-polls" class="container-result"></div>
-    </form>
-
-      <form id="idForm" class="container-form" onsubmit="event.preventDefault();" style="width: 700px;">
+      <form id="idForm" class="container-form margin_b-small" onsubmit="event.preventDefault();"">
 
         <div class="title" style="margin-bottom: 20px;"><h2>Edit Poll Details</h2></div>
 
@@ -148,7 +132,29 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          </div>
 
       </form>
+
+    <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 20px;">
+
+        <div class="title" style="margin-bottom: 20px;"><h2>Search Polls</h2></div>
+
+        <div data-section="search" class="group">
+            <div class="row">
+                  <div style="flex: 1;">
+                    <label class="floating">
+                        <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
+                        <span>Search</span>
+                    </label>
+                  </div>
+                  <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
+            </div>
+         </div>
+
+        <div data-section="select-polls" class="container-result"></div>
+    </form>
+
    </div>
+
+   
 
    <script>
 
