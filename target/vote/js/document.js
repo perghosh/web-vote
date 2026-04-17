@@ -144,13 +144,13 @@ class CDocument {
  * node found then select that, if more than one then select first with
  * command="select". Throws if no matching node or invalid CDATA structure.
  *
- * @param {string} sXmlString - XML string with result nodes containing CDATA JSON
+ * @param {string} xml_ - XML string with result nodes containing CDATA JSON
  * @returns {any|null} First value from second row, or null if fewer than two rows
  */
-function XML_GetFirstValue(xml_ , sNode = "result") {
+function XML_GetFirstValue(xml_ , sNode = "result", sType = "") {
    let oDocument;
 
-   if( typeof xml_ === "object" ) { xml_ = xml_.data; }                    // If input is an object (e.g. server response), extract the XML string from the 'data' property
+   if( typeof xml_ === "object" ) { xml_ = xml_.data; }                       // If input is an object (e.g. server response), extract the XML string from the 'data' property
 
    // ## check if xml_ isn't xml object, then try to parse it as XML string
 
@@ -159,10 +159,10 @@ function XML_GetFirstValue(xml_ , sNode = "result") {
       // ## Parse XML string and select result node
       const sXmlString = String(xml_); // Ensure it is string
       const oParser = new DOMParser(); // Create a DOMParser
-      oDocument = oParser.parseFromString(sXmlString, "application/xml"); // Parse the XML string into a document
-      aResultNodes = oDocument.querySelectorAll(sNode);                      // Select all nodes matching the specified name (default "result")
+      oDocument = oParser.parseFromString(sXmlString, "application/xml");     // Parse the XML string into a document
+      aResultNodes = oDocument.querySelectorAll(sNode);                       // Select all nodes matching the specified name (default "result")
    }
-   else if( xml_ instanceof Document ) {                                   // If xml_ is document then no need to parse
+   else if( xml_ instanceof Document ) {                                      // If xml_ is document then no need to parse
       oDocument = xml_; // Use the provided XML Document
       aResultNodes = oDocument.querySelectorAll(sNode); // Select all nodes matching the specified name (default "result")
    }
@@ -178,7 +178,7 @@ function XML_GetFirstValue(xml_ , sNode = "result") {
 
    if( !oNode ) { throw new Error("No result node with command='select' found"); }
 
-   const bCData = oNode.firstChild?.nodeType === Node.CDATA_SECTION_NODE; // Check if the first child of the node is a CDATA section
+   const bCData = oNode.firstChild?.nodeType === Node.CDATA_SECTION_NODE;     // Check if the first child of the node is a CDATA section
 
    let data_; // variable to hold first value data
 
@@ -191,10 +191,12 @@ function XML_GetFirstValue(xml_ , sNode = "result") {
 
    // ## Handle different formats of node content and try to pick the first value or first object
 
+   if(sType === "object") { return data_; }                                   // If type is object, return the whole parsed object without trying to extract a value
+
    if(Array.isArray(data_) === true) {
       const aData = data_; // Only to make code simpler
       if(aData.length < 2 || !aData[1][0]) { return null; }
-      else { return aData[1][0]; }                                         // Return the first value in the second row; it's wrapped as an array
+      else { return aData[1][0]; }                                            // Return the first value in the second row; it's wrapped as an array
    }
    else if(typeof data_ === 'object' && data_ !== null) {
       // It's an object, pick the first value

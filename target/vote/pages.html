@@ -21,7 +21,7 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
     <script src="js/gd_server.js"></script>
-    <script src="js/gd_mapper.js"></script>
+    <script src="js/document.js"></script>
     <script src="js/gd_ui_toast.js"></script>
     <title>Pages Navigation - Web Vote</title>
     <style>
@@ -109,7 +109,7 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
     /** --------------------------------------------------------------------- @API [tag: initialize]
      * Main initialization function that initializes the navigation page
      */
-    function PAGE_Initialize() {                                                                   console.assert( gd_mapper.XML_GetFirstValue !== undefined, "gd_mapper.XML_GetFirstValue function is not defined, make sure gd_mapper.js is loaded" );
+    function PAGE_Initialize() {
         oDocument_g = new CDocument({});
         oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
 
@@ -125,21 +125,10 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
         PAGE_Initialize();
     });
 
-    class CDocument {
-        static iIdleTimerId_s = null;
-
-        constructor(oOptions = {}) {
-            this.bModified = false;
-        }
-
-        IsModified() { return this.bModified; }
-        SetModified(bModified) { this.bModified = bModified; }
-    }
-
     // Check if queries exists in webserver, if not load them -----------------
     function SERVER_LoadSqlQueries() {
        gd.SendToServer("", "!sys/meta/query/count", "").then( function(oResponse) {
-          const oCount = gd_mapper.XML_GetFirstValue(oResponse);
+          const oCount = XML_GetFirstValue(oResponse, undefined, "object");
           const iCount = oCount.count;
           if( iCount === 0 ) {                                                 // no queries means that we need to load them
              SERVER_AddSqlQuery();
@@ -181,26 +170,6 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
 "description": "Select active poll with questions and answers in a single query using JSON aggregation" }
    ];
 
-        // ## loop aQuery array and add queries
-        const aPromise = aQuery.map( function(oQuery) {
-           let sArguments = "name=" + oQuery.name + "\n";
-           sArguments += "format=" + oQuery.format + "\n";
-           sArguments += "type=" + oQuery.type + "\n";
-           sArguments += "statement=" + oQuery.statement;
-           return gd.SendToServer("", "!sys/meta/query/add", sArguments ).then( function(oResponse) {
-              const oQueryKey = gd_mapper.XML_GetFirstValue(oResponse);
-              console.log(`Query added with key ${oQuery.name} (key=${oQueryKey.id})`);
-           });
-        });
-
-        Promise.all(aPromise).then( function() {
-           oToast_g.Show(`${aQuery.length} SQL queries loaded`, { sType: "success" });
-
-           // Fill in the data value for number of queries loaded
-           const eElement = document.querySelector("[data-value='value-statement-count']");
-           if(eElement) { eElement.textContent = ` ${aQuery.length} queries loaded`; }
-
-        });
     }
     </script>
 </body>
