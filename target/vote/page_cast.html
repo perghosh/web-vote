@@ -19,7 +19,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/variables/variables-harvest.css">
+    <link rel="stylesheet" href="css/variables/variables-color-default.css">
     <link rel="stylesheet" href="css/poll.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
@@ -123,6 +123,7 @@ gd.SetBaseUrl(sBaseUrl_g);
 
 // ## Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
+   THEME_Select("color", {});
    PAGE_Initialize();
    PAGE_SetListeners();
 });
@@ -190,18 +191,6 @@ function PAGE_SetListeners() {
                   const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";
                   oToast_g.Show(sMessage);
                });
-
-/*
-               gd.SendToServer("", "!db/execute?&table=TPollVote", oDocument).then((oResult) => {
-                  const count_ = XML_GetFirstValue( oResult );
-                  const iCount = parseInt(count_) || 0;
-                  oToast_g.Show(`Successfully cast ${iCount} votes.`);
-               }).catch((error) => {
-                  console.error("Failed to cast votes:", error);
-                  const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";
-                  oToast_g.Show(sMessage);
-               });
-               */
             }
          }
       }

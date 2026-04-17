@@ -36,7 +36,8 @@ data-action="user-update" - Command for updating a user
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/variables/variables-corporate-blue.css">
+    <link rel="stylesheet" href="css/variables/variables-color-default.css">
+    <link rel="stylesheet" href="css/poll.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
     <script src="js/gd_ui_toast.js"></script>
@@ -48,8 +49,6 @@ data-action="user-update" - Command for updating a user
     <title>Login - Web Vote</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
         .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
         .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
         .container-result tbody tr { border-bottom: 1px solid var(--color-border); }
@@ -124,7 +123,7 @@ let oDocument_g;
 
 
 document.addEventListener('DOMContentLoaded', function() {
-   console.log('Login page loaded successfully!');
+   THEME_Select("color", {});
    PAGE_initialize();
 });
 

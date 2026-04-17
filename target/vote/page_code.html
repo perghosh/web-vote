@@ -12,7 +12,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/variables-green.css">
+    <link rel="stylesheet" href="css/variables/variables-color-default.css">
+    <link rel="stylesheet" href="css/poll.css">
     <link rel="stylesheet" href="css/elements.css">
     <link rel="stylesheet" href="css/input-effects.css">
     <script src="js/gd_browser.js"></script>
@@ -20,9 +21,9 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
     <script src="js/gd_ui_tablelite.js"></script>
     <script src="js/gd_db.js"></script>
     <script src="js/gd_data_table.js"></script>
+    <script src="js/document.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
         .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
         .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
         .container-result tbody tr { border-bottom: 1px solid var(--color-border); }
@@ -184,6 +185,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
    // Start page initialization -----------------------------------------------
    document.addEventListener('DOMContentLoaded', function() {
+      THEME_Select("color", {});
       PAGE_Initialize();                                                      // Initialize page
    });
 
