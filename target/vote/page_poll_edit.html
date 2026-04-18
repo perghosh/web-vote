@@ -54,7 +54,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    </style>
 </head>
 <body>
-   <div id="idContainer" class="page-container container page">
+   <div id="idContainer" class="page-container container page" data-section="page">
 
 
 
@@ -104,7 +104,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          <hr class="divider" style="margin-top: 20px">
          
-         <div class="row" id="idButtons" style="margin-top: 20px;">
+         <div class="row" id="idButtons" style="margin-top: 20px;" data-section="command">
             <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
             <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll" data-idle="poll_key">Update</button>
             <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll" data-idle="poll_key">Delete</button>
@@ -117,7 +117,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       </form>
 
-    <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 20px;">
+    <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
 
         <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Search Polls</h2></div>
 
