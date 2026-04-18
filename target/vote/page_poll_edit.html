@@ -32,6 +32,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    <script src="js/document.js"></script>
    <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      .page-title { color: var(--color-body); }
+
+
       .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
       .container-result:not(:empty) { margin-bottom: 20px; }
       .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
@@ -42,30 +46,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
 
       button.button { border: none; }
-
-      .divider {
-         border-top: 2px solid var(--color-border);
-         border-radius: 5px;
-      }
-
-      .label-text {
-         color: var(--color-muted);
-      }
-
-      .label-number {
-         color: var(--background-success);
-      }
-
-      .group {
-         display: flex;
-         gap: 12px;
-         align-items: flex-end;
-      }
-
-      .row {
-         display: flex;
-         width: 100%;
-      }
+      .divider { border-radius: 5px; border-top: 2px solid var(--color-border); }
+      .group { align-items: flex-end; display: flex; gap: 12px; }
+      .label-number { color: var(--background-success); }
+      .label-text { color: var(--color-muted); }
+      .row { display: flex; width: 100%; }
    </style>
 </head>
 <body>
@@ -75,7 +60,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       <form id="idForm" class="container-form margin_b-small" onsubmit="event.preventDefault();"">
 
-        <div class="title" style="margin-bottom: 20px;"><h2>Edit Poll Details</h2></div>
+        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Edit Poll Details</h2></div>
 
          <div data-section="poll-form">
             <div class="group" style="gap: 20px;">
@@ -134,7 +119,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
     <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 20px;">
 
-        <div class="title" style="margin-bottom: 20px;"><h2>Search Polls</h2></div>
+        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Search Polls</h2></div>
 
         <div data-section="search" class="group">
             <div class="row">

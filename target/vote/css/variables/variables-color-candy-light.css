@@ -17,7 +17,7 @@
 :root {
    /* --- BASE BODY --- */
    --color-body: #334155; /* Soft charcoal for reading */
-   --background-body: #ffffff;
+   --background-body: #eef4ff; /* Soft blue wash matching the pastel primary */
 
    /* --- THEME COLORS (Soft Pastel / "Macaron" Palette) --- */
 

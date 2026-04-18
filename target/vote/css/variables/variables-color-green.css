@@ -14,7 +14,7 @@
 :root {
    /* --- BASE BODY --- */
    --color-body: #000000;
-   --background-body: #ffffff;
+   --background-body: #f0faf3; /* Subtle green tint for the all-green palette */
 
    /* --- THEME COLORS --- */
 

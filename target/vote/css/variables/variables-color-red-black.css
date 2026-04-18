@@ -14,7 +14,7 @@
 :root {
    /* --- BASE BODY --- */
    --color-body: #333333;
-   --background-body: #ffffff;
+   --background-body: #1a0a0a; /* Very dark near-black — matches "black" in the name */
 
    /* --- THEME COLORS (Red/Black/Gold Vibe) --- */
 

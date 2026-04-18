@@ -1,0 +1,89 @@
+/*
+## Dark Forest Theme
+Deep forest night — very dark green base with bright lime and emerald accents.
+Inspired by a dense forest after dark, with bioluminescent highlights.
+*/
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #d1fae5;                    /* Soft mint white for readability */
+   --background-body: #030f07;               /* Near-black deep forest green */
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Bright Emerald */
+   --color-primary: #030f07;
+   --background-primary: #22c55e;
+   --background-primary-hover: #16a34a;
+
+   /* Secondary: Teal Green */
+   --color-secondary: #d1fae5;
+   --background-secondary: #0f4a2e;
+   --background-secondary-hover: #165c38;
+
+   /* Success: Lime Green */
+   --color-success: #030f07;
+   --background-success: #4ade80;
+   --background-success-hover: #22c55e;
+
+   /* Danger: Red */
+   --color-danger: #ffffff;
+   --background-danger: #ef4444;
+   --background-danger-hover: #dc2626;
+
+   /* Warning: Amber */
+   --color-warning: #030f07;
+   --background-warning: #fbbf24;
+   --background-warning-hover: #f59e0b;
+
+   /* Info: Seafoam Teal */
+   --color-info: #030f07;
+   --background-info: #2dd4bf;
+   --background-info-hover: #14b8a6;
+
+   /* Light: Slightly lighter dark forest surface */
+   --color-light: #d1fae5;
+   --background-light: #071a0e;
+   --background-light-hover: #0d2618;
+
+   /* Dark: Deepest forest black */
+   --color-dark: #d1fae5;
+   --background-dark: #020a04;
+   --background-dark-hover: #000000;
+
+   /* Borders */
+   --color-border: #0f3d1e;
+   --color-border-dark: #1a6032;
+
+   /* Muted Text */
+   --color-muted: #4b7a5c;
+
+   /* Background Form (dark card/panel) */
+   --background-form: #061309;
+   /* Background for Sub-forms */
+   --background-form-sub: #071a0e;
+
+   /* Inputs */
+   --background-input: #071309;
+   --color-input: #d1fae5;
+   --color-placeholder: #2d5a3d;
+
+   /* Links */
+   --color-link: #22c55e;
+   --color-link-hover: #4ade80;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #22c55e;
+   --color-active: #030f07;
+
+   --background-disabled: #0f3d1e;
+   --color-disabled: #2d5a3d;
+   --border-disabled: #0f3d1e;
+
+   /* Focus Rings */
+   --focus-ring-color: rgba(34, 197, 94, 0.35);
+
+   /* Shadows */
+   --shadow-sm: 0 .125rem .25rem rgba(0,0,0,.5);
+   --shadow-md: 0 .5rem 1rem rgba(0,0,0,.7);
+}

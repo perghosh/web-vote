@@ -1,0 +1,89 @@
+/*
+## Dark Ocean Theme
+Deep navy and cyan inspired by the deep sea at night.
+Dark body, dark cards, bright cyan accents.
+*/
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #cbd5e1;                    /* Light slate for readability on dark */
+   --background-body: #050e1f;               /* Near-black deep navy */
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Bright Cyan */
+   --color-primary: #050e1f;
+   --background-primary: #00b4d8;
+   --background-primary-hover: #0096c7;
+
+   /* Secondary: Steel Blue */
+   --color-secondary: #e2e8f0;
+   --background-secondary: #1d4e6e;
+   --background-secondary-hover: #155a82;
+
+   /* Success: Sea Green */
+   --color-success: #050e1f;
+   --background-success: #2dd4bf;
+   --background-success-hover: #14b8a6;
+
+   /* Danger: Coral Red */
+   --color-danger: #ffffff;
+   --background-danger: #ef4444;
+   --background-danger-hover: #dc2626;
+
+   /* Warning: Amber */
+   --color-warning: #050e1f;
+   --background-warning: #fbbf24;
+   --background-warning-hover: #f59e0b;
+
+   /* Info: Sky Blue */
+   --color-info: #050e1f;
+   --background-info: #38bdf8;
+   --background-info-hover: #0ea5e9;
+
+   /* Light: Slightly lighter dark surface */
+   --color-light: #cbd5e1;
+   --background-light: #0f2040;
+   --background-light-hover: #172d55;
+
+   /* Dark: Deepest dark */
+   --color-dark: #cbd5e1;
+   --background-dark: #020817;
+   --background-dark-hover: #000000;
+
+   /* Borders */
+   --color-border: #1e3a5f;
+   --color-border-dark: #2d5a8e;
+
+   /* Muted Text */
+   --color-muted: #64748b;
+
+   /* Background Form (dark card/panel) */
+   --background-form: #0a1e3d;
+   /* Background for Sub-forms */
+   --background-form-sub: #0f2040;
+
+   /* Inputs */
+   --background-input: #0d1f3c;
+   --color-input: #cbd5e1;
+   --color-placeholder: #475569;
+
+   /* Links */
+   --color-link: #00b4d8;
+   --color-link-hover: #38bdf8;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #00b4d8;
+   --color-active: #050e1f;
+
+   --background-disabled: #1e3a5f;
+   --color-disabled: #475569;
+   --border-disabled: #1e3a5f;
+
+   /* Focus Rings */
+   --focus-ring-color: rgba(0, 180, 216, 0.35);
+
+   /* Shadows */
+   --shadow-sm: 0 .125rem .25rem rgba(0,0,0,.4);
+   --shadow-md: 0 .5rem 1rem rgba(0,0,0,.6);
+}

@@ -1,0 +1,89 @@
+/*
+## Dark Ember Theme
+Dark charcoal with glowing ember orange and amber accents.
+Inspired by dying coals and molten metal — warm and dramatic.
+*/
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #e7e0d8;                    /* Warm off-white for readability */
+   --background-body: #120d0a;               /* Near-black warm charcoal */
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Ember Orange */
+   --color-primary: #120d0a;
+   --background-primary: #f4511e;
+   --background-primary-hover: #d84315;
+
+   /* Secondary: Deep Amber */
+   --color-secondary: #e7e0d8;
+   --background-secondary: #7c3f1a;
+   --background-secondary-hover: #9a4f22;
+
+   /* Success: Warm Green */
+   --color-success: #ffffff;
+   --background-success: #4ade80;
+   --background-success-hover: #22c55e;
+
+   /* Danger: Lava Red */
+   --color-danger: #ffffff;
+   --background-danger: #dc2626;
+   --background-danger-hover: #b91c1c;
+
+   /* Warning: Bright Amber */
+   --color-warning: #120d0a;
+   --background-warning: #fbbf24;
+   --background-warning-hover: #f59e0b;
+
+   /* Info: Muted Steel Blue */
+   --color-info: #ffffff;
+   --background-info: #334155;
+   --background-info-hover: #1e293b;
+
+   /* Light: Slightly lighter dark surface */
+   --color-light: #e7e0d8;
+   --background-light: #231815;
+   --background-light-hover: #2e1e1a;
+
+   /* Dark: Deepest dark */
+   --color-dark: #e7e0d8;
+   --background-dark: #0a0706;
+   --background-dark-hover: #000000;
+
+   /* Borders */
+   --color-border: #3b2218;
+   --color-border-dark: #6b3a2a;
+
+   /* Muted Text */
+   --color-muted: #78716c;
+
+   /* Background Form (dark card/panel) */
+   --background-form: #1c1210;
+   /* Background for Sub-forms */
+   --background-form-sub: #231815;
+
+   /* Inputs */
+   --background-input: #201410;
+   --color-input: #e7e0d8;
+   --color-placeholder: #57534e;
+
+   /* Links */
+   --color-link: #f4511e;
+   --color-link-hover: #fb923c;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #f4511e;
+   --color-active: #120d0a;
+
+   --background-disabled: #3b2218;
+   --color-disabled: #57534e;
+   --border-disabled: #3b2218;
+
+   /* Focus Rings */
+   --focus-ring-color: rgba(244, 81, 30, 0.4);
+
+   /* Shadows */
+   --shadow-sm: 0 .125rem .25rem rgba(0,0,0,.5);
+   --shadow-md: 0 .5rem 1rem rgba(0,0,0,.7);
+}

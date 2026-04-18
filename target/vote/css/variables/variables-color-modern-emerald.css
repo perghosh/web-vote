@@ -15,7 +15,7 @@
 :root {
    /* --- BASE BODY --- */
    --color-body: #374151; /* Softer dark gray */
-   --background-body: #f9fafb; /* Slightly off-white page background */
+   --background-body: #f0fdf4; /* Light emerald-tinted background */
 
    /* --- THEME COLORS --- */
 

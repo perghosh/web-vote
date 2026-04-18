@@ -1,0 +1,89 @@
+/*
+## Dark Violet Theme
+Rich dark purple base with vivid violet and magenta accents.
+Inspired by a night sky full of nebulae — deep, elegant, and electric.
+*/
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #ede9fe;                    /* Soft lavender white for readability */
+   --background-body: #0d0a1e;               /* Near-black deep purple */
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Vivid Violet */
+   --color-primary: #0d0a1e;
+   --background-primary: #a855f7;
+   --background-primary-hover: #9333ea;
+
+   /* Secondary: Deep Indigo */
+   --color-secondary: #ede9fe;
+   --background-secondary: #3730a3;
+   --background-secondary-hover: #4338ca;
+
+   /* Success: Teal (avoids green clash with purple) */
+   --color-success: #ffffff;
+   --background-success: #14b8a6;
+   --background-success-hover: #0d9488;
+
+   /* Danger: Rose Red */
+   --color-danger: #ffffff;
+   --background-danger: #f43f5e;
+   --background-danger-hover: #e11d48;
+
+   /* Warning: Amber */
+   --color-warning: #0d0a1e;
+   --background-warning: #fbbf24;
+   --background-warning-hover: #f59e0b;
+
+   /* Info: Electric Blue */
+   --color-info: #ffffff;
+   --background-info: #6366f1;
+   --background-info-hover: #4f46e5;
+
+   /* Light: Slightly lighter dark purple surface */
+   --color-light: #ede9fe;
+   --background-light: #1a1535;
+   --background-light-hover: #221c45;
+
+   /* Dark: Deepest dark */
+   --color-dark: #ede9fe;
+   --background-dark: #050310;
+   --background-dark-hover: #000000;
+
+   /* Borders */
+   --color-border: #2d1f5e;
+   --color-border-dark: #4c3a8a;
+
+   /* Muted Text */
+   --color-muted: #6d5fa0;
+
+   /* Background Form (dark card/panel) */
+   --background-form: #110e26;
+   /* Background for Sub-forms */
+   --background-form-sub: #1a1535;
+
+   /* Inputs */
+   --background-input: #130f28;
+   --color-input: #ede9fe;
+   --color-placeholder: #4c3a8a;
+
+   /* Links */
+   --color-link: #a855f7;
+   --color-link-hover: #c084fc;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #a855f7;
+   --color-active: #0d0a1e;
+
+   --background-disabled: #2d1f5e;
+   --color-disabled: #4c3a8a;
+   --border-disabled: #2d1f5e;
+
+   /* Focus Rings */
+   --focus-ring-color: rgba(168, 85, 247, 0.4);
+
+   /* Shadows */
+   --shadow-sm: 0 .125rem .25rem rgba(0,0,0,.5);
+   --shadow-md: 0 .5rem 1rem rgba(0,0,0,.7);
+}

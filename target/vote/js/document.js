@@ -469,7 +469,13 @@ function THEME_Select( sTheme, options_ = {}, bReturnKeys = false ) {
             "royal-violet": "variables-color-royal-violet.css",
             "soft-candy": "variables-color-soft-candy.css",
             "test": "variables-color-test.css",
-            "color-default": "variables-color-default.css"
+            "color-default": "variables-color-default.css",
+
+            "dark-ember": "variables-color-dark-ember.css",
+            "dark-forest": "variables-color-dark-forest.css",
+            "dark-ocean": "variables-color-dark-ocean.css",
+            "dark-violet": "variables-color-dark-violet.css"
+
          }
       }
    };

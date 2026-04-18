@@ -17,7 +17,7 @@
 :root {
    /* --- BASE BODY --- */
    --color-body: #334155; /* Slate grey text (softer than black) */
-   --background-body: #ffffff; /* White background */
+   --background-body: #f2f5f8; /* Light slate-grey matching the theme identity */
 
    /* --- THEME COLORS (Slate & Muted Earth Tones) --- */
 

@@ -15,7 +15,7 @@
 :root {
    /* --- BASE BODY --- */
    --color-body: #333333;
-   --background-body: #ffffff;
+   --background-body: #f5f7fa; /* Subtle cool professional grey */
 
    /* --- THEME COLORS --- */
 

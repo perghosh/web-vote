@@ -16,7 +16,7 @@
 :root {
    /* --- BASE BODY --- */
    --color-body: #000000;
-   --background-body: #ffffff;
+   --background-body: #f8f4e9; /* Warm parchment/cream matching the earthy food palette */
 
    /* --- THEME COLORS --- */
 

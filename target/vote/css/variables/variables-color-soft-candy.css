@@ -14,7 +14,7 @@
 :root {
    /* --- BASE BODY --- */
    --color-body: #000000;
-   --background-body: #ffffff;
+   --background-body: #fff9f5; /* Warm cream-peach for the pastel palette */
 
    /* --- THEME COLORS (Pastel Palette) --- */
 
