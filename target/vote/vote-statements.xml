@@ -42,8 +42,12 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
          <code><![CDATA[-- #lua v1;
 local database = doc:GetDatabase()
 local sKey = database:ExecuteReturn("INSERT INTO tie DEFAULT VALUES RETURNING tie_k");
---req:SetGlobalVariable("FTie", sKey, "uuid")
-req:SetGlobalVariable("FTie", sKey)
+local sIp = request:GetIpAddress()
+print("IP: " .. sIp)
+local expression = Expression:new();
+local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } )
+print("IP binary: " .. sBinaryIp)
+request:SetGlobalVariable("FTie", sKey)
       ]]></code>
          <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>   
       </statement>

@@ -32,6 +32,41 @@ CREATE TABLE tie (
    ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP-- when tie was created
 );
 
+
+-- =====================================================
+-- SYSTEM TABLES (Internal use only - not for users/customers)
+-- =====================================================
+
+-- System Group table - for categorizing internal system codes
+CREATE TABLE "TSystemCodeGroup" (
+    "SystemCodeGroupK" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    "FName" VARCHAR(100) NOT NULL,                    -- Internal system group name
+    "FSystemName" VARCHAR(50) NOT NULL,               -- System identifier (e.g., 'STATE', 'FLAG', 'EVENT')
+    "FDescription" VARCHAR(500)                       -- System description of what this group is for
+);
+
+-- System Code table - for internal system codes (not exposed to users)
+CREATE TABLE "TSystemCode" (
+    "SystemCodeK" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    "SystemCodeGroupK" INTEGER NOT NULL,                  -- FK to TSystemCodeGroup
+    "FId" INTEGER NOT NULL,                           -- Internal numeric identifier for the code
+    "FName" VARCHAR(100) NOT NULL,                    -- Display name (internal use)
+    "FDescription" VARCHAR(500),                      -- System description of what this code means
+    "FValue" INTEGER,                                 -- Optional numeric value associated with code
+    "FText" TEXT,                                     -- Optional text value associated with code
+    "FIdle" INTEGER DEFAULT 0,                        -- Code is temporarily suspended
+    "FDeleted" INTEGER DEFAULT 0,                     -- Deleted but kept in database
+    CONSTRAINT "FK_TSystemCode_SystemCodeGroupK" FOREIGN KEY ("SystemCodeGroupK") REFERENCES "TSystemCodeGroup"("SystemCodeGroupK") ON DELETE CASCADE
+);
+
+CREATE INDEX "I_TSystemCode_SystemCodeGroupK" ON "TSystemCode" ("SystemCodeGroupK");
+CREATE INDEX "I_TSystemCode_FName" ON "TSystemCode" ("FName");
+CREATE INDEX "I_TSystemCode_FId" ON "TSystemCode" ("FId");
+
+-- =====================================================
+-- CODE TABLES (Used for user-defined codes and lookups, can be exposed to users) 
+-- =====================================================
+
 -- CREATE TABLE TGroup, group codes
 CREATE TABLE "TCodeGroup" (
     "CodeGroupK" INTEGER PRIMARY KEY NOT NULL
@@ -180,6 +215,9 @@ CREATE TABLE TVoter (
    ,FDeleted        INTEGER DEFAULT 0
 );
 
+-- =====================================================
+-- POLL TABLES  (Used for storing polls, questions, answers, votes, comments, limits, etc.) 
+-- =====================================================
 
 CREATE TABLE TPoll (
    PollK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
@@ -281,8 +319,8 @@ CREATE INDEX IC_TPollQuestion_PollK ON TPollQuestion (PollK);
 
 CREATE TABLE TPollAnswer (
 	PollAnswerK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
-	,PollK BLOB
-	,PollQuestionK BLOB
+   ,PollK BLOB
+   ,PollQuestionK BLOB
    ,SuperK BLOB             -- owner answer when used in hierarchical structure
    ,PollSectionK BLOB       -- When poll is divided in sections
    ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -303,6 +341,21 @@ CREATE TABLE TPollAnswer (
 CREATE INDEX IC_TPollAnswer_PollK ON TPollAnswer (PollK);
 CREATE INDEX I_TPollAnswer_PollQuestionK ON TPollAnswer (PollQuestionK);
 
+-- Connect votes for polls that has multiple questions, this can then be used to analyze how voters have voted across questions
+CREATE TABLE TPollTie (
+   PollTieK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
+   ,PollK BLOB             -- Poll reference, this is needed to connect votes to the right poll
+   ,VoterK BLOB            -- Voter reference
+   ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP-- when tie was created
+   ,FIp BLOB               -- IP address for tie, this can be used to block voters or analyze from where voters are coming from
+   ,FAgent VARCHAR(50)     -- User agent string for tracking device/browser information
+   ,FLanguage VARCHAR(20)  -- Language for tie, this can be used to analyze from where voters are coming from
+   ,FOs VARCHAR(50)        -- Operating system for tie, this can be used to analyze from where voters are coming from
+   ,FDevice VARCHAR(50)    -- Device for tie, this can be used to analyze from where voters are coming from
+   ,CONSTRAINT FK_TPollTie_PollK FOREIGN KEY (PollK) REFERENCES TPoll(PollK) ON DELETE CASCADE
+);
+
+CREATE INDEX I_TPollTie_PollK ON TPollTie (PollK);
 
 CREATE TABLE IF NOT EXISTS TPollVote (
     PollVoteK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
