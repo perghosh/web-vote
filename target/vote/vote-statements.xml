@@ -40,13 +40,17 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
       <statement name="cast-poll_answers" format="jinja" type="select" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = X{PollK}</statement>
       <statement name="cast-add_vote" type="insert" description="Add vote for user">
          <code><![CDATA[-- #lua v1;
-local database = doc:GetDatabase()
-local sKey = database:ExecuteReturn("INSERT INTO tie DEFAULT VALUES RETURNING tie_k");
-local sIp = request:GetIpAddress()
-print("IP: " .. sIp)
+local database = request:GetDatabase()
 local expression = Expression:new();
-local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } )
-print("IP binary: " .. sBinaryIp)
+local sIp = request:GetIpAddress() -- Get user IP address
+local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } ) -- Convert IP address to binary
+local sql = request:CreateSql()
+local sPollK = sql:GetValue("PollK")
+sql:AddColumn({column = "FIp", value = sBinaryIp, type = "binary"})
+sql:SetColumn( "PollK", {type = "binary"})
+local sInsert = sql:AsInsert({ table = "TPollTie", returning = "PollTieK" })
+-- print("SQL: " .. sInsert)
+local sKey = database:ExecuteReturn(sInsert);
 request:SetGlobalVariable("FTie", sKey)
       ]]></code>
          <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>   

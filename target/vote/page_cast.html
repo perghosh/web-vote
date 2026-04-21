@@ -135,17 +135,17 @@ function PAGE_Initialize() {
    oDocument_g = new CDocument({});                                           // Create new document
    oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
 
-   let sPollKey = null; // Get poll key from url parameters if available, otherwise use null to fetch first poll
+   let sPollK = null; // Get poll key from url parameters if available, otherwise use null to fetch first poll
 
    // try to get poll key from url parameters, if not available use null to fetch first poll
    const oUrlParameter = new URLSearchParams(window.location.search);
-   sPollKey = oUrlParameter.get("PollK") || oUrlParameter.get("key") || null;
-   if( !sPollKey || sPollKey.length !== 32 ) {
+   sPollK = oUrlParameter.get("PollK") || oUrlParameter.get("key") || null;
+   if( !sPollK || sPollK.length !== 32 ) {
       console.warn("No poll key or invalid poll key provided in URL parameters, fetching first poll");
-      sPollKey = null; // Set to null to fetch first poll
+      sPollK = null; // Set to null to fetch first poll
    }
    else {
-      oDocument_g.SetValue("PollKey", sPollKey);                              // Store poll key in document for later use
+      oDocument_g.SetValue("PollK", sPollK );                                 // Store poll key in document for later use
       PAGE_Load();                                                            // Load poll information and display it on the page
    }
 }
@@ -169,7 +169,7 @@ function PAGE_SetListeners() {
                //    <values PollK="" PollQuestionK="" PollAnswerK="" /> each value element holds the keys for one vote, there will be one value element for each selected answer
                const ePollContainer = document.getElementById("idPoll");
                const aQuestionContainers = ePollContainer.querySelectorAll(`[data-field="PollQuestionK"]`);
-               const oDocument = document.implementation.createDocument(null, "document");
+               const oDocument = document.implementation.createDocument(null, "document"); // Create new XML document to hold vote data
                aQuestionContainers.forEach((eQuestionContainer) => {
                   const sQuestionKey = eQuestionContainer.getAttribute("data-value");
 
@@ -177,12 +177,15 @@ function PAGE_SetListeners() {
                   aSelected.forEach((eAnswer) => {
                      const sAnswerKey = eAnswer.getAttribute("data-value");
 
-                     const eValues = oDocument.createElement("values");
+                     const eValues = oDocument.createElement("values"); // values element to hold poll information as attributes
                      eValues.setAttribute("PollAnswerK", sAnswerKey);
                      oDocument.documentElement.appendChild(eValues);
                   });
                });
-               gd.SendToServer("", "!db/insert?table=TPollVote&query=%23cast-add_vote", oDocument).then((oResult) => {
+
+               // Prepare PollK to set for all votes
+               const oPoll = { PollK: oDocument_g.GetValue("PollK") };
+               gd.SendToServer("", "!db/insert?table=TPollVote&query=%23cast-add_vote", `values=${JSON.stringify(oPoll)}`, oDocument).then((oResult) => {
                   const count_ = XML_GetFirstValue( oResult );
                   const iCount = parseInt(count_) || 0;
                   oToast_g.Show(`Successfully cast ${iCount} votes.`);
@@ -206,8 +209,8 @@ function PAGE_SetListeners() {
  * when rendering the poll on the page.
  */
 async function PAGE_Load() {
-   const sPollKey = oDocument_g.GetValue("PollKey");
-   console.assert(sPollKey, "Poll key is not set in document");
+   const sPollK = oDocument_g.GetValue("PollK");
+   console.assert(sPollK, "Poll key is not set in document");
 
    const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers"];
    // const aQueryName = ["cast-poll"];
@@ -215,7 +218,7 @@ async function PAGE_Load() {
    try {
       // ## Execute all queries in parallel
       const aTable = await Promise.all(aQueryName.map(async (sQueryName) => {
-         const oResult = await gd.SendToServer("", "!db/select?ui=1&", `query=#${sQueryName}\nvalues={"PollK":"${sPollKey}"}`);
+         const oResult = await gd.SendToServer("", "!db/select?ui=1&", `query=#${sQueryName}\nvalues={"PollK":"${sPollK}"}`);
          const data_ = oResult.data;
 
          const eResult = data_.querySelector("result") || console.error("No result element found in response for query:", sQueryName, "Response data:", data_);
