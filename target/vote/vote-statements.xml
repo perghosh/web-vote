@@ -44,6 +44,16 @@ local database = request:GetDatabase()
 local expression = Expression:new();
 local sIp = request:GetIpAddress() -- Get user IP address
 local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } ) -- Convert IP address to binary
+
+local sqlCheck = doc:CreateSql()
+sqlCheck:AddColumn({column = "PollTieK", alias = "count_vote", raw = "COUNT(*)"})
+sqlCheck:AddColumn({type_part = "where",column = "PollK", value = sPollK, type = "binary"})
+local sSelectCheck = sqlCheck:AsSelect({ table = "TPollTie" })
+print("SQL: " .. sSelectCheck)
+--local sSelectCheck = sqlCheck:AsSelect({ table = "TPollTie", where = "PollK = X{PollK} AND FIp = X{sBinaryIp}" })
+
+
+
 local sql = request:CreateSql()
 local sPollK = sql:GetValue("PollK")
 sql:AddColumn({column = "FIp", value = sBinaryIp, type = "binary"})
