@@ -221,6 +221,13 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
    }
 
+   function PAGE_TableUpdate() {
+      const sQueryName = "vote-poll_search";
+      gd.SendToServer("", "!db/select", "query=#" + sQueryName).then(function(oResult) {
+         PAGE_ProcessResponse(oResult, "select-polls");
+      });
+   }
+
    // Start page initialization -----------------------------------------------
    document.addEventListener('DOMContentLoaded', function() {
       THEME_Select("color", {});
@@ -243,10 +250,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       let oTable = new Table(["id", "name", "header"], {sName: "search"} );
       oDocument_g.AddTable(oTable);
 
-      const sQueryName = "vote-poll_search";
-      gd.SendToServer("", "!db/select", "query=#" + sQueryName).then(function(oResult) {
-         PAGE_ProcessResponse(oResult, "select-polls");
-      });
+      PAGE_TableUpdate();
 
       const fnRead = function(sName, oRecord)
       {
@@ -416,6 +420,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   PAGE_ProcessResponse(oResult);
                   CreateButtons(document.querySelector("#idButtons"));
                   oToast_g.Show("Skapad!")
+                  PAGE_TableUpdate();
                });
             } break;
             case "poll-update": {
@@ -461,6 +466,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   }
                   else {oToast_g.Show("Kunde inte ta bort")}
                });
+
+               PAGE_TableUpdate();
+
             } break;
             case "poll-open": {
                // Open poll questions page, pass selected poll key as parameter
@@ -540,6 +548,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          default:
             console.error("Unknown response type:", oData.type);
       }
+      
 
       if(eResults)
       {
@@ -562,7 +571,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             {
                oTable.Clear();
             }
-
+            
 
             // loop array and add rows to table
             for(const aRow of aPoll) {oTable.Add(aRow);}
@@ -578,8 +587,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   eRow.dataset.key = sKey;
                }
             };
+            
          }
       }
+
+      
    }
 
    // ============================================================================
