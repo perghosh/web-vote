@@ -435,38 +435,20 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                });
             } break;
             case "poll-delete": {
+               const sKey = oDBRecord.GetKeyValue();
+               const sWhere = `{"PollK": "${sKey}"}`;
+               let sArguments = `{ "table": "TPoll", "where": ${sWhere} }`;
+               sArguments = `record=${sArguments}`;
 
-               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-               const sKey = oDBPollRecord.GetKeyValue();
-               const sDelete = "DELETE FROM TPoll WHERE PollK = x''{=PollK}''";
-               const sValues = JSON.stringify({ PollK: oDocument_g.key_ });
-               const sArguments = `query=${sDelete}` + `\n` + `values=${sKey}`;
-
-               let oTable = oDocument_g.GetTable("search");
-               oTable.Delete( { id: sKey } );
-
-               PAGE_Update();
-
-               return;
-
-               gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
+               gd.SendToServer("", "!db/delete?", sArguments).then(function(oResult) {
                   let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
 
-                  if( iCount !== 0) {
-                     oToast_g.Show("Borttagen!");
-                     PAGE_DeleteFieldInputs(eContainer);
-                     const oDBPollRecord = oDocument_g.GetCell("TPoll");
-                     oDBPollRecord.ClearValues();
-
-
-
-
-                     PAGE_Update();
+                  if( iCount !== 0) { 
+                     PAGE_TableUpdate();
+                     oToast_g.Show("Raderad!"); 
                   }
                   else {oToast_g.Show("Kunde inte ta bort")}
                });
-
-               PAGE_TableUpdate();
 
             } break;
             case "poll-open": {
