@@ -406,16 +406,14 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
                const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
 
-               gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult) {
+               gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult, "select-polls");
                });
             } break;
             case "poll-add": {
                const sValues = JSON.stringify(oDBRecord.GetFilledValues());
-               const sJson = `{ "table": "TPoll", "values": ${sValues}, "returning": "PollK" }`;
-
-               const sArguments = `record=${sJson}`;
-
+               const oArguments = `{ "table": "TPoll", "values": ${sValues}, "returning": "PollK" }`;
+               const sArguments = `record=${oArguments}`;
                gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult);
                   CreateButtons(document.querySelector("#idButtons"));
@@ -424,11 +422,12 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                });
             } break;
             case "poll-update": {
-               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-               oDBPollRecord.ReadValues();
-               const oArguments = oDBPollRecord.GetRecordAsArguments();
-               console.log(sArguments);
-               gd.SendToServer("", "!db/update?echo=user", sArguments).then(function(oResult) {
+               const sKey = oDBRecord.GetKeyValue();
+               const sValues = JSON.stringify(oDBRecord.GetFilledValues());
+               const sWhere = `{"PollK": "${sKey}"}`;
+               let sArguments = `{ "table": "TPoll", "values": ${sValues}, "where": ${sWhere} }`;
+               sArguments = `record=${sArguments}`;
+               gd.SendToServer("", "!db/update?", sArguments).then(function(oResult) {
                   let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
 
                   if( iCount !== 0) { oToast_g.Show("Updaterad!"); }
@@ -593,25 +592,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       
    }
-
-   // ============================================================================
-   // DBRecord custom methods - loaded once, available on all instances
-   // ============================================================================
-
-   DBRecord.extend("GetRecordAsArguments", function(options_ = {}) {
-      const oResult    = {};
-      oResult.table    = this.sTable;
-      oResult.values   = {};
-      this.mapValues.forEach((value, key) => { oResult.values[key] = value; });
-
-      const aKeyColumns = this._get_key_columns();
-      const sKeyName    = aKeyColumns.length > 0 ? aKeyColumns[0].sName : null;
-      const sKeyValue   = sKeyName ? this.GetValue(sKeyName) : null;
-      oResult.where     = `{"${sKeyName}": "${sKeyValue}"}`;
-
-      return oResult;
-   });
-
    </script>
 </body>
 </html>
