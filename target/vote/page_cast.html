@@ -57,6 +57,8 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
       .page-poll-title { color: var(--color-body); font-size: 2rem; font-weight: 800; letter-spacing: 0.01em; line-height: 1.12; margin: 0; }
       .page-poll-description { border-left: 3px solid color-mix(in srgb, var(--background-primary) 60%, transparent); font-size: 1.03rem; line-height: 1.5; margin: 0; max-width: 76ch; padding-left: 12px; }
 
+      .page-auto_hide:empty { display: none; }
+
 
       @media (max-width: 640px) { .vote-answer-box { margin-top: 1px; } .vote-answer-option { align-items: flex-start; } }
     </style>
@@ -84,7 +86,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
             <div data-section="record" data-table="TPollQuestion">
                <div class="page-question-header">
                   <div class="page-question-title-row">
-                     <span class="page-label page-question-tag" data-field="FLabel">-</span>
+                     <span class="page-label page-question-tag page-auto_hide" data-field="FLabel"></span>
                      <h3 class="margin_b-small page-question-title" data-field="FName">Question name</h3>
                   </div>
                   <p class="margin_b-small page-question-description" data-field="FQuestion">Question text goes here...</p>
