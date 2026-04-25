@@ -82,6 +82,7 @@ request:SetScriptValue("FTie", sKey)
       ]]></code>
          <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>
       </statement>
+      <statement name="cast-poll_votes" format="jinja" type="select">SELECT hex(TPollVote.PollAnswerK) AS PollAnswerK, COUNT(*) AS count FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK WHERE TPollAnswer.PollK = X{PollK} GROUP BY TPollVote.PollAnswerK</statement>      
    </statements>
 
 </document>
