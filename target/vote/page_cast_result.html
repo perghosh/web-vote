@@ -470,10 +470,13 @@ function PAGE_RenderPoll() {
             }
          });*/
 
-         if( oVoteData[i] )
+         const sAnswerKey = oRow.PollAnswerK;
+         const oVote = oVoteData.find(vote => vote.answerKey === sAnswerKey);
+
+         if( oVote )
          {
-            eAnswer.querySelector('[data-field="count"]').textContent = `${oVoteData[i].count} Votes`;
-            eAnswer.querySelector('[data-field="percent"]').textContent = `${oVoteData[i].percent}%`; 
+            eAnswer.querySelector('[data-field="count"]').textContent = `${oVote.count} Votes`;
+            eAnswer.querySelector('[data-field="percent"]').textContent = `${oVote.percent}%`; 
          }
 
          
