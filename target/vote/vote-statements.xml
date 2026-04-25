@@ -59,7 +59,7 @@ end
 local expression = Expression:new();
 local sIp = request:GetIpAddress() -- Get user IP address
 local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } ) -- Convert IP address to binary
-local sPollK = request:GetSqlValue("PollK") print("GetSqlValue PollK: " .. sPollK)
+local sPollK = request:GetClientValue("PollK") print("GetClientValue PollK: " .. sPollK)
 
 local bCanVote = check_vote(sBinaryIp, sPollK)                                 -- Check if user can vote
 if not bCanVote then
@@ -78,7 +78,7 @@ local sInsert = sql:AsInsert({ table = "TPollTie", returning = "PollTieK" })
 -- print("SQL - INSERT to TPollTie : " .. sInsert)
 local sKey = database:ExecuteReturn(sInsert);
 -- print("Tie key: " .. sKey)
-request:SetGlobalVariable("FTie", sKey)
+request:SetScriptValue("FTie", sKey)
       ]]></code>
          <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>
       </statement>
