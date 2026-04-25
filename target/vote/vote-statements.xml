@@ -40,42 +40,48 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
       <statement name="cast-poll_answers" format="jinja" type="select" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = X{PollK}</statement>
       <statement name="cast-add_vote" type="insert" description="Add vote for user">
          <code><![CDATA[-- #lua v1;
-local database = request:GetDatabase()
+-- ## Check if voter can vote         
+function check_vote(sBinaryIp, sPollK)
+   local sqlCheck = doc:CreateSql()
+   sqlCheck:AddColumn({name = "PollTieK", alias = "count_vote", raw = "COUNT(*)"})
+   sqlCheck:AddCondition({name = "FIp", value = sBinaryIp, type = "binary"})
+   sqlCheck:AddCondition({name = "PollK", value = sPollK, type = "binary"})
+   local sSelectCheck = sqlCheck:AsSelect({ table = "TPollTie" });
+   local database = request:GetDatabase()
+   local iVoteCount = tonumber( database:Ask(sSelectCheck) )
+   -- print("Vote count for this IP: " .. iVoteCount)
+   if iVoteCount > 0 then
+      return false
+   end
+   return true
+end
+
 local expression = Expression:new();
 local sIp = request:GetIpAddress() -- Get user IP address
 local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } ) -- Convert IP address to binary
-local sql = request:CreateSql()
-local sPollK = sql:GetValue("PollK")
-local sqlCheck = doc:CreateSql()
-sqlCheck:AddColumn({name = "PollTieK", alias = "count_vote", raw = "COUNT(*)"})
-sqlCheck:AddCondition({name = "FIp", value = sBinaryIp, type = "binary"})
-sqlCheck:AddCondition({name = "PollK", value = sPollK, type = "binary"})
-local sSelectCheck = sqlCheck:AsSelect({ table = "TPollTie" })
-print("SQL: " .. sSelectCheck)
+local sPollK = request:GetSqlValue("PollK") print("GetSqlValue PollK: " .. sPollK)
 
-
-local iVoteCount = database:Ask(sSelectCheck)
-print("Vote count for this IP: " .. iVoteCount)
-if iVoteCount > 0 then
-   error("You have already voted in this poll.")
+local bCanVote = check_vote(sBinaryIp, sPollK)                                 -- Check if user can vote
+if not bCanVote then
+   print("User has already voted, aborting.")
+   -- @TODO [description: add message to body and set to abort]
    return
 end
 
--- local sSelectCheck = sqlCheck:AsSelect({ table = "TPollTie", where = "PollK = X{PollK} AND FIp = X{sBinaryIp}" })
 
-
+-- ## Insert vote into TPollTie to tie votes together
+local database = request:GetDatabase()
+local sql = request:CreateSql()
 sql:AddColumn({name = "FIp", value = sBinaryIp, type = "binary"})
 sql:SetColumn( "PollK", {type = "binary"})
 local sInsert = sql:AsInsert({ table = "TPollTie", returning = "PollTieK" })
--- print("SQL: " .. sInsert)
+-- print("SQL - INSERT to TPollTie : " .. sInsert)
 local sKey = database:ExecuteReturn(sInsert);
+-- print("Tie key: " .. sKey)
 request:SetGlobalVariable("FTie", sKey)
       ]]></code>
-         <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>   
+         <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>
       </statement>
-
-      <statement name="cast-poll_votes" format="jinja" type="select">SELECT hex(TPollVote.PollAnswerK) AS PollAnswerK, COUNT(*) AS count FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK WHERE TPollAnswer.PollK = X{PollK} GROUP BY TPollVote.PollAnswerK</statement>
-
    </statements>
 
 </document>
