@@ -8,7 +8,8 @@
        | - vote-poll_table: Get poll data for table, used to fill table on vote page
        |-->
       <statement name="vote-get_first" format="raw" type="select">SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1</statement>
-      <statement name="vote-poll_search" format="jinja" type="select">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll {?? exists( args::exists( args, "name" ), "WHERE FName LIKE ''%{=name}%'' OR FHeader LIKE ''%{=name}%''" ) ??} ORDER BY FName</statement>
+      <statement name="vote-poll_search" format="jinja" type="select" table="TPoll">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll {?? exists( args::exists( args, "name" ), "WHERE FName LIKE ''%{=name}%'' OR FHeader LIKE ''%{=name}%''" ) ??} ORDER BY FName</statement>
+      <!--<statement name="vote-poll_search" format="jinja" type="select">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR FHeader LIKE ''%{=name}%'' ORDER BY FName</statement>-->
       <statement name="vote-poll_table" format="jinja" type="select">SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}</statement>
 
       <statement name="vote-count" format="jinja" type="select">SELECT COUNT(*) AS uCount FROM TPoll WHERE PollK = {PollK}</statement>
@@ -31,6 +32,24 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
        | - cast-poll_questions: Select poll questions for vote
        | - cast-poll_answers: Select poll answers for questions
        | -->
+      <statement name="cast-check_if_voted" format="jinja" type="select" description="Check if user has already voted in poll">
+         <code><![CDATA[-- #lua v1;
+local sIp = request:GetIpAddress() -- Get user IP address         
+local sValueIp = request:GetClientValue("Ip")
+
+-- Check if ip matches
+if sValueIp ~= sIp then
+   request:GetResponse():Message({text = "Ip mismatch", abort = true}, "error")
+   request:SetStatus( "abort" )
+   return
+end
+
+local expression = Expression:new();
+local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } ) -- Convert IP address to binary
+request:SetScriptValue("FIp", sBinaryIp)
+         ]]></code>
+         <statement>SELECT COUNT(*) as count_vote FROM TPollTie WHERE PollK = X{PollK} AND FIp = X{FIp}</statement>
+      </statement>
       <statement name="cast-poll" format="jinja" type="select" description="Select poll header for vote">
          <ui>{ "table": "PollK;FName,Name;FHeader,Header;FDescription,Description" }</ui>
          <![CDATA[SELECT hex(PollK) AS PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}]]></statement>
@@ -38,10 +57,11 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
          <ui>{ "table": "PollQuestionK;FLabel;FName,Name;FQuestion,Question;FQuestionMore,More;FDescription,Description" }</ui>
          <![CDATA[SELECT hex(PollQuestionK) AS PollQuestionK, FLabel, FName, FQuestion, FQuestionMore, FDescription FROM TPollQuestion WHERE PollK = X{PollK} ORDER BY FOrder]]></statement>
       <statement name="cast-poll_answers" format="jinja" type="select" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = X{PollK}</statement>
+
       <statement name="cast-add_vote" type="insert" description="Add vote for user">
          <code><![CDATA[-- #lua v1;
 -- ## Check if voter can vote         
-function check_vote(sBinaryIp, sPollK)
+function CanVote(sBinaryIp, sPollK)
    local sqlCheck = doc:CreateSql()
    sqlCheck:AddColumn({name = "PollTieK", alias = "count_vote", raw = "COUNT(*)"})
    sqlCheck:AddCondition({name = "FIp", value = sBinaryIp, type = "binary"})
@@ -49,7 +69,6 @@ function check_vote(sBinaryIp, sPollK)
    local sSelectCheck = sqlCheck:AsSelect({ table = "TPollTie" });
    local database = request:GetDatabase()
    local iVoteCount = tonumber( database:Ask(sSelectCheck) )
-   -- print("Vote count for this IP: " .. iVoteCount)
    if iVoteCount > 0 then
       return false
    end
@@ -61,13 +80,12 @@ local sIp = request:GetIpAddress() -- Get user IP address
 local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } ) -- Convert IP address to binary
 local sPollK = request:GetClientValue("PollK") print("GetClientValue PollK: " .. sPollK)
 
-local bCanVote = check_vote(sBinaryIp, sPollK)                                 -- Check if user can vote
+local bCanVote = CanVote(sBinaryIp, sPollK)                                    -- Check if user can vote
 if not bCanVote then
-   print("User has already voted, aborting.")
-   -- @TODO [description: add message to body and set to abort]
-   return
+   request:GetResponse():Message({text = "Ip has voted", abort = true}, "error")
+   request:SetStatus( "abort" )
+   return   
 end
-
 
 -- ## Insert vote into TPollTie to tie votes together
 local database = request:GetDatabase()
@@ -75,9 +93,7 @@ local sql = request:CreateSql()
 sql:AddColumn({name = "FIp", value = sBinaryIp, type = "binary"})
 sql:SetColumn( "PollK", {type = "binary"})
 local sInsert = sql:AsInsert({ table = "TPollTie", returning = "PollTieK" })
--- print("SQL - INSERT to TPollTie : " .. sInsert)
 local sKey = database:ExecuteReturn(sInsert);
--- print("Tie key: " .. sKey)
 request:SetScriptValue("FTie", sKey)
       ]]></code>
          <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>

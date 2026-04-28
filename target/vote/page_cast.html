@@ -117,7 +117,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
 'use strict';
 
 let oDocument_g; // Global document object
-let oToast_g;
+let oToast_g; // Global toast object for showing messages to user
 
 // ## Prepare base url .....................................................
 const sBaseUrl_g = gd.GetBaseUrl();
@@ -139,7 +139,7 @@ function PAGE_Initialize() {
 
    let sPollK = null; // Get poll key from url parameters if available, otherwise use null to fetch first poll
 
-   // try to get poll key from url parameters, if not available use null to fetch first poll
+   // ## try to get poll key from url parameters, if not available use null to fetch first poll
    const oUrlParameter = new URLSearchParams(window.location.search);
    sPollK = oUrlParameter.get("PollK") || oUrlParameter.get("key") || null;
    if( !sPollK || sPollK.length !== 32 ) {
@@ -150,8 +150,32 @@ function PAGE_Initialize() {
       oDocument_g.SetValue("PollK", sPollK );                                 // Store poll key in document for later use
       PAGE_Load();                                                            // Load poll information and display it on the page
    }
+
+   // ## Get client IP to check if user can vote
+   gd.SendToServer("", "!sys/client/ip").then((oResult) => {
+      const oIp = XML_GetFirstValue( oResult, undefined, "object" );
+      oDocument_g.SetValue("Ip", oIp.ip); // Store client IP in document for later use when casting vote
+      console.log("Client IP obtained from server:", oIp.ip);
+      const oValues = { PollK: sPollK, Ip: oIp.ip };
+      gd.SendToServer("", "!db/select", "query=#cast-check_if_voted\nvalues=" + JSON.stringify(oValues)).then((oResult) => {
+         const oVoteCheck = XML_GetFirstValue( oResult, undefined, "object" );
+         if( oVoteCheck.hasVoted === true ) {
+            oToast_g.Show("You have already voted in this poll. Thank you for your participation!");
+            /*
+            const eCommandSection = document.querySelector(`[data-section="command"]`);
+            if( eCommandSection ) { eCommandSection.remove(); } // Remove command section to prevent voting again
+            */
+         }
+      }).catch((error) => {
+         console.error("Failed to check if user has already voted:", error);
+      });
+
+   }).catch((error) => {
+      console.error("Failed to get client IP from server:", error);
+   });
 }
 
+// --------------------------------------------------------------------------- PAGE_SetListeners
 function PAGE_SetListeners() {
    // ## Set listener for cast vote button
    const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
@@ -188,8 +212,13 @@ function PAGE_SetListeners() {
                // Prepare PollK to set for all votes
                const oPoll = { PollK: oDocument_g.GetValue("PollK") };
                gd.SendToServer("", "!db/insert?table=TPollVote&query=%23cast-add_vote", `values=${JSON.stringify(oPoll)}`, oDocument).then((oResult) => {
-                  const count_ = XML_GetFirstValue( oResult );
-                  const iCount = parseInt(count_) || 0;
+                  const oVote = XML_GetFirstValue( oResult, undefined, "object" );
+                  if( oVote.abort === true ) {
+                     console.warn(oVote.text);
+                     oToast_g.Warning(oVote.text);
+                     return;
+                  }
+                  const iCount = parseInt(oVote.count) || 0;
                   oToast_g.Show(`Successfully cast ${iCount} votes.`);
                }).catch((error) => {
                   console.error("Failed to cast votes:", error);
