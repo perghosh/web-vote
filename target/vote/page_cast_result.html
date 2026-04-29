@@ -11,7 +11,6 @@ PAGE_Initialize - Initialize the page by creating necessary objects and loading 
 PAGE_SetListeners - Set event listeners for user interactions on the page
 PAGE_Load - Load poll information from the server and store it in the document
 PAGE_RenderPoll - Render poll information, questions, and answers on the page based on data stored in the document
-PAGE_Validate - Validate user input before sending votes to server, ensuring required number of answers are selected for each question
 
 -->
 <!DOCTYPE html>
@@ -68,6 +67,8 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
     | ## Page Container for casting votes
     -->
    <div id="idPage" class="page-container container page" data-section="page">
+      <!-- Message container for displaying validation messages or other information to the user, default is hidden -->
+      <div id="idPageMessage" style="display: none;"></div>
       <!-- Poll information -->
       <div id="idPoll" class="container-view margin_b-small">
          <h1 data-field="FName">Poll Title</h1>
@@ -174,41 +175,6 @@ function PAGE_SetListeners() {
 
       const sAction = eTarget.dataset.action;                                                      console.assert( sAction, "Action is not defined in data-action attribute" );
       const sTableName = eTarget.dataset.table;                                                    console.assert( sTableName, "Table name is not defined in data-table attribute" );
-      if( sTableName === "TPoll" ) {
-         /*if( sAction === "cast-vote" ) {
-            if( PAGE_Validate("cast") == true ) {
-               // ## Generate xml for votes based on selected answers and send to server
-               //    Values are placed in <fields fieldname1="value" fieldname2="value" /> each attributes holds one value where the name is the field name in database
-               //    <values PollK="" PollQuestionK="" PollAnswerK="" /> each value element holds the keys for one vote, there will be one value element for each selected answer
-               const ePollContainer = document.getElementById("idPoll");
-               const aQuestionContainers = ePollContainer.querySelectorAll(`[data-field="PollQuestionK"]`);
-               const oDocument = document.implementation.createDocument(null, "document");
-               aQuestionContainers.forEach((eQuestionContainer) => {
-                  const sQuestionKey = eQuestionContainer.getAttribute("data-value");
-
-                  const aSelected = eQuestionContainer.querySelectorAll(`.vote-answer-input:checked`);
-                  aSelected.forEach((eAnswer) => {
-                     const sAnswerKey = eAnswer.getAttribute("data-value");
-
-                     const eValues = oDocument.createElement("values");
-                     //eValues.setAttribute("PollK", oDocument_g.GetValue("PollKey"));
-                     //eValues.setAttribute("PollQuestionK", sQuestionKey);
-                     eValues.setAttribute("PollAnswerK", sAnswerKey);
-                     oDocument.documentElement.appendChild(eValues);
-                  });
-               });
-
-               gd.SendToServer("", "!db/execute?format=xml&node=values&table=TPollVote", oDocument).then((oResult) => {
-                  const sMessage = oResult.data?.message || "Votes cast successfully!";
-                  oToast_g.Show(sMessage);
-               }).catch((error) => {
-                  console.error("Failed to cast votes:", error);
-                  const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";
-                  oToast_g.Show(sMessage);
-               });
-            }
-         }*/
-      }
    });
 }
 
@@ -442,64 +408,19 @@ function PAGE_RenderPoll() {
          const eAnswer =  document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
          oRecord.WriteValues(eAnswer);                                      // Write values from record to page elements with matching data-field attributes
 
-         // ------
-         /*const sQuestionK = oRow.PollQuestionK;
-         if( sQuestionK !== sCurrentQuestion )
-         {
-            sCurrentQuestion = sQuestionK;
-         }
-
-         const oVoteTable = oDocument_g.GetTable("TPollVote");
-
-         if( oVoteTable )
-         {
-            for( let i = 0; i < oVoteTable.GetRowCount(); i++)
-            {
-               const oRowVote = oVoteTable.AsObject(i);
-               const uCount = oRowVote.count || 0;
-               const sAnswerKey = oRowVote.PollAnswerK;
-
-               if(sAnswerKey == oRow.PollAnswerK)
-               {
-                  eAnswer.querySelector('[data-field="count"]').textContent = `${uCount} Votes`;
-               }
-            }
-         }*/
-
-         // Display vote count
-         
-         /*const sAnswerKey = oRecord.GetValue("PollAnswerK");
-
-         const uCount = oVoteCount[sAnswerKey] || 0;
-         const uPercent = (uCount / uTotalVotes) * 100;
-
-         eAnswer.querySelector('[data-field="count"]').textContent = `${uCount} Votes`;
-         eAnswer.querySelector('[data-field="percent"]').textContent = `${uPercent}%`;
-         */
-
-         
-         /*oVoteData.forEach(oVote => {
-            
-            if( oVote.answerKey == oRow.PollAnswerK );
-            {
-               eAnswer.querySelector('[data-field="count"]').textContent = `${oVote.count} Votes`;
-               eAnswer.querySelector('[data-field="percent"]').textContent = `${oVote.percent}%`; 
-            }
-         });*/
-
          const sAnswerKey = oRow.PollAnswerK;
          const oVote = oVoteData.find(vote => vote.answerKey === sAnswerKey);
-         const fillElement = eAnswer.querySelector('.fill');
+         const eFillElement = eAnswer.querySelector('.fill');
 
 
-         if(fillElement)
+         if(eFillElement)
          {
             if( oVote && oVote.percent ) 
             { 
                let percentWidth = parseFloat(oVote.percent);
                percentWidth = Math.min(100, Math.max(0, percentWidth));
 
-               fillElement.style.width = percentWidth + '%';
+               eFillElement.style.width = percentWidth + '%';
             }           
          }
 
@@ -523,42 +444,6 @@ function PAGE_RenderPoll() {
    }
 }
 
-/** --------------------------------------------------------------------------- PAGE_Validate
- * Validate user input before sending votes to server
- * 
- * This function checks that the user has selected the required number of answers for each question based on the FMinSelect and FMaxSelect values defined for each question. If any validation fails, it shows an appropriate message to the user and prevents the form from being submitted.
- * 
- * @param {string} sType - The type of validation to perform, in this case "cast" for casting votes
- * @returns {boolean} - Returns true if validation passes, false otherwise
- */
-function PAGE_Validate( sType ) {
-   let bValid = true;
-   if( sType === "cast" ) {
-      // ## Validate that at least one answer is selected for each question
-      const ePollContainer = document.getElementById("idPoll");
-      const aQuestion = ePollContainer.querySelectorAll(`div[data-field="PollQuestionK"]`);
-      aQuestion.forEach((eQuestion) => {
-         const eRecord = eQuestion.querySelector(`[data-section="record"]`); 
-         const sQuestionKey = eRecord.getAttribute("data-value");
-         const uMinSelect = parseInt(eRecord.querySelector(`[data-field="FMinSelect"]`).value) || 0;
-         const uMaxSelect = parseInt(eRecord.querySelector(`[data-field="FMaxSelect"]`).value) || 0;
-
-         const aSelectedAnswers = eQuestion.querySelectorAll(`.vote-answer-input:checked`);
-         const uSelectedCount = aSelectedAnswers.length;
-         if( uSelectedCount < uMinSelect ) {
-            bValid = false;
-            oToast_g.Show(`Please select at least ${uMinSelect} answer(s) for question "${eQuestion.querySelector(`[data-field="FName"]`).textContent}"`);
-         }
-         else if( uMaxSelect > 0 && uSelectedCount > uMaxSelect ) {
-            bValid = false;
-            oToast_g.Show(`Please select no more than ${uMaxSelect} answer(s) for question "${eQuestion.querySelector(`[data-field="FName"]`).textContent}"`);
-         }
-      });
-   }
-
-   return bValid;
-}
- 
    </script>
 </body>
 </html>

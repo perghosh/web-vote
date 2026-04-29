@@ -81,20 +81,21 @@ local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip
 local sPollK = request:GetClientValue("PollK") print("GetClientValue PollK: " .. sPollK)
 
 local bCanVote = CanVote(sBinaryIp, sPollK)                                    -- Check if user can vote
-if not bCanVote then
-   request:GetResponse():Message({text = "Ip has voted", abort = true}, "error")
-   request:SetStatus( "abort" )
-   return   
+bCanVote = true -- ## Remove after testing, allows voting multiple times from same IP
+if bCanVote then
+   -- ## Insert vote into TPollTie to tie votes together
+   local database = request:GetDatabase()
+   local sql = request:CreateSql()
+   sql:AddColumn({name = "FIp", value = sBinaryIp, type = "binary"})
+   sql:SetColumn( "PollK", {type = "binary"})
+   local sInsert = sql:AsInsert({ table = "TPollTie", returning = "PollTieK" })
+   local sKey = database:ExecuteReturn(sInsert);
+   request:SetScriptValue("FTie", sKey)
+   return
 end
 
--- ## Insert vote into TPollTie to tie votes together
-local database = request:GetDatabase()
-local sql = request:CreateSql()
-sql:AddColumn({name = "FIp", value = sBinaryIp, type = "binary"})
-sql:SetColumn( "PollK", {type = "binary"})
-local sInsert = sql:AsInsert({ table = "TPollTie", returning = "PollTieK" })
-local sKey = database:ExecuteReturn(sInsert);
-request:SetScriptValue("FTie", sKey)
+request:GetResponse():Message({text = "Ip has voted", abort = true}, "error")
+request:SetStatus( "abort" )
       ]]></code>
          <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>
       </statement>
