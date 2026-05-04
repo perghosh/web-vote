@@ -187,16 +187,17 @@ function PAGE_SetListeners() {
  * when rendering the poll on the page.
  */
 async function PAGE_Load() {
-   const sPollKey = oDocument_g.GetValue("PollKey");
-   console.assert(sPollKey, "Poll key is not set in document");
+   const sPollKey = oDocument_g.GetValue("PollKey");                           console.assert(sPollKey, "Poll key is not set in document");
 
-   const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers", "cast-poll_votes"];
-   // const aQueryName = ["cast-poll"];
-      
+   const aColumn = ["TPoll","PollK", sPollKey]; // table, column and value, order is important, table, field and value
+      const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers", "cast-poll_votes"];
+   
    try {
       // ## Execute all queries in parallel
       const aTable = await Promise.all(aQueryName.map(async (sQueryName) => {
-         const oResult = await gd.SendToServer("", "!db/select?ui=1&", `query=#${sQueryName}\nvalues={"PollK":"${sPollKey}"}`);
+         //const sArguments = `query=#${sQueryName}`+ "\n" + `columns=[${JSON.stringify(aColumn)}]`;
+         const oResult = await gd.Send("!db/select?", { query: `#${sQueryName}`, columns: JSON.stringify(aColumn) }); // Execute query to fetch data for poll, questions, answers, and votes
+         //const oResult = await gd.SendToServer("", "!db/select?ui=1&", `query=#${sQueryName}\nvalues={"PollK":"${sPollKey}"}`);
          const data_ = oResult.data;
 
          const eResult = data_.querySelector("result") || console.error("No result element found in response for query:", sQueryName, "Response data:", data_);
@@ -206,18 +207,7 @@ async function PAGE_Load() {
 
          let oTable; // Generated table from result
          const aResult = JSON.parse(eResult.textContent);
-
-         if( sResultUi ) { 
-            if( sResultUi.charAt(0) === "{" ) { // If ui attribute is a JSON string, parse it to get table configuration
-               const oUiConfig = JSON.parse(sResultUi);
-               sResultUi = oUiConfig.table; // Get table name from UI configuration for later use
-            }
-            oTable = new Table(sResultUi); 
-            oTable.Add(aResult.slice(1)); // Parse rows from UI format if available
-         }
-         else if( eResult.textContent ) {
-            oTable = new Table(aResult);
-         }
+         if( eResult.textContent ) { oTable = new Table(aResult);}
          else { console.error("No data found in result for query:", sQueryName, "Result element:", eResult); }
          
          if (sQueryName === "cast-poll") { oTable.name = "TPoll"; }
@@ -229,10 +219,9 @@ async function PAGE_Load() {
          return oTable;
       }));
 
-      // console.log("All poll data loaded:", aTable);
       
-      // All done - render
-      PAGE_RenderPoll();
+      
+      PAGE_RenderPoll();                                                      // All done - render poll information on the page
       
    } 
    catch(error) { console.error("Failed to load poll data:", error); }

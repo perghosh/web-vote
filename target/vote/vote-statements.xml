@@ -1,4 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+## Queries and descriptions for groups of queries used in voting
+
+### cast statements
+Cast votes starts with cast-* statements, these are used for casting votes and getting data for voting. 
+
+### "vote" statements
+Vote statements are used for administering votes, creating and editing polls, these are used in admin interface for votes.
+
+TIP: select name and search in project to find where these statements are used
+
+-->
 <document>
    <statements>
       <!-- @API [tag: TPoll]
@@ -7,22 +19,21 @@
        | - vote-poll_search: Search for polls by name or header, used for main search field on vote page
        | - vote-poll_table: Get poll data for table, used to fill table on vote page
        |-->
-      <statement name="vote-get_first" format="raw" type="select">SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1</statement>
+      <statement name="vote-get_first" format="raw" type="select" description="Get first poll, used for development">SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1</statement>
       <statement name="vote-poll_search" format="jinja" type="select" table="TPoll">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll {?? exists( args::exists( args, "name" ), "WHERE FName LIKE ''%{=name}%'' OR FHeader LIKE ''%{=name}%''" ) ??} ORDER BY FName</statement>
-      <!--<statement name="vote-poll_search" format="jinja" type="select">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR FHeader LIKE ''%{=name}%'' ORDER BY FName</statement>-->
-      <statement name="vote-poll_table" format="jinja" type="select">SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}</statement>
+      <statement name="vote-poll_table" format="jinja" type="select" table="TPoll">SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = {PollK}</statement>
 
       <statement name="vote-count" format="jinja" type="select">SELECT COUNT(*) AS uCount FROM TPoll WHERE PollK = {PollK}</statement>
-      <statement name="vote-count_questions" format="jinja" type="select">SELECT COUNT(*) AS uCount FROM TPollQuestion WHERE PollK = X{PollK}</statement>
-      <statement name="vote-get" format="jinja" type="select">SELECT hex(PollK) AS PollK, TypeC, StateC, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}</statement>
-      <statement name="vote-get_polls" format="jinja" type="select">SELECT hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollQuestion WHERE PollK = X{PollK}</statement>
-      <statement name="vote-get_answers" format="jinja" type="select">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollAnswer WHERE PollK = X{PollK}</statement>
-      <statement name="vote-all_questions" format="jinja" type="select"><![CDATA[
+      <statement name="vote-count_questions" format="jinja" type="select" table="TPollQuestion">SELECT COUNT(*) AS uCount FROM TPollQuestion WHERE PollK = {PollK}</statement>
+      <statement name="vote-get" format="jinja" type="select" table="TPoll">SELECT hex(PollK) AS PollK, TypeC, StateC, FName, FHeader, FDescription FROM TPoll WHERE PollK = {PollK}</statement>
+      <statement name="vote-get_polls" format="jinja" type="select" table="TPollQuestion">SELECT hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollQuestion WHERE PollK = {PollK}</statement>
+      <statement name="vote-get_answers" format="jinja" type="select">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollAnswer WHERE PollK = {PollK}</statement>
+      <statement name="vote-all_questions" format="jinja" type="select" table="TPoll"><![CDATA[
 SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuestionK, hex(TPollAnswer.PollAnswerK) AS PollAnswerK,
          TPollQuestion.FName AS Q_FName, TPollQuestion.FLabel AS Q_FLabel, TPollQuestion.FDescription AS Q_FDescription, TPollQuestion.FOrder AS Q_FOrder,
          TPollAnswer.FName AS A_FName, TPollAnswer.FAnswer AS A_FAnswer, TPollAnswer.FOrder AS A_FOrder, TPollAnswer.FDescription AS A_Description
          FROM TPoll LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK LEFT JOIN TPollAnswer ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK
-         WHERE TPoll.PollK = X{PollK} ORDER BY 1,TPollQuestion.FOrder, 2,TPollAnswer.FOrder]]></statement>
+         WHERE TPoll.PollK = {PollK} ORDER BY 1,TPollQuestion.FOrder, 2,TPollAnswer.FOrder]]></statement>
 
       <statement name="user-edit_search" format="jinja" type="select">SELECT hex(UserK) id, FAlias alias, FFirstName name, FLastName lastname FROM TUser {?? exists( args::exists( args, "name" ), "WHERE FAlias LIKE ''%{=name}%'' OR FFirstName LIKE ''%{=name}%'' OR FLastName LIKE ''%{=name}%''" ) ??} ORDER BY FAlias</statement>
       <statement name="user-edit_table" format="jinja" type="select">SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}</statement>
@@ -32,7 +43,7 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
        | - cast-poll_questions: Select poll questions for vote
        | - cast-poll_answers: Select poll answers for questions
        | -->
-      <statement name="cast-check_if_voted" format="jinja" type="select" description="Check if user has already voted in poll">
+      <statement name="cast-check_if_voted" format="jinja" type="select" table="TPollTie" description="Check if user has already voted in poll">
          <code><![CDATA[-- #lua v1;
 local sIp = request:GetIpAddress() -- Get user IP address         
 local sValueIp = request:GetClientValue("Ip")
@@ -44,21 +55,23 @@ if sValueIp ~= sIp then
    return
 end
 
+request:RemoveClientValue("Ip") -- Remove ip from client values, we don't need it anymore
+
 local expression = Expression:new();
 local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } ) -- Convert IP address to binary
-request:SetScriptValue("FIp", sBinaryIp)
+request:AddClientValue("FIp", sBinaryIp)
          ]]></code>
-         <statement>SELECT COUNT(*) as count_vote FROM TPollTie WHERE PollK = X{PollK} AND FIp = X{FIp}</statement>
+         <statement>SELECT COUNT(*) as count_vote FROM TPollTie WHERE PollK = {PollK} AND FIp = {FIp}</statement>
       </statement>
-      <statement name="cast-poll" format="jinja" type="select" description="Select poll header for vote">
+      <statement name="cast-poll" format="jinja" type="select" description="Select poll header for vote" table="TPoll">
          <ui>{ "table": "PollK;FName,Name;FHeader,Header;FDescription,Description" }</ui>
-         <![CDATA[SELECT hex(PollK) AS PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}]]></statement>
-      <statement name="cast-poll_questions" format="jinja" type="select" description="Select poll questions for vote">
+         <![CDATA[SELECT hex(PollK) AS PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = {PollK}]]></statement>
+      <statement name="cast-poll_questions" format="jinja" type="select" description="Select poll questions for vote" table="TPollQuestion">
          <ui>{ "table": "PollQuestionK;FLabel;FName,Name;FQuestion,Question;FQuestionMore,More;FDescription,Description" }</ui>
-         <![CDATA[SELECT hex(PollQuestionK) AS PollQuestionK, FLabel, FName, FQuestion, FQuestionMore, FDescription FROM TPollQuestion WHERE PollK = X{PollK} ORDER BY FOrder]]></statement>
-      <statement name="cast-poll_answers" format="jinja" type="select" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = X{PollK}</statement>
+         <![CDATA[SELECT hex(PollQuestionK) AS PollQuestionK, FLabel, FName, FQuestion, FQuestionMore, FDescription FROM TPollQuestion WHERE PollK = {PollK} ORDER BY FOrder]]></statement>
+      <statement name="cast-poll_answers" format="jinja" type="select" table="TPollAnswer" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = {PollK}</statement>
 
-      <statement name="cast-add_vote" type="insert" description="Add vote for user">
+      <statement name="cast-add_vote" type="insert" description="Add vote for user" table="TPollVote">
          <code><![CDATA[-- #lua v1;
 -- ## Check if voter can vote         
 function CanVote(sBinaryIp, sPollK)
@@ -78,16 +91,16 @@ end
 local expression = Expression:new();
 local sIp = request:GetIpAddress() -- Get user IP address
 local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } ) -- Convert IP address to binary
-local sPollK = request:GetClientValue("PollK") print("GetClientValue PollK: " .. sPollK)
+local sPollK = request:GetClientValue("PollK") -- print("GetClientValue PollK: " .. sPollK)
 
 local bCanVote = CanVote(sBinaryIp, sPollK)                                    -- Check if user can vote
-bCanVote = true -- ## Remove after testing, allows voting multiple times from same IP
+bCanVote = true                                                                -- @TODO Remove after testing, allows voting multiple times from same IP
 if bCanVote then
    -- ## Insert vote into TPollTie to tie votes together
    local database = request:GetDatabase()
-   local sql = request:CreateSql()
+   local sql = doc:CreateSql()
+   sql:AddColumn({name = "PollK", value = sPollK, type = "binary"})
    sql:AddColumn({name = "FIp", value = sBinaryIp, type = "binary"})
-   sql:SetColumn( "PollK", {type = "binary"})
    local sInsert = sql:AsInsert({ table = "TPollTie", returning = "PollTieK" })
    local sKey = database:ExecuteReturn(sInsert);
    request:SetScriptValue("FTie", sKey)
@@ -97,9 +110,15 @@ end
 request:GetResponse():Message({text = "Ip has voted", abort = true}, "error")
 request:SetStatus( "abort" )
       ]]></code>
-         <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>
+         <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES ({PollAnswerK}, {FTie})</statement>
       </statement>
-      <statement name="cast-poll_votes" format="jinja" type="select">SELECT hex(TPollVote.PollAnswerK) AS PollAnswerK, COUNT(*) AS count FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK WHERE TPollAnswer.PollK = X{PollK} GROUP BY TPollVote.PollAnswerK</statement>      
+      <statement name="cast-poll_count_total" type="select" description="Count total votes for a poll">SELECT COUNT(*) AS count_total_votes FROM TPollVote WHERE PollK = {PollK}</statement>
+      <statement name="cast-poll_votes" format="jinja" type="select" table="TPollVote" description="Count number of votes per answer"><![CDATA[
+SELECT hex(TPollVote.PollAnswerK) AS PollAnswerK, COUNT(*) AS count 
+FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK 
+WHERE TPollAnswer.PollK = {PollK} 
+GROUP BY TPollVote.PollAnswerK
+]]></statement>      
    </statements>
 
 </document>

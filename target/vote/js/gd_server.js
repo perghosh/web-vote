@@ -87,6 +87,41 @@ oNS.EncodeToBase64 = function(sText) {
 }
 
 /** -------------------------------------------------------------------------
+ * Simple method to wrap sending requests to the server
+ * 
+ * If arguments_ is an object, it will be treated as query parameters. Values will be URL-encoded and appended to the endpoint as query string.
+ * If arguments_ is a string, it will be treated as newline-separated key=value pairs and processed similarly to the object case.
+ *
+ * @param {string}                  sEndpoint   - Endpoint path (e.g. "!db/select?ui=1&")
+ * @param {string|object|Document} [arguments_] - If object → treated as QUERY PARAMETERS
+ *                                                If string  → old newline format
+ * @param {string|object|Document} [body_]      - Optional body (JSON, XML or string)
+ * @returns {Promise<{type: "json"|"xml"|"text", data: any}>}
+ */
+oNS.Send = function(sEndpoint, arguments_, body_) {
+   if(typeof arguments_ === "string") { return oNS.SendToServer("", sEndpoint, arguments_, body_); }
+   else if(typeof arguments_ === "object" && arguments_ !== null) {
+      let sArguments = "";
+      for(let sKey in arguments_) {
+         if(arguments_.hasOwnProperty(sKey)) {
+            if(sArguments) sArguments += "&";
+            sArguments += sKey + "=" + encodeURIComponent(arguments_[sKey]);
+         }
+      }
+
+      if(sArguments) {
+         if(sEndpoint.indexOf('?') === -1) { sEndpoint += '?'; }
+         else if(sEndpoint.slice(-1) !== '&' && sEndpoint.slice(-1) !== '?') { sEndpoint += '&'; }
+         sEndpoint += sArguments;
+      }
+
+      return oNS.SendToServer("", sEndpoint, undefined, body_); // ← pass undefined not sArguments
+   }
+
+   return oNS.SendToServer("", sEndpoint, arguments_, body_); // fallback to original behavior if arguments_ is not an object or string
+};
+
+/** -------------------------------------------------------------------------
  * Send arguments to server and return a typed response object.
  *
  * @param {string}                  sBaseUrl    - Base URL of the server, falls back to gd.sDefaultBaseUrl_s
@@ -157,8 +192,6 @@ oNS.SendToServer = function(sBaseUrl, sEndpoint, arguments_, body_) {
       // Handle XML document arguments
       sBody = new XMLSerializer().serializeToString(arguments_);
    }
-
-   //sFullUrl += oNS.EncodeUrlParams(sFullUrl);                                  // Encode URL parameters for first part, here you should only have simple values
 
    // ## If encoded arguments exist and URL contains '='
    if( sEncodedArguments.length > 0 && sFullUrl.indexOf('=') !== -1 ) {
