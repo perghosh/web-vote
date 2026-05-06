@@ -88,6 +88,17 @@ vote-get_answers - Select poll answers for poll
          color: var(--color-warning);
          box-shadow: 0 0 0 2px color-mix(in srgb, var(--background-warning) 35%, transparent);
       }
+
+      /* Open: Chevron rotated down */
+      details[open] > summary::before { transform: rotate(90deg); }
+
+      /* Hide default */
+      summary { align-items: center; cursor: pointer; display: flex; list-style: none; }
+
+      /* Closed: Chevron right */
+      summary::before { content: "›"; display: inline-block; font-size: 1.5rem; margin-right: 0.5rem; transition: transform 0.2s ease; }
+      summary::marker { display: none; }
+      summary::-webkit-details-marker { display: none; }
     </style>
 </head>
 <body>
@@ -152,44 +163,46 @@ vote-get_answers - Select poll answers for poll
    </template>
 
    <template id="idTemplateQuestion">
-      <div class="container-form margin_b-small" data-section="form-list">
-         <div data-table="TPollQuestion" data-section="form" data-status-modified="">
+      <details open class="container-form margin_b-small" data-section="form-list">
+         <summary>
+            <div data-table="TPollQuestion" data-section="form" data-status-modified="">
+               <div data-section="record" data-table="TPollQuestion" data-key="">
+                  <div class="form-group form-row form-row--aside-left">
+                     <h2 class="margin_b-small">Question</h2>
+                     <div data-section="command" style="margin-left: auto;"> <!-- right align buttons for question -->
+                        <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Update question</span>
+                        <span class="button" data-action="new-answer-form" data-command="new" data-table="TPollAnswer">Add Answer</span>
+                        <span class="button button-danger" data-action="delete-pollquestion" data-command="delete" data-table="TPollQuestion">Delete</span>
+                     </div>
+                  </div>
 
-            <div data-section="record" data-table="TPollQuestion" data-key="">
-               <div class="form-group form-row form-row--aside-left">
-                  <h2 class="margin_b-small">Question</h2>
-                  <div data-section="command" style="margin-left: auto;"> <!-- right align buttons for question -->
-                     <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Update question</span>
-                     <span class="button" data-action="new-answer-form" data-command="new" data-table="TPollAnswer">Add Answer</span>
-                     <span class="button button-danger" data-action="delete-pollquestion" data-command="delete" data-table="TPollQuestion">Delete</span>
+                  <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 64px;">
+                     <div class="floating">
+                        <input type="text" placeholder=" " data-field="FName" required>
+                        <span>Name</span>
+                     </div>
+                     <div class="floating">
+                        <input type="text" placeholder=" " data-field="FLabel" required>
+                        <span>Label</span>
+                     </div>
+                     <div class="floating">
+                        <input type="number" step="1" min="0" placeholder=" " data-field="FOrder" value="0">
+                        <span>#</span>
+                     </div>
                   </div>
+                  <div class="form-group">
+                     <div class="floating">
+                        <textarea placeholder=" " data-field="FDescription" rows="2"></textarea>
+                        <span>Description</span>
+                     </div>
+                  </div>
+                  <input type="hidden" data-field="PollK">
+                  <input type="hidden" data-field="PollQuestionK">
                </div>
-
-               <div class="form-group form-row" style="grid-template-columns: 2fr 1fr 64px;">
-                  <div class="floating">
-                     <input type="text" placeholder=" " data-field="FName" required>
-                     <span>Name</span>
-                  </div>
-                  <div class="floating">
-                     <input type="text" placeholder=" " data-field="FLabel" required>
-                     <span>Label</span>
-                  </div>
-                  <div class="floating">
-                     <input type="number" step="1" min="0" placeholder=" " data-field="FOrder" value="0">
-                     <span>#</span>
-                  </div>
-               </div>
-               <div class="form-group">
-                  <div class="floating">
-                     <textarea placeholder=" " data-field="FDescription" rows="2"></textarea>
-                     <span>Description</span>
-                  </div>
-               </div>
-               <input type="hidden" data-field="PollK">
-               <input type="hidden" data-field="PollQuestionK">
             </div>
-         </div>
-      </div>
+         </summary>
+         <div data-section="answer-list"></div>  <!-- container for clarity -->
+      </details>
    </template>
 
    <!--  -->
@@ -317,7 +330,8 @@ function PAGE_LoadPollInformation() {
 
    const fnRenderVotes = function( oTable ) {
       let eQuestion = null;
-      const eQuestions = document.getElementById("idQuestions");
+      let eAnswerList = null;
+      const eQuestions = document.getElementById("idQuestions");              // container questions
       let sQuestionK = null;
       for( let uRow = 0; uRow < oTable.GetRowCount(); uRow++ ) {
          const sCheckQuestionK = oTable.GetCellValue(uRow, "PollQuestionK");
@@ -326,6 +340,7 @@ function PAGE_LoadPollInformation() {
             sQuestionK = sCheckQuestionK;
             // ### Geneate html for new question
             eQuestion =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
+            eAnswerList = eQuestion.querySelector('[data-section="answer-list"]'); // Get the answer list container within the question form
             eQuestions.appendChild(eQuestion);
             let oRow = oTable.GetRowData(uRow, { format: "json" });            // Get question data as json and attach to question element for later use
             // regex filter for all fields that start with capital "Q"
@@ -341,7 +356,7 @@ function PAGE_LoadPollInformation() {
          const sAnswer = oTable.GetCellValue(uRow, "A_FAnswer");
          if( eQuestion && sAnswer ) {
             const eAnswer = document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
-            eQuestion.appendChild(eAnswer);                                    // Attach answer element to current question element
+            eAnswerList.appendChild(eAnswer);                                    // Attach answer element to current question element
             let oRow = oTable.GetRowData(uRow, { format: "json" });            // Get answer data as json and attach to answer element for later use
             // regex filter for all fields that start with capital "A"
             oTable.GetRowData(uRow, { format: "json", append: oRow, filter: /^A_/ }); // add capital A fields to answer data
@@ -388,6 +403,7 @@ function PAGE_SetListeners() {
 
       const sCommand = eTarget.dataset.command;
       if( !sCommand ) return;                                                 // If no command is defined, return
+      e_.preventDefault();
       const eForm = eTarget.closest('[data-section="form"]');                 // Container element for form based on command
       const eFormList = eTarget.closest('[data-section="form-list"]');        // Continer list for forms based on command
 
@@ -466,8 +482,8 @@ function PAGE_SetListeners() {
                XML_AppendObject(eValues, { PollQuestionK: sPollQuestionK }, undefined, "where"); // Append poll question key to values for updating the correct question
                eValues.setAttribute("table", sTableName);
                gd.SendToServer("", "!db/update", `table=${sTableName}`, oDocument).then(function(oResponse) {
-                  PAGE_Message( "Question updated successfully" ); // Process response and show message
-                  eForm.setAttribute("data-status-modified", ""); // Reset modified status on form after successful insert
+                  PAGE_Message( "Question updated successfully" );            // Process response and show message
+                  eForm.setAttribute("data-status-modified", "");             // Reset modified status on form after successful insert
                }).catch(function(error) {
                   PAGE_Message({table: sTableName, command: "update", response: oResponse, status: "error" }); // Process response and show message
                });
@@ -489,7 +505,9 @@ function PAGE_SetListeners() {
                const eQuestion = eFormList.querySelector('[data-table="TPollQuestion"]'); // Get question form container for current answer form based on command
                const eAnswer = document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
                FIELD_CopyValues(eQuestion,  eAnswer, ["PollK", "PollQuestionK"] ); // Copy poll key and question key values from question form to answer form
-               eFormList.appendChild(eAnswer); // Append new answer form to the question form list
+               const eAnswerList = eFormList.querySelector('[data-section="answer-list"]'); // Get the answer list container within the question form
+               eAnswerList.appendChild(eAnswer);                              // Append new answer form to the answer list container
+               eFormList.open = true;                                         // Open the question details to show the new answer form
             } break;
             case "update": {
                const oValues = oDBRecord.GetFilledValues();
@@ -503,7 +521,7 @@ function PAGE_SetListeners() {
                      const sNewAnswerK = XML_GetFirstValue(oResponse);
                      eForm.querySelector(`[data-field="PollAnswerK"]`).value = sNewAnswerK;
                      PAGE_Message("Answer added successfully", "success");
-                     eForm.setAttribute("data-status-modified", ""); // Reset modified status on form after successful insert
+                     eForm.setAttribute("data-status-modified", "");          // Reset modified status on form after successful insert
                   })
                   .catch((error) => { PAGE_Message("Error adding answer", "danger"); });
                   return;
@@ -512,7 +530,7 @@ function PAGE_SetListeners() {
                   const sPollQuestionK = eForm.querySelector(`[data-field="PollAnswerK"]`).value;
                   gd.DB.Update("TPollAnswer", oValues, { PollAnswerK: sPollAnswerK } ).then(oResponse => {
                      PAGE_Message("Answer updated successfully", "success");
-                     eForm.setAttribute("data-status-modified", ""); // Reset modified status on form after successful insert
+                     eForm.setAttribute("data-status-modified", "");          // Reset modified status on form after successful insert
                   })
                   .catch((error) => { PAGE_Message("Error updating answer", "danger"); });
                }
