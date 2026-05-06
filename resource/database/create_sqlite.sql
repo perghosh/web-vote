@@ -28,7 +28,7 @@ CREATE TABLE table_number (
 -- tie us used to connect votes that belongs together, for example when a voter votes for multiple questions in a poll, those votes can be connected with a tie, this can then be used to analyze how voters have voted across questions and maybe use this information to weight votes in some way.
 CREATE TABLE tie (
    tie_k BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
-   ,FIp VARCHAR(100)
+   ,FIp BLOB               -- IP address for tie, this can be used to block voters or analyze from where voters are coming from
    ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP-- when tie was created
 );
 
@@ -200,7 +200,7 @@ CREATE TABLE TVoter (
    ,UserK BLOB
    ,CreateD         DATETIME DEFAULT CURRENT_TIMESTAMP
    ,UpdateD         DATETIME
-   ,FIp             TEXT    -- IP address for voter, this can be used to block voters or analyze from where voters are coming from
+   ,FIp             BLOB    -- IP address for voter, this can be used to block voters or analyze from where voters are coming from
    ,FUserAgent      VARCHAR(100) -- User agent string for tracking device/browser information
    ,FName           VARCHAR(100)
    ,FAlias          VARCHAR(100)
@@ -262,6 +262,7 @@ CREATE TABLE TPollSection (
 );
 CREATE INDEX IC_TPoll_PollK ON TPollSection (PollK);
 
+/* Used to store comments for polls, this can be used for discussions around the poll and also to get feedback from voters. Comments can be connected to a specific question or answer if needed by using SuperK and maybe some rules for how to use it. */
 CREATE TABLE TPollComment (
    PollCommentK BLOB PRIMARY KEY DEFAULT (randomblob(16))
    ,PollK BLOB
@@ -272,10 +273,31 @@ CREATE TABLE TPollComment (
    ,FormatS INTEGER         -- Comment format type
    ,TypeC INTEGER           -- Type of comment
    ,FText VARCHAR(2000)     -- Comment text
+   ,FIp   BLOB              -- IP address
+
+   ,FEdited INTEGER DEFAULT 0 -- Whether comment has been edited (0=no, 1=yes)
+   ,FPinned INTEGER DEFAULT 0 -- Whether comment is pinned/sticky (moderator feature)   
+
+   ,FUpVotes INTEGER DEFAULT 0 -- number of upvotes for comment, this can be used to sort comments based on score and also to block voters that are voting in a way that is not appropriate
+   ,FDownVotes INTEGER DEFAULT 0 -- number of downvotes for comment 
+   ,FScore INTEGER DEFAULT 0  -- (Upvotes - Downvotes) used for sorting
+
    ,FDeleted INTEGER DEFAULT 0 -- if poll is deleted
+   ,CONSTRAINT FK_Comment_Poll FOREIGN KEY (PollK) REFERENCES TPoll(PollK) ON DELETE CASCADE
 );
 CREATE INDEX IC_TPollComment_PollK ON TPollComment (PollK);
 CREATE INDEX I_TPollComment_VoterK ON TPollComment (VoterK);
+
+/* Used to store votes for comments, this can be used to sort comments based on score and also to block voters that are voting in a way that is not appropriate */
+CREATE TABLE TPollCommentVote (
+    PollCommentVoteK BLOB PRIMARY KEY DEFAULT (randomblob(16))
+    ,PollCommentK BLOB NOT NULL
+    ,VoterK BLOB NOT NULL
+    ,FValue INTEGER CHECK (FValue IN (1, -1)) -- 1 for upvote, -1 for downvote
+    ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP
+    ,CONSTRAINT FK_Vote_Comment FOREIGN KEY (PollCommentK) REFERENCES TPollComment(PollCommentK) ON DELETE CASCADE
+    ,CONSTRAINT FK_Vote_Voter FOREIGN KEY (VoterK) REFERENCES TVoter(VoterK) ON DELETE CASCADE
+);
 
 /* Limits are used to set limits for the poll, like rules what for different questions */
 CREATE TABLE TPollLimit (
@@ -360,16 +382,16 @@ CREATE INDEX I_TPollTie_PollK ON TPollTie (PollK);
 CREATE TABLE IF NOT EXISTS TPollVote (
     PollVoteK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
     PollAnswerK   BLOB NOT NULL,
-    VoterK        BLOB,                       -- Voter reference
+    VoterK        BLOB,                     -- Voter reference
     CreateD       DATETIME DEFAULT CURRENT_TIMESTAMP,
     TypeC         INTEGER,
     StateC        INTEGER,
-    FSelect       INTEGER,                    -- Usually 1 if selected
-    FWeight       INTEGER,                    -- Weight for weighted polls
-    FIp           TEXT,                       -- IP address
-    FComment      TEXT,                       -- Comment (max ~500 chars)
-    verified      INTEGER,                    -- SMALLINT → INTEGER in SQLite
-    FTie          BLOB,                       -- UNIQUEIDENTIFIER → TEXT (or BLOB)
+    FSelect       INTEGER,                  -- Usually 1 if selected
+    FWeight       INTEGER,                  -- Weight for weighted polls
+    FIp           BLOB,                     -- IP address
+    FComment      TEXT,                     -- Comment (max ~500 chars)
+    verified      INTEGER,                  -- SMALLINT → INTEGER in SQLite
+    FTie          BLOB,                     -- UNIQUEIDENTIFIER → TEXT (or BLOB)
     CONSTRAINT FK_TPollVote_PollAnswerK  FOREIGN KEY (PollAnswerK) REFERENCES TPollAnswer(PollAnswerK) ON DELETE CASCADE,
     CONSTRAINT FK_TPollVote_VoterK FOREIGN KEY (VoterK) REFERENCES TVoter(VoterK) ON DELETE CASCADE
 );
@@ -378,6 +400,28 @@ CREATE TABLE IF NOT EXISTS TPollVote (
 CREATE INDEX I_TPollVote_PollQuestionK ON TPollVote (PollAnswerK);
 CREATE INDEX I_TPollVote_FTie ON TPollVote (FTie);
 CREATE INDEX I_TPollVote_FIp ON TPollVote (FIp);
+
+
+CREATE TABLE TThreadHeader (
+    ThreadHeaderK BLOB NOT NULL
+    ,ThreadK BLOB NOT NULL
+    ,table_number INTEGER                   -- Links back to your table_number registry
+    ,FNextId INTEGER NOT NULL DEFAULT 0     -- Used to keep track of comment counts or IDs within this thread
+);
+
+-- This table handles the "Reddit-style" nesting.
+-- It stores the relationship and the "Path" to the comment.
+CREATE TABLE TThread (
+    ThreadHeaderK BLOB NOT NULL
+    ,table_number INTEGER                   -- Links back to your table_number registry
+    ,FKey BLOB                              -- The key of the item this thread entry is connected to (e.g., PollCommentK for comments, or other keys for different tables)
+    ,FDepth INTEGER DEFAULT 0               -- How deep is the reply (0 = top level)
+    ,FOrder INTEGER                         -- Used for ordering within a branch
+    ,FPath VARCHAR(1024)                    -- Example: 'UUID1/UUID2/UUID3'
+);
+
+CREATE INDEX I_TThread_ThreadHeaderK ON TThread (ThreadHeaderK);
+CREATE INDEX I_TThread_FPath ON TThread (FPath);
 
 CREATE TABLE "TSystemStatement" (
     "SystemStatementK" INTEGER PRIMARY KEY AUTOINCREMENT
@@ -410,6 +454,8 @@ INSERT INTO table_number (number, name, description) VALUES (1080, 'TPollComment
 INSERT INTO table_number (number, name, description) VALUES (1090, 'TPollLimit', 'Poll limits and rules');
 INSERT INTO table_number (number, name, description) VALUES (1100, 'TPollQuestion', 'Poll questions table');
 INSERT INTO table_number (number, name, description) VALUES (1110, 'TPollAnswer', 'Poll answers table');
+INSERT INTO table_number (number, name, description) VALUES (1120, 'TPollTie', 'Connect votes for polls with multiple questions');
+INSERT INTO table_number (number, name, description) VALUES (1130, 'TPollVote', 'Votes for poll answers');
 
 
 -- TCodeGroup inserts for code groups

@@ -75,7 +75,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
       </div>
 
       <div id="idPollCommand">
-         <button class="button-primary page-command" data-command="insert" data-action="cast-vote" data-table="TPoll">Send votes to server</button>
+         <button class="button-primary page-command" data-command="insert" data-action="cast-vote" data-table="TPoll">Press to Vote</button>
       </div>
    </div>
 
@@ -189,7 +189,7 @@ function PAGE_SetListeners() {
       const sTableName = eTarget.dataset.table;                                                    console.assert( sTableName, "Table name is not defined in data-table attribute" );
       if( sTableName === "TPoll" ) {
          if( sAction === "cast-vote" ) {
-            if( PAGE_Validate("cast") == true ) {
+            if( PAGE_Validate("cast") == true ) {                             // check rules for voting and if validation passes, cast vote
                // ## Generate xml for votes based on selected answers and send to server
                //    Values are placed in <fields fieldname1="value" fieldname2="value" /> each attributes holds one value where the name is the field name in database
                //    <values PollK="" PollQuestionK="" PollAnswerK="" /> each value element holds the keys for one vote, there will be one value element for each selected answer
@@ -203,8 +203,8 @@ function PAGE_SetListeners() {
                   aSelected.forEach((eAnswer) => {
                      const sAnswerKey = eAnswer.getAttribute("data-value");
 
-                     const eValues = oDocument.createElement("values"); // values element to hold poll information as attributes
-                     eValues.setAttribute("PollAnswerK", sAnswerKey);
+                     const eValues = oDocument.createElement("values");       // values element to hold poll information as attributes
+                     eValues.setAttribute("_TPollVote.PollAnswerK", sAnswerKey); // extended attribute name
                      oDocument.documentElement.appendChild(eValues);
                   });
                });
