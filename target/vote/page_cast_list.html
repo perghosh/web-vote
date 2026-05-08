@@ -1,0 +1,264 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+PAGE_Initialize - Initialize the page
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+PAGE_Update -  Update UI elements based on the given type
+PAGE_SetListeners - Configure page listeners, handle page specific events  
+PAGE_ProcessResponse - Handle response data from server and display it in the container
+
+Objects:
+CDocument - Manages data and state of the page, including records and tables
+DBRecord - Represents a database record, with methods to read/write values and get arguments for server
+UITableLite - A lightweight table UI component for displaying data in a table format
+
+<method name> - <description>
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="css/variables/variables-color-default.css">
+   <link rel="stylesheet" href="css/poll.css">
+   <link rel="stylesheet" href="css/elements.css">
+   <link rel="stylesheet" href="css/input-effects.css">
+   <script src="js/gd_server.js"></script>
+   <script src="js/gd_ui_toast.js"></script>
+   <script src="js/gd_ui_tablelite.js"></script>
+   <script src="js/gd_db.js"></script>
+   <script src="js/gd_data_table.js"></script>
+   <script src="js/document.js"></script>
+   <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      .page-title { color: var(--color-body); }
+
+
+      .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+      .container-result:not(:empty) { margin-bottom: 20px; }
+      .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+      .container-result tbody tr { border-bottom: 1px solid var(--color-border); transition: background-color 0.3s ease;}
+      .container-result tbody tr:hover { background: var(--background-light-hover); }
+      .container-result td { cursor: pointer; padding: 20px 22px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+      .container-result th { padding: 6px 8px; text-align: left; font-weight: 600; color: var(--color-body); border-bottom: 2px solid var(--color-border); }
+      .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
+
+      button.button { border: none; }
+      .divider { border-radius: 5px; border-top: 2px solid var(--color-border); }
+      .group { align-items: flex-end; display: flex; gap: 12px; }
+      .label-number { color: var(--background-success); }
+      .label-text { color: var(--color-muted); }
+      .row { display: flex; width: 100%; }
+   </style>
+</head>
+<body>
+   <div id="idContainer" class="page-container container page" data-section="page">
+
+    <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
+
+        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Search Polls</h2></div>
+
+        <div data-section="search" class="group">
+            <div class="row">
+                  <div style="flex: 1;">
+                    <label class="floating">
+                        <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
+                        <span>Search</span>
+                    </label>
+                  </div>
+                  <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
+            </div>
+         </div>
+
+        <div data-section="select-polls" class="container-result"></div>
+    </form>
+
+   </div>
+
+   
+
+   <script>
+
+   let oToast_g;
+   let oDocument_g;
+
+   function PAGE_TableUpdate() {
+      const sQueryName = "vote-poll_search";
+      gd.SendToServer("", "!db/select", "query=#" + sQueryName).then(function(oResult) {
+         PAGE_ProcessResponse(oResult, "select-polls");
+      });
+   }
+
+   // Start page initialization -----------------------------------------------
+   document.addEventListener('DOMContentLoaded', function() {
+      THEME_Select("color", {});
+      PAGE_Initialize();                                                      // Initialize page
+   });
+
+
+
+   /** --------------------------------------------------------------------- @API [tag: initialize]
+    * Main initialization function that initializes the page
+    */
+   function PAGE_Initialize() {
+      oDocument_g = new CDocument({});
+      
+      let oTable = new Table(["id", "Name", "Header", "Votes"], {sName: "search"} );
+      oDocument_g.AddTable(oTable);
+
+      PAGE_TableUpdate();
+
+      oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
+
+      PAGE_SetListeners();
+   }
+
+
+   /** ---------------------------------------------------------------------------
+    * Update UI elements
+    */
+   function PAGE_Update( sType ) {
+      if( sType === undefined || sType === "search" )
+      {
+         const oTable = oDocument_g.GetTable("search");
+         if(oTable)
+         {
+            const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
+            eSelectPoll.innerHTML = "";
+
+            const fnSelectPoll = (sEvent, oParameter) => {
+               if(sEvent === "row")
+               {
+                  const iRow = oParameter.iOriginalIndex;
+                  const eRow = oParameter.eRow;
+                  const sKey = oTable.GetCell(iRow, 0);
+                  eRow.dataset.key = sKey;
+               }
+            };
+
+            const oUITable = new UITableLite( eSelectPoll, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, callback: fnSelectPoll} );
+            oUITable.Render();
+         }
+      }
+   }
+
+
+
+   /** --------------------------------------------------------------------- @API [tag: event, command]
+   * Configure page listeners, handle page specific events
+   */
+   function PAGE_SetListeners() {
+      const eContainer = document.querySelector("#idContainer");
+
+      eContainer.addEventListener("click", (e_) => {
+         const eTarget = e_.target;
+
+
+
+         if(!eTarget.dataset.action) return;
+         e_.stopPropagation();
+
+         const sAction = eTarget.dataset.action;
+
+         switch(sAction) {
+            case "search": {
+               const sQueryName = "vote-poll_search";
+               const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
+               const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+
+               gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
+                  PAGE_ProcessResponse(oResult, "select-polls");
+               });
+            } break;
+            default:
+               console.error("Unknown action:", sAction);
+         }
+
+      });
+
+   }
+
+   /** ---------------------------------------------------------------------
+    * Handle response data from server and display it in the container
+    *
+    * Response data format is { type: <format>, data: <data> } and type can be any of
+    * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
+    *
+    * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+    */
+   function PAGE_ProcessResponse(oData, sOperation) {
+      let sResult = '';
+      let eResults = null;
+
+      switch(oData.type) {
+         case 'json':
+            sResult = JSON.stringify(oData.data, null, 2);
+            break;
+         case 'xml':
+            // If oData.data is an XML Document object, serialize it to string
+            /*if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+               sResult = (new XMLSerializer()).serializeToString(oData.data);
+            } else {
+               // If it's already a string, use it directly
+               sResult = oData.data;
+            }*/
+
+            /*console.log(oData.data);
+            let sValue = JSON.parse(oData.data.querySelector("result").textContent);
+            sResult = sValue.key;
+            oDocument_g.key_ = sResult;
+            */
+
+            // If oData.data is an XML Document object, serialize it to string
+            if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+               //sResult = (new XMLSerializer()).serializeToString(oData.data);
+
+               // ## query results element
+               eResults = oData.data.querySelector('results');                   // get results element holding result elements
+            } else {
+               // If it's already a string, use it directly
+               sResult = oData.data;
+            }
+
+            break;
+         case 'text':
+            sResult = oData.data;
+            break;
+         default:
+            console.error("Unknown response type:", oData.type);
+      }
+      
+
+      if(eResults)
+      {
+         if( sOperation === "select-polls")
+         {
+            const eSelect = eResults.querySelector('result[command="select"]');
+            const aPoll = JSON.parse(eSelect.textContent);
+            aPoll.shift();
+
+            let oTable = oDocument_g.GetTable("search");
+            if(!oTable)
+            {
+               oTable = new Table(["id", "name", "header"], {sName: "search"} );
+               oDocument_g.AddTable(oTable);
+            }
+            else
+            {
+               oTable.Clear();
+            }
+
+            // loop array and add rows to table
+            for(const aRow of aPoll) {oTable.Add(aRow);}
+
+            PAGE_Update("search");
+         }
+      }
+
+      
+   }
+   </script>
+</body>
+</html>
