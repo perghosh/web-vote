@@ -83,7 +83,8 @@ class CDocument {
    }
 
    // Add a record, returns the id -------------------------------------------
-   AddRecord( oRecord, sId = crypto.randomUUID() ) {
+   AddRecord( oRecord, sId = null ) {
+      if( !sId ) { sId = CDocument.GenerateUUID(); }  
       oRecord.sId = sId;
       this.mapRecord.set( sId, oRecord );
       return sId;
@@ -111,7 +112,8 @@ class CDocument {
    }
 
    // Add a table, returns the id --------------------------------------------
-   AddTable( oTable, sId = crypto.randomUUID() ) {
+   AddTable( oTable, sId = null ) {
+      if( !sId ) { sId = CDocument.GenerateUUID(); }  
       oTable.sId = sId;
       this.mapTable.set( sId, oTable );
       return sId;
@@ -137,6 +139,22 @@ class CDocument {
       let oTable = this.mapTable.get( sId );                                                       console.assert( oTable, `No table found with id "${sId}"` );
       return oTable ?? null;
    }
+
+   // Generate a UUID that works in both HTTP and HTTPS -----------------------
+   static GenerateUUID() {
+      // Try crypto.randomUUID() first (secure contexts)
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+         try { return crypto.randomUUID(); } 
+         catch(e) {}
+      }
+      
+      // Fallback: RFC4122 version 4 compliant UUID
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+         const r = Math.random() * 16 | 0;
+         const v = c === 'x' ? r : (r & 0x3 | 0x8);
+         return v.toString(16);
+      });
+   }   
 }
 
 /** --------------------------------------------------------------------------- XML_GetFirstValue
