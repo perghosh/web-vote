@@ -94,7 +94,7 @@ local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip
 local sPollK = request:GetClientValue("PollK") -- print("GetClientValue PollK: " .. sPollK)
 
 local bCanVote = CanVote(sBinaryIp, sPollK)                                    -- Check if user can vote
-bCanVote = true                                                                -- @TODO Remove after testing, allows voting multiple times from same IP
+-- bCanVote = true                                                                -- @TODO Remove after testing, allows voting multiple times from same IP
 if bCanVote then
    -- ## Insert vote into TPollTie to tie votes together
    local database = request:GetDatabase()

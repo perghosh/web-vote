@@ -143,7 +143,7 @@ class CDocument {
    // Generate a UUID that works in both HTTP and HTTPS -----------------------
    static GenerateUUID() {
       // Try crypto.randomUUID() first (secure contexts)
-      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      if(typeof crypto !== 'undefined' && crypto.randomUUID) {
          try { return crypto.randomUUID(); } 
          catch(e) {}
       }
@@ -434,7 +434,7 @@ function FIELD_CopyValues( source_, target_, aName )
          const eTargetElement = eTarget.querySelector(`[data-field="${sFieldName}"]`);
          if(eTargetElement) {
             const sValue = source_[sFieldName];
-            if (eTargetElement.matches("input, textarea, select")) { eTargetElement.value = sValue ?? ""; }
+            if(eTargetElement.matches("input, textarea, select")) { eTargetElement.value = sValue ?? ""; }
             else { eTargetElement.textContent = sValue ?? ""; }
          }
       });
@@ -449,7 +449,7 @@ function FIELD_CopyValues( source_, target_, aName )
 
       const eTargetElement = eTarget.querySelector(`[data-field="${sFieldName}"]`);
       if(eTargetElement) {
-         if (eTargetElement.matches("input, textarea, select")) { eTargetElement.value = eSourceElement.value ?? ""; }
+         if(eTargetElement.matches("input, textarea, select")) { eTargetElement.value = eSourceElement.value ?? ""; }
          else { eTargetElement.textContent = eSourceElement.value ?? eSourceElement.textContent ?? ""; }
       }
    });
@@ -554,4 +554,133 @@ function THEME_Select( sTheme, options_ = {}, bReturnKeys = false ) {
    if( bReturnKeys === true ) { return Object.keys( oValue ); }
 
    return sSelectedValue;
+}
+
+
+
+/** --------------------------------------------------------------------------- ELEMENT_Show
+ * Show/hide elements based on whether they contain specific keywords in their
+ * data-page-state attribute.
+ *
+ * Elements with data-page-state attribute can have one or more space-separated
+ * keywords. If any keyword matches the requested visibility keywords, the
+ * element is shown; otherwise it is hidden.
+ *
+ * This provides a declarative way to control visibility based on page state
+ * without scattering visibility logic across CSS or multiple JS files.
+ *
+ * @param {string|string[]} words_ - Single keyword string or array of keywords
+ * @param {Object} [oOptions={}] - Optional configuration
+ * @param {string|Element} [oOptions.eContainer="#idPage"] - Container element or selector to search within
+ * @param {boolean} [oOptions.bShowByDefault=false] - If true, elements without data-page-state are shown; if false, they are hidden
+ * @param {string} [oOptions.sAttribute="data-page-state"] - Attribute name containing visibility keywords
+ * @returns {Array<Element>} Array of elements that are visible after applying visibility
+ *
+ * @example
+ * // Show only elements marked with "cast" state
+ * ELEMENT_Show("cast");
+ *
+ * // Show elements marked with either "cast" or "results"
+ * ELEMENT_Show(["cast", "results"]);
+ *
+ * // Search within a specific container
+ * ELEMENT_Show("admin", { eContainer: "#idAdminPanel" });
+ *
+ * // Hide elements without data-page-state by default
+ * ELEMENT_Show("closed", { bShowByDefault: false });
+ */
+function ELEMENT_Show(words_, oOptions = {}) {
+   // ## Normalize keywords to array for consistent processing
+   const aKeywords = Array.isArray(words_) ? words_ : [String(words_).trim()];
+   if(aKeywords.length === 0) { console.warn("ELEMENT_Show: No keywords provided"); return []; }
+
+   // ## Set default options
+   const oDefault = { eContainer: "#idPage", bShowByDefault: false, sAttribute: "data-page-state" };
+   const o_ = Object.assign({}, oDefault, oOptions);
+
+   // ## Resolve container element ............................................
+   let eContainer;
+   if(o_.eContainer instanceof Element) { eContainer = o_.eContainer; } 
+   else if(typeof o_.eContainer === "string") { 
+      eContainer = document.querySelector(o_.eContainer);
+      console.assert(eContainer, `ELEMENT_Show: Container not found: "${o_.eContainer}"`);
+      if(!eContainer) return [];
+   }
+   else { console.error("ELEMENT_Show: Invalid container type"); return []; }
+
+   // ## Create Set for O(1) keyword lookup
+   const oKeywordSet = new Set(aKeywords.map(s => s.toLowerCase().trim()));
+
+   // ## Find all elements with the target attribute
+   const aTarget = eContainer.querySelectorAll(`[${o_.sAttribute}]`);
+   const aVisible = [];
+
+   // ## Process each element
+   aTarget.forEach(eElement => {
+      const sStateValue = eElement.getAttribute(o_.sAttribute);
+      if(!sStateValue) return;
+
+      // Split space-separated keywords and check for matches
+      const aElementKeywords = sStateValue.toLowerCase().split(/\s+/);
+      const bHasMatch = aElementKeywords.some(sKeyword => oKeywordSet.has(sKeyword));
+
+      if(bHasMatch === true) {
+         // Show element: restore original display value
+         if(eElement.dataset.originalDisplay) {
+            eElement.style.display = eElement.dataset.originalDisplay;
+            delete eElement.dataset.originalDisplay;
+         } else {
+            eElement.style.display = "";
+         }
+         aVisible.push(eElement);
+      } 
+      else {
+         // Hide element but preserve original display value
+         if(eElement.style.display !== "none") {
+            eElement.dataset.originalDisplay = window.getComputedStyle(eElement).display;
+         }
+         eElement.style.display = "none";
+      }
+   });
+
+   // ## Handle elements without the attribute based on bShowByDefault
+   if(o_.bShowByDefault === false) {
+      const aElementsWithoutState = eContainer.querySelectorAll(`:not([${o_.sAttribute}])`);
+      aElementsWithoutState.forEach(eElement => {
+         // Skip the container itself and any elements that might be parent wrappers
+         if(eElement === eContainer) return;
+         if(eElement.closest(`[${o_.sAttribute}]`)) return;                   // Skip children of state-managed elements
+         
+         // Preserve original display value before hiding
+         if(eElement.style.display !== "none") {
+            eElement.dataset.originalDisplay = window.getComputedStyle(eElement).display;
+         }
+         eElement.style.display = "none";
+      });
+   }
+   else {
+      // Restore visibility for elements without state attribute
+      const aHiddenElements = eContainer.querySelectorAll(`:not([${o_.sAttribute}])[style*="display: none"]`);
+      aHiddenElements.forEach(eElement => {
+         if(eElement.dataset.originalDisplay) {
+            eElement.style.display = eElement.dataset.originalDisplay;
+            delete eElement.dataset.originalDisplay;
+         } else {
+            eElement.style.display = "";
+         }
+      });
+   }
+
+   // ## Dispatch custom event for listeners to react to visibility change ....
+   const oEvent = new CustomEvent("gd-visibility", {
+      detail: {
+         keywords: aKeywords,
+         visibleCount: aVisible.length,
+         totalManaged: aTarget.length,
+         container: eContainer
+      }
+   });
+   eContainer.dispatchEvent(oEvent);
+
+   return aVisible;
 }
