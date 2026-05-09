@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poll Result</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f4f0;
+    padding: 2rem;
+    color: #1a1a1a;
+  }
+
+  .poll-block {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem 1.75rem;
+    max-width: 680px;
+    border: 0.5px solid #e0ddd6;
+  }
+
+  .poll-question {
+    font-size: 16px;
+    font-weight: 500;
+    color: #1a1a1a;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+  }
+
+  .answer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .answer-row {
+    padding: 1rem 0;
+    border-top: 0.5px solid #e8e6e0;
+  }
+
+  .answer-row:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .answer-label {
+    font-size: 14px;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  /* Bar group: one or more bars stacked vertically */
+  .bar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .bar-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-segment-label {
+    font-size: 11px;
+    color: #888;
+    min-width: 58px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 10px;
+    background: #eeece7;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.4s ease;
+  }
+
+  .bar-fill--all     { background: #3a7fd5; }
+  .bar-fill--women   { background: #1d9e75; }
+  .bar-fill--men     { background: #e07b39; }
+  /* Add more segment variants as needed */
+
+  .bar-pct {
+    font-size: 13px;
+    color: #555;
+    min-width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!--
+  POLL RESULT COMPONENT
+  =====================
+  Structure per answer:
+    .answer-row
+      .answer-label        — the answer text
+      .bar-group           — holds one or more .bar-line elements
+        .bar-line          — one comparison segment (e.g. "Alla", "Kvinnor")
+          .bar-segment-label  — group name (hidden when only one bar)
+          .bar-track
+            .bar-fill      — width set inline as a percentage
+          .bar-pct         — percentage label
+-->
+
+<div class="poll-block" data-table="TPollQuestion" data-field="PollQuestionK" data-value="05059A4B5F34466E32E94EEFD9181A53">
+
+  <h2 class="poll-question" data-field="FName">
+    Vilken fråga är viktigast för dig inför valet 2026?
+  </h2>
+
+  <div class="answer-list" data-section="answer">
+
+    <!-- Answer 1: no votes -->
+    <div class="answer-row" data-table="TPollAnswer">
+      <p class="answer-label" data-field="FAnswer">
+        Lag och ordning (bekämpa gängkriminalitet och öka tryggheten).
+      </p>
+      <div class="bar-group">
+        <div class="bar-line">
+          <span class="bar-segment-label" data-segment="all">Alla</span>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill--all" style="width: 0%;" data-field="percent" data-segment="all"></div>
+          </div>
+          <span class="bar-pct" data-field="percent" data-segment="all">0%</span>
+        </div>
+        <!-- Example: second bar when filter is active. Remove or hide when not comparing. -->
+        <!--
+        <div class="bar-line">
+          <span class="bar-segment-label" data-segment="women">Kvinnor</span>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill--women" style="width: 12%;" data-field="percent" data-segment="women"></div>
+          </div>
+          <span class="bar-pct" data-field="percent" data-segment="women">12%</span>
+        </div>
+        -->
+      </div>
+    </div>
+
+    <!-- Answer 2: 29% -->
+    <div class="answer-row" data-table="TPollAnswer">
+      <p class="answer-label" data-field="FAnswer">
+        Välfärden (kortare vårdköer och ökad likvärdighet i skolan).
+      </p>
+      <div class="bar-group">
+        <div class="bar-line">
+          <span class="bar-segment-label" data-segment="all">Alla</span>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill--all" style="width: 29%;" data-field="percent" data-segment="all"></div>
+          </div>
+          <span class="bar-pct" data-field="percent" data-segment="all">29%</span>
+        </div>
+        <!-- Comparison bar (active when filter applied) -->
+        <div class="bar-line">
+          <span class="bar-segment-label" data-segment="women">Kvinnor</span>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill--women" style="width: 44%;" data-field="percent" data-segment="women"></div>
+          </div>
+          <span class="bar-pct" data-field="percent" data-segment="women">44%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Answer 3: 71% -->
+    <div class="answer-row" data-table="TPollAnswer">
+      <p class="answer-label" data-field="FAnswer">
+        Ekonomi och tillväxt (sänkta priser, fler jobb och hantering av AI-utvecklingen).
+      </p>
+      <div class="bar-group">
+        <div class="bar-line">
+          <span class="bar-segment-label" data-segment="all">Alla</span>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill--all" style="width: 71%;" data-field="percent" data-segment="all"></div>
+          </div>
+          <span class="bar-pct" data-field="percent" data-segment="all">71%</span>
+        </div>
+        <!-- Comparison bar (active when filter applied) -->
+        <div class="bar-line">
+          <span class="bar-segment-label" data-segment="women">Kvinnor</span>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill--women" style="width: 38%;" data-field="percent" data-segment="women"></div>
+          </div>
+          <span class="bar-pct" data-field="percent" data-segment="women">38%</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.answer-list -->
+</div><!-- /.poll-block -->
+
+</body>
+</html>
