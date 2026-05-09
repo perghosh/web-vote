@@ -85,7 +85,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    let oDocument_g;
 
    function PAGE_TableUpdate() {
-      const sQueryName = "vote-poll_search";
+      //const sQueryName = "vote-poll_search";
+      const sQueryName = "list-poll";
       gd.SendToServer("", "!db/select", "query=#" + sQueryName).then(function(oResult) {
          PAGE_ProcessResponse(oResult, "select-polls");
       });
@@ -164,7 +165,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          switch(sAction) {
             case "search": {
-               const sQueryName = "vote-poll_search";
+               //const sQueryName = "vote-poll_search";
+               const sQueryName = "list-poll";
                const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
                const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
 
@@ -242,7 +244,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             let oTable = oDocument_g.GetTable("search");
             if(!oTable)
             {
-               oTable = new Table(["id", "name", "header"], {sName: "search"} );
+               oTable = new Table(["id", "Name", "Header", "Votes"], {sName: "search"} );
                oDocument_g.AddTable(oTable);
             }
             else
