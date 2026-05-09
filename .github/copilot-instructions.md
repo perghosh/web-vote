@@ -123,11 +123,9 @@ Examples:
 ```javascript
 let iCounter = 0; // counter for iterations
 
-if( iRow < 0 || iRow >= aTable.length ) {                                     // validate row index
-   return null;
-}
+if( iRow < 0 || iRow >= aTable.length ) { return null; }                       // validate row index
 
-const eTable = document.getElementById("table");                               assert( eTable !== null && "table element must exist" );
+const eTable = document.getElementById("table");                                                   assert( eTable !== null && "table element must exist" );
 ```
 
 ### Search Tags

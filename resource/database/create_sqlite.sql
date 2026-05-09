@@ -402,6 +402,81 @@ CREATE INDEX I_TPollVote_FTie ON TPollVote (FTie);
 CREATE INDEX I_TPollVote_FIp ON TPollVote (FIp);
 
 
+CREATE TABLE TLink (
+    LinkK           BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
+
+    CreateD         DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdateD         DATETIME,
+
+    -- Polymorphic link to any record.
+    table_number    INTEGER NOT NULL,           -- Reference to table_number.number
+    FKey            BLOB NOT NULL,              -- Primary key of the record (for example, PollK, UserK, OrganizationK...)
+    
+    -- Link-specific fields
+    FUrl            TEXT NOT NULL,              -- The actual link (can be http, https, mailto, tel, file:, etc.)
+    FName           VARCHAR(300),               -- Display name / title of the link
+    FDescription    TEXT,                       -- Description of what the link contains
+    
+    TypeC           INTEGER,                    -- Type of link (web, document, video, social media, API, etc.)
+    CategoryC       INTEGER,                    -- Optional additional categorization
+    
+    FOrder          INTEGER DEFAULT 0,          -- Sort order when multiple links exist on the same record
+    FTarget         VARCHAR(20) DEFAULT '_blank', -- _blank, _self, etc.
+    
+    FIdle           INTEGER DEFAULT 0,
+    FDeleted        INTEGER DEFAULT 0
+);
+
+-- Indexes (very important for performance)
+CREATE INDEX I_TLink_table_number_FKey ON TLink (table_number, FKey);
+CREATE INDEX I_TLink_FUrl ON TLink (FUrl);
+CREATE INDEX I_TLink_TypeC ON TLink (TypeC);
+CREATE INDEX I_TLink_FOrder ON TLink (table_number, FKey, FOrder);
+
+
+CREATE TABLE TImage (
+    ImageK           BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
+
+    CreateD          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdateD          DATETIME,
+
+    table_number     INTEGER NOT NULL,          -- Reference to table_number.number
+    FKey             BLOB NOT NULL,             -- Primary key of the owning record
+
+    TypeC            INTEGER,                   -- Type of image (photo, logo, banner, thumbnail, icon, etc.)
+    StateC           INTEGER,                   -- State of image
+    CategoryC        INTEGER,                   -- Optional additional categorization
+
+    FName            VARCHAR(300),              -- Display name / title
+    FDescription     TEXT,                      -- Description of the image
+    FAltText         VARCHAR(500),              -- Alt text for accessibility
+    FFileName        VARCHAR(300),              -- Original file name
+    FMimeType        VARCHAR(100),              -- image/jpeg, image/png, image/webp, etc.
+
+    FUrl             TEXT,                      -- URL or relative path if file is stored outside the DB
+    FPath            TEXT,                      -- Optional local/server path
+    FData            BLOB,                      -- Binary image data if stored inside SQLite
+
+    FWidth           INTEGER,                   -- Pixel width
+    FHeight          INTEGER,                   -- Pixel height
+    FSize            INTEGER,                   -- File size in bytes
+
+    FChecksum        VARCHAR(128),              -- Optional hash for deduplication
+    FIsPrimary       INTEGER DEFAULT 0,         -- Marks the main image for the owning record
+    FOrder           INTEGER DEFAULT 0,         -- Sort order when multiple images exist
+
+    FIdle            INTEGER DEFAULT 0,
+    FDeleted         INTEGER DEFAULT 0
+);
+
+CREATE INDEX I_TImage_table_number_FKey ON TImage (table_number, FKey);
+CREATE INDEX I_TImage_TypeC ON TImage (TypeC);
+CREATE INDEX I_TImage_FIsPrimary ON TImage (table_number, FKey, FIsPrimary);
+CREATE INDEX I_TImage_FOrder ON TImage (table_number, FKey, FOrder);
+CREATE INDEX I_TImage_FChecksum ON TImage (FChecksum);
+
+
+
 CREATE TABLE TThreadHeader (
     ThreadHeaderK BLOB NOT NULL
     ,ThreadK BLOB NOT NULL
@@ -456,6 +531,11 @@ INSERT INTO table_number (number, name, description) VALUES (1100, 'TPollQuestio
 INSERT INTO table_number (number, name, description) VALUES (1110, 'TPollAnswer', 'Poll answers table');
 INSERT INTO table_number (number, name, description) VALUES (1120, 'TPollTie', 'Connect votes for polls with multiple questions');
 INSERT INTO table_number (number, name, description) VALUES (1130, 'TPollVote', 'Votes for poll answers');
+INSERT INTO table_number (number, name, description) VALUES (1200, 'TLink', 'Table for storing links related to any record');
+INSERT INTO table_number (number, name, description) VALUES (1300, 'TImage', 'Table for storing images related to any record');
+INSERT INTO table_number (number, name, description) VALUES (1400, 'TThreadHeader', 'Table for storing thread headers for nested comments');
+INSERT INTO table_number (number, name, description) VALUES (1410, 'TThread', 'Table for storing thread entries for nested comments');
+INSERT INTO table_number (number, name, description) VALUES (1500, 'TSystemStatement', 'Table for storing predefined system statements');
 
 
 -- TCodeGroup inserts for code groups

@@ -13,6 +13,13 @@ PAGE_Load - Load poll information from the server and store it in the document
 PAGE_RenderPoll - Render poll information, questions, and answers on the page based on data stored in the document
 PAGE_Validate - Validate user input before sending votes to server, ensuring required number of answers are selected for each question
 
+## Queries used in page:
+========================
+#cast-poll - Fetches poll information based on poll key
+#cast-poll_questions - Fetches questions for the poll based on poll key
+#cast-poll_answers - Fetches answers for the questions in the poll based on poll key
+#cast-check_if_voted - Checks if the user has already voted in the poll based on poll key and client IP
+
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -69,14 +76,20 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
     -->
    <div id="idPage" class="page-container container page" data-section="page">
       <!-- Poll information -->
-      <div id="idPoll" class="container-view margin_b-small page-poll-frame page-poll-header">
+      <div id="idPoll" class="container-view margin_b-small page-poll-frame page-poll-header" data-page-state="cast">
          <h1 class="page-poll-title" data-field="FName">Poll Title</h1>
          <p class="page-poll-description" data-field="FDescription">Poll description goes here...</p>
       </div>
 
-      <div id="idPollCommand">
+      <div id="idPollCommand" data-page-state="cast">
          <button class="button-primary page-command" data-command="insert" data-action="cast-vote" data-table="TPoll">Press to Vote</button>
       </div>
+
+      <div class="container-view margin_b-small page-poll-frame page-poll-header page-auto_hide" data-page-state="voted">
+         <h2 class="page-poll-title">You have already voted in this poll</h2>
+         <p class="page-poll-description">Thank you for your participation!</p>
+         <!-- link to vote result -->
+         <a id="idGotoResult" href="#" class="page-poll-link">View Results</a>
    </div>
 
 
@@ -126,6 +139,7 @@ gd.SetBaseUrl(sBaseUrl_g);
 // ## Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
    THEME_Select("color", {});
+   ELEMENT_Show("cast");
    PAGE_Initialize();
    PAGE_SetListeners();
 });
@@ -158,13 +172,15 @@ function PAGE_Initialize() {
       console.log("Client IP obtained from server:", oIp.ip);
       const oValues = { PollK: sPollK, Ip: oIp.ip };
       gd.SendToServer("", "!db/select", "query=#cast-check_if_voted\nvalues=" + JSON.stringify(oValues)).then((oResult) => {
-         const oVoteCheck = XML_GetFirstValue( oResult, undefined, "object" );
-         if( oVoteCheck.hasVoted === true ) {
-            oToast_g.Show("You have already voted in this poll. Thank you for your participation!");
-            /*
-            const eCommandSection = document.querySelector(`[data-section="command"]`);
-            if( eCommandSection ) { eCommandSection.remove(); } // Remove command section to prevent voting again
-            */
+         const aVoteCheck = XML_GetFirstValue( oResult, undefined, "object" );
+         if( Number(aVoteCheck[1][0]) > 0 ) {
+            //oToast_g.Show("You have already voted in this poll. Thank you for your participation!");
+            ELEMENT_Show("voted");
+            const eGotoResult = document.getElementById("idGotoResult");
+            if( eGotoResult ) {
+               const sResultUrl = `page_cast_result.html?PollK=${sPollK}`;
+               eGotoResult.setAttribute("href", sResultUrl);
+            }
          }
       }).catch((error) => {
          console.error("Failed to check if user has already voted:", error);

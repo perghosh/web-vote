@@ -94,7 +94,7 @@ local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip
 local sPollK = request:GetClientValue("PollK") -- print("GetClientValue PollK: " .. sPollK)
 
 local bCanVote = CanVote(sBinaryIp, sPollK)                                    -- Check if user can vote
--- bCanVote = true                                                                -- @TODO Remove after testing, allows voting multiple times from same IP
+bCanVote = true                                                                -- @TODO Remove after testing, allows voting multiple times from same IP
 if bCanVote then
    -- ## Insert vote into TPollTie to tie votes together
    local database = request:GetDatabase()
@@ -103,7 +103,7 @@ if bCanVote then
    sql:AddColumn({name = "FIp", value = sBinaryIp, type = "binary"})
    local sInsert = sql:AsInsert({ table = "TPollTie", returning = "PollTieK" })
    local sKey = database:ExecuteReturn(sInsert);
-   request:SetScriptValue("FTie", sKey)
+   request:SetScriptValue("TPollVote.FTie", sKey)
    return
 end
 
