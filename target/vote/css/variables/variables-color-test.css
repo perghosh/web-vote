@@ -40,4 +40,10 @@
    --background-disabled: var(--background-secondary); /* background for disabled elements */
    --color-active: var(--color-primary); /* color for active elements */
    --color-disabled: var(--color-secondary); /* color for disabled elements */
+
+   /* Charts */
+   --chart-background: var(--color-border);
+   --chart-primary: var(--background-success);
+   --chart-secondary: var(--background-info);
+   --chart-line: var(--background-primary);
 }

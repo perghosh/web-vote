@@ -88,6 +88,12 @@ Perfect for organic, rustic, or natural-feeling interfaces like your poll editor
    --color-brief: #DEB887;
    --color-default: #D4C5A9;
    --color-line: #CB8553;
+
+   /* Charts */
+   --chart-background: var(--color-border);
+   --chart-primary: var(--background-success);
+   --chart-secondary: var(--background-info);
+   --chart-line: var(--background-primary);
 }
 
 /* ==================== FLOATING LABELS ==================== */

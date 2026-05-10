@@ -85,4 +85,10 @@
 
    --background-disabled: #d4b8e9;
    --color-disabled: #6b7280;
+
+   /* Charts */
+   --chart-background: var(--color-border);
+   --chart-primary: var(--background-success);
+   --chart-secondary: var(--background-info);
+   --chart-line: var(--background-primary);
 }
