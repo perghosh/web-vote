@@ -121,7 +121,7 @@ GROUP BY TPollVote.PollAnswerK
 ]]></statement>      
 
    <!-- Count votes from poll -->
-   <statement name="list-poll" type="select" description="Count totalvotes of poll">SELECT hex(TPoll.PollK) AS PollK, TPoll.FName, TPoll.FHeader, (SELECT COUNT(DISTINCT TPollVote.FTie) FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK JOIN TPollQuestion ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK WHERE TPollQuestion.PollK = TPoll.PollK) AS TotalVotes FROM TPoll</statement>
+   <statement name="list-poll" type="select" description="Count totalvotes of poll">SELECT hex(TPoll.PollK) AS PollK, TPoll.FName, TPoll.FDescription, (SELECT COUNT(DISTINCT TPollVote.FTie) FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK JOIN TPollQuestion ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK WHERE TPollQuestion.PollK = TPoll.PollK) AS TotalVotes FROM TPoll</statement>
 
    </statements>
 
