@@ -1,5 +1,5 @@
 <!--
-## Edit poll questions and answers for each question.
+@FILE [tag: result] [description: page for displaying poll results after voting] [name: page_cast_result.html]
 
 Importanbt data attributes are data-action, data-section. These are both used for
 command and simplify navigation in page.
@@ -10,9 +10,9 @@ PAGE_ Method documentation:
 PAGE_Initialize - Initialize the page by creating necessary objects and loading initial data
 PAGE_SetListeners - Set event listeners for user interactions on the page
 PAGE_Load - Load poll information from the server and store it in the document
-PAGE_RenderPoll - Render poll information, questions, and answers on the page based on data stored in the document
-
+PAGE_Render - Render the poll results on the page using the loaded data
 -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,63 +28,53 @@ PAGE_RenderPoll - Render poll information, questions, and answers on the page ba
     <script src="js/gd_db.js"></script>
     <script src="js/gd_server.js"></script>
     <script src="js/document.js"></script>
-    <title>Login - Web Vote</title>
+    <title>Result and filter - Web Vote</title>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      .vote-answer { border: 1px solid var(--color-border); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
-      
-      
-      .vote-answer-input { height: 1px; opacity: 0; position: absolute; width: 1px; }
-      
-      
-      
-      .vote-answer-option { align-items: center; justify-content: center; cursor: pointer; display: flex; gap: 12px; user-select: none; width: 100%; }
-      .vote-answer-text { color: var(--color-body); font-size: 1rem; line-height: 1.4; }
-      .vote-answer:hover { border-color: var(--color-border-dark); transform: translateY(-1px); }
-
       .page-command { align-items: center; border: none; border-radius: 80px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); cursor: pointer; display: flex; font-family: inherit; font-size: 1.2rem; font-weight: 600; gap: 12px; justify-content: center; padding: 1rem 0; transition: all 0.2s ease; width: 100%; }
-
-
       @media (max-width: 640px) { .vote-answer-box { margin-top: 1px; } .vote-answer-option { align-items: flex-start; } }
+      .page-bar { background: var(--chart-background, var(--color-border)); border-radius: 12px; height: 24px; overflow: hidden; position: relative; width: 100%; }
+      .page-fill { background: var(--chart-primary, var(--background-success)); border-radius: 12px; height: 100%; position: relative; z-index: 1; }
+      .page-fill-filter { background: var(--chart-secondary, var(--background-info)); border-radius: 999px; height: 50%; left: 0; position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; }
 
-   .bar {
-      width: 100%;
-      height: 24px;
-      background: #e2e8f0;
-      border-radius: 12px;
-      overflow: hidden;
-   }
+      .page-answer-block { padding-bottom: 16px; margin-bottom: 12px; }
+      .page-answer-block:not(:last-child) { border-bottom: 1px solid var(--color-border); }
 
-   .fill {
-      height: 100%;
-      background: #10b981;
-      border-radius: 12px;
-   }
+      .page-answer-row { align-items: center; column-gap: 14px; display: grid; grid-template-columns: 88px 1fr; }
+      .page-answer-percentage { align-items: center; color: var(--chart-line, var(--color-active)); display: flex; font-size: 1.45rem; font-weight: 700; justify-content: flex-end; line-height: 1; min-height: 54px; }
+      .page-answer-content { display: grid; gap: 8px; }
+      .page-answer-content [data-field="FAnswer"] { margin-bottom: 0; }
+
+      .page-count-marker { background: var(--chart-line, var(--background-primary)); border-radius: 999px; color: var(--color-primary); display: inline-flex; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; margin-left: 10px; padding: 4px 10px; text-transform: uppercase; vertical-align: middle; }
+      .page-count-marker [data-field="VoteCount"] { margin-right: 4px; }
+      @media (max-width: 640px) { .page-answer-row { grid-template-columns: 72px 1fr; } .page-answer-percentage { font-size: 1.2rem; } }
     </style>
 </head>
 <body>
    <!--
-    | ## Page Container for casting votes
+    | ## Page Container for poll result
     -->
    <div id="idPage" class="page-container container page" data-section="page">
-      <!-- Message container for displaying validation messages or other information to the user, default is hidden -->
-      <div id="idPageMessage" style="display: none;"></div>
       <!-- Poll information -->
       <div id="idPoll" class="container-view margin_b-small">
-         <h1 data-field="FName">Poll Title</h1>
+         <h1><span data-field="FName">Poll Title</span><span class="page-count-marker"><span data-field="VoteCount">0</span>votes</span></h1>
          <p data-field="FDescription">Poll description goes here...</p>
       </div>
+      <!-- Questions and answers will be rendered here -->
+      <div id="idQuestions" class="margin_b-small">
+         <!-- Question and answer templates will be rendered here based on loaded data -->   
+      </div>          
    </div>
 
-   
-   <template id="idTemplateQuestion" data-description="template for generating question information based on possible questions added to poll">
+   <!--
+    | ## Poll question container
+    -->
+   <template id="idTemplateQuestion" data-description="question template">
       <div class="container-view margin_b-large" data-table="TPollQuestion">
-         <div data-table="TPollQuestion" data-field="PollQuestionK" data-value="" data-description="key for question">
+         <div data-field="PollQuestionK" data-value="" data-table="TPollQuestion" data-description="key for question">
             <div data-section="record" data-table="TPollQuestion">
-               <h2 class="margin_b-small" data-field="FName">Question name</h2>
+               <h3 class="margin_b-small" data-field="FName">Name...</h3>
                <p class="margin_b-small" data-field="FQuestion">Question text goes here...</p>
-               <input type="hidden" value="1" data-field="FMinSelect"> <!-- Min selectable answers for this question -->
-               <input type="hidden" value="1" data-field="FMaxSelect"> <!-- Max selectable answers for this question -->
             </div>
             <div data-section="answer" class="margin_b-small">
                <!-- Answer options will be appended here based on answers linked to this question -->
@@ -93,39 +83,31 @@ PAGE_RenderPoll - Render poll information, questions, and answers on the page ba
       </div>
    </template>
 
-   <template id="idTemplateAnswer" data-description="template for generating answer information based on possible answers added to question"> 
-    <div class="row" style="display: flex; gap: 10px;">
-        <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer" style="width: 40%;">
-            <label class="vote-answer-option" data-description="single selectable answer option">
-            <!--<input class="vote-answer-input" type="checkbox" data-value="" value="" data-field="PollAnswerK">
-            <span class="vote-answer-box" aria-hidden="true"></span>-->
-            <span class="vote-answer-text" data-field="FAnswer">Answer text goes here...</span>
-            </label>
-            <input type="hidden" value="" data-field="PollQuestionK">
-        </div>
-
-        <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer" style="width: 40%; display: flex; gap: 5px">
-            <label class="vote-answer-option" data-description="single answer count" style="display: flex; width: 100%;">
-               <div class="bar" style="flex: 1">
-                  <div class="fill" style="width: 0%"></div>
+   <!--
+    | ## Poll answer container
+    -->
+   <template id="idTemplateAnswer" data-description="answer template">
+      <div class="page-answer-block" data-table="TPollAnswer">
+         <div data-field="PollAnswerK" data-value="" data-table="TPollAnswer" data-description="key for answer">
+            <div data-section="record" data-table="TPollAnswer">
+               <div class="page-answer-row">
+                  <div class="page-answer-percentage" data-field="VotePercent">0%</div>
+                  <div class="page-answer-content">
+                     <p class="margin_b-small" data-field="FAnswer">Answer text goes here...</p>
+                     <div class="page-bar" data-field="VoteCount" data-value="">
+                        <div data-target="bar" class="page-fill" style="width: 50%;"></div>
+                        <div data-target="bar-filter" class="page-fill-filter"></div>
+                     </div>
+                  </div>
                </div>
-
-            <span class="vote-answer-text" data-field="percent" style="text-align: right; min-width: 45px;">0%</span>
-            </label>
-        </div>
-
-        <div class="container-view-sub vote-answer margin_b-small" data-table="TPollAnswer" style="width: 20%;">
-            <label class="vote-answer-option" data-description="single answer count">
-
-            <span class="vote-answer-text" data-field="count">0 Votes</span>
-            </label>
-        </div>
-    </div>  
-    
+            </div>
+         </div>
+      </div>
    </template>
 
 
-   <script>
+
+<script>
 'use strict';
 
 let oDocument_g; // Global document object
@@ -139,7 +121,7 @@ gd.SetBaseUrl(sBaseUrl_g);
 document.addEventListener('DOMContentLoaded', function() {
    THEME_Select("color", {});
    PAGE_Initialize();
-   PAGE_SetListeners();
+   //PAGE_SetListeners();
 });
 
 /** --------------------------------------------------------------------------- PAGE_Initialize
@@ -149,290 +131,128 @@ function PAGE_Initialize() {
    oDocument_g = new CDocument({});                                           // Create new document
    oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
 
-   let sPollKey = null; // Get poll key from url parameters if available, otherwise use null to fetch first poll
+   let sPollK = null; // Get poll key from url parameters if available, otherwise use null to fetch first poll
 
    // try to get poll key from url parameters, if not available use null to fetch first poll
    const oUrlParameter = new URLSearchParams(window.location.search);
-   sPollKey = oUrlParameter.get("PollK") || oUrlParameter.get("key") || null;
-   if( !sPollKey || sPollKey.length !== 32 ) {
-      console.warn("No poll key or invalid poll key provided in URL parameters, fetching first poll");
-      sPollKey = null; // Set to null to fetch first poll
+   sPollK = oUrlParameter.get("PollK") || oUrlParameter.get("key") || null;
+   if( !sPollK || sPollK.length !== 32 ) { console.warn("No poll key or invalid poll key provided in URL parameters, fetching first poll");
+      sPollK = null;                                                           // Set to null to fetch first poll
    }
-   else {
-      oDocument_g.SetValue("PollKey", sPollKey);                              // Store poll key in document for later use
+   else { oDocument_g.SetValue("PollK", sPollK); }                            // Store poll key in document for later use
+
+   if( sPollK ) {
       PAGE_Load();                                                            // Load poll information and display it on the page
    }
 }
 
-function PAGE_SetListeners() {
-   // ## Set listener for cast vote button
-   const ePage = document.querySelector('[data-section="page"]'); // get page container that holds the complete page
-   ePage.addEventListener("click", function(e_) {
-      const eTarget = e_.target;
-
-      const sCommand = eTarget.dataset.command;
-      if( !sCommand ) return;                                                 // If no command is defined, return
-
-      const sAction = eTarget.dataset.action;                                                      console.assert( sAction, "Action is not defined in data-action attribute" );
-      const sTableName = eTarget.dataset.table;                                                    console.assert( sTableName, "Table name is not defined in data-table attribute" );
-   });
-}
-
 /** --------------------------------------------------------------------------- PAGE_Load
  * Load poll information from the server and store it in the document
- * 
- * This function fetches all necessary information for the poll, including poll
- * details, questions, and answers. It executes multiple queries in parallel to
- * optimize loading time. The results are stored in the document for later use
- * when rendering the poll on the page.
  */
 async function PAGE_Load() {
-   const sPollKey = oDocument_g.GetValue("PollKey");                           console.assert(sPollKey, "Poll key is not set in document");
+   const sPollK = oDocument_g.GetValue("PollK");                              // Get poll key from document
+   const aColumn = ["TPoll","PollK", sPollK ];                                // table, column and value to fetch poll information
 
-   const aColumn = ["TPoll","PollK", sPollKey]; // table, column and value, order is important, table, field and value
-      const aQueryName = ["cast-poll", "cast-poll_questions", "cast-poll_answers", "cast-poll_votes"];
-   
-   try {
-      // ## Execute all queries in parallel
-      const aTable = await Promise.all(aQueryName.map(async (sQueryName) => {
-         //const sArguments = `query=#${sQueryName}`+ "\n" + `columns=[${JSON.stringify(aColumn)}]`;
-         const oResult = await gd.Send("!db/select?", { query: `#${sQueryName}`, columns: JSON.stringify(aColumn) }); // Execute query to fetch data for poll, questions, answers, and votes
-         //const oResult = await gd.SendToServer("", "!db/select?ui=1&", `query=#${sQueryName}\nvalues={"PollK":"${sPollKey}"}`);
-         const data_ = oResult.data;
+   // ## Fetch poll information ...............................................
 
-         const eResult = data_.querySelector("result") || console.error("No result element found in response for query:", sQueryName, "Response data:", data_);
-         const sResultName = eResult.getAttribute("name");
-         const sResultId = eResult.getAttribute("id");
-         let sResultUi = eResult.getAttribute("ui");
+   const fnLoadTable = async (sQueryName, sTableName) => {
+      try {
+         const oResult = await gd.Send("!db/select?", { query: `#${sQueryName}`, columns: JSON.stringify(aColumn) });
+         const eResult = oResult?.data?.querySelector("result");
+         if( !eResult ) {
+            console.error("No result element found in response for query:", sQueryName, "Response data:", oResult?.data);
+            return null;
+         }
 
-         let oTable; // Generated table from result
+         if( !eResult.textContent ) { console.error("No data found in result for query:", sQueryName, "Result element:", eResult); return null; }
+
          const aResult = JSON.parse(eResult.textContent);
-         if( eResult.textContent ) { oTable = new Table(aResult);}
-         else { console.error("No data found in result for query:", sQueryName, "Result element:", eResult); }
-         
-         if (sQueryName === "cast-poll") { oTable.name = "TPoll"; }
-         else if (sQueryName === "cast-poll_questions") { oTable.name = "TPollQuestion"; }
-         else if (sQueryName === "cast-poll_answers") { oTable.name = "TPollAnswer"; }
-         else if (sQueryName === "cast-poll_votes") { oTable.name = "TPollVote"; }
-         
+         const oTable = new Table(aResult);
+         oTable.name = sTableName;
+         oTable.SetProperty("query", sQueryName);
          oDocument_g.AddTable(oTable);
          return oTable;
-      }));
+      }
+      catch( e_ ) { console.error("Failed to load table for query:", sQueryName, e_); return null;}
+   };
 
-      
-      
-      PAGE_RenderPoll();                                                      // All done - render poll information on the page
-      
-   } 
-   catch(error) { console.error("Failed to load poll data:", error); }
+   // ## Load main TPoll record ..............................................
+   const oPollTable = await fnLoadTable("cast-poll", "TPoll");
+   if( !oPollTable ) { console.error("PAGE_Load stopped: TPoll failed to load"); return; }
+   const oRecord = new DBRecordContainer(oPollTable.GetColumnInformation());
+   const oPollData = oPollTable.AsObject(0);
+   oRecord.AddValue(oPollData);
+   oRecord.WriteValues(document.getElementById("idPoll")); 
+
+   const iTotalCount = Number(oPollData.VoteCount) || 0; // Ensure VoteCount is defined for rendering
+   oDocument_g.SetValue("TotalCount", iTotalCount); // Store vote count in document for later use in rendering
+
+   // ## Load related tables for questions, answers and votes ................
+   const oPollQuestionTable = await fnLoadTable("cast-poll_questions", "TPollQuestion");
+   if( !oPollQuestionTable ) { console.error("PAGE_Load stopped: TPollQuestion failed to load"); return; }
+
+   const oPollAnswerTable = await fnLoadTable("cast-poll_answers_and_count", "TPollAnswer");
+   if( !oPollAnswerTable ) { console.error("PAGE_Load stopped: TPollAnswer failed to load"); return; }
+
+   /*
+   const oPollVoteTable = await fnLoadTable("cast-poll_votes", "TPollVote");
+   if( !oPollVoteTable ) { console.error("PAGE_Load stopped: TPollVote failed to load"); return; }
+   */
+
+   PAGE_RenderResult();                                                             // Render the page with loaded data
 }
 
-function PAGE_RenderPoll() {
-   const ePollContainer = document.getElementById("idPoll");
-   
+/** --------------------------------------------------------------------------- PAGE_Render
+ * Render the poll results on the page using the loaded data
+ */
+function PAGE_RenderResult() {
+   const iTotalCount = oDocument_g.GetValue("TotalCount");                      // Total vote count
 
-   // ## Render poll information on the page ..................................
-   {
-      const oTable = oDocument_g.GetTable("TPoll");
-      const aColumnInformation = oTable.GetColumnInformation();
-      const oRecord = new DBRecordContainer(aColumnInformation);
+   {  // ## Render all questions ...............................................
+      const tablePollQuestion = oDocument_g.GetTable("TPollQuestion");
+      const eQuestions = document.getElementById("idQuestions");
+      const recordQuestion = new DBRecordContainer(tablePollQuestion.GetColumnInformation());
 
-      // Get first row with data from table
-      const oRow = oTable.AsObject(0);
-      oRecord.AddValue(oRow);                                                  // Add values from row to record container
-
-      oRecord.WriteValues(ePollContainer);                                     // Write values from record to page elements with matching data-field attributes
-   }
-
-   // ## Render questions for poll ............................................
-   // Iterate rows for question result and generate one question element for each row
-   {
-      const oTable = oDocument_g.GetTable("TPollQuestion");
-      const aColumnInformation = oTable.GetColumnInformation();
-      const oRecord = new DBRecordContainer(aColumnInformation);
-
-      const ePollContainer = document.getElementById("idPoll");
-
-      for( let i = 0; i < oTable.GetRowCount(); i++ ) {
-         const oRow = oTable.AsObject(i);
-         oRecord.AddValue(oRow);
+      for( let i = 0; i < tablePollQuestion.GetRowCount(); i++ ) {
+         const oRow = tablePollQuestion.AsObject(i);
+         recordQuestion.AddValue(oRow);
 
          // ### Geneate html for new question
-         const eQuestion =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
-         oRecord.WriteValues(eQuestion);                                      // Write values from record to page elements with matching data-field attributes
-         ePollContainer.appendChild(eQuestion);
+         const eTemplate = document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild;
+         recordQuestion.WriteValues(eTemplate);
+
+         eQuestions.appendChild(eTemplate);
       }
    }
 
+   {  // ## Render all answers for each question ..............................
+      const tablePollAnswer = oDocument_g.GetTable("TPollAnswer");
+      const recordAnswer = new DBRecordContainer(tablePollAnswer.GetColumnInformation());
+      for( let i = 0; i < tablePollAnswer.GetRowCount(); i++ ) {
+         const oRow = tablePollAnswer.AsObject(i);
+         recordAnswer.AddValue(oRow);
 
-   // Count number of votes for each answer
-      /*const oVoteTable = oDocument_g.GetTable("TPollVote");
-
-      const oVoteCount = {};
-      let uTotalVotes = 0;
-
-      if( oVoteTable )
-      {
-         for( let i = 0; i < oVoteTable.GetRowCount(); i++)
-         {
-            const oRow = oVoteTable.AsObject(i);
-            const sAnswerKey = oRow.PollAnswerK;
-            
-            oVoteCount[sAnswerKey] = (oVoteCount[sAnswerKey] || 0) + 1;
-            uTotalVotes++;
-         }
-      }*/
-   
-   let oVoteData = [];
-
-   {
-      const oTable = oDocument_g.GetTable("TPollAnswer");
-      const oVoteTable = oDocument_g.GetTable("TPollVote");
-      const uRowCount = oTable.GetRowCount();
-
-      if( !oTable || !oVoteTable ) { return; }
-
-      for( let i = 0; i < uRowCount; i++ ) {
-         const oRow = oTable.AsObject(i); 
-         const sQuestionK = oRow.PollQuestionK;
-
-         for( let i2 = 0; i2 < oVoteTable.GetRowCount(); i2++)
-         {
-            const oRowVote = oVoteTable.AsObject(i2);
-            const uCount = Number(oRowVote.count) || 0;
-            const sAnswerKey = oRowVote.PollAnswerK;
-
-            if(sAnswerKey == oRow.PollAnswerK)
-            {
-               oVoteData.push({count: uCount, answerKey: sAnswerKey, questionKey: sQuestionK});
-            }
-         }
-      }
-      console.log(oVoteData);
-   }
-
-   {
-      //let sCurrentQuestion;
-      let oGroups = {};
-      
-      //let uTotalVotes = 0;
-      //let uVotes = 0;
-      //let iCount = 0;
-
-      oVoteData.forEach(oAnswer => {
-         const sQuestionKey = oAnswer.questionKey;
-
-         if( !oGroups[sQuestionKey] )
-         {
-            oGroups[sQuestionKey] = {
-               total: 0,
-               votes: []
-            };  
-         }
-
-         oGroups[sQuestionKey].votes.push(oAnswer);
-         oGroups[sQuestionKey].total += oAnswer.count;
-      });
-
-      Object.values(oGroups).forEach(oGroup => {
-         oGroup.votes.forEach(oVote => {
-            oVote.percent = ((oVote.count / oGroup.total) * 100).toFixed(0);
-         });
-      });
-
-      /*oVoteData.forEach(oAnswer => {
-         
-         if( iCount === 0 )
-         {
-            sCurrentQuestion = oAnswer.questionKey;
-         }
-         
-         if( sCurrentQuestion != oAnswer.questionKey )
-         {
-            let uLength = aVotes.length;
-            for(let i = 0; i < uLength; i++)
-            {
-               const uPercent = aVotes[i] / uVotes;
-               oVoteData[(iCount - uLength) + i].percent = uPercent;
-            }
-            uVotes = 0;
-            aVotes = [];
-         }
-         else
-         {
-            aVotes.push(oAnswer.count);
-            uVotes += oAnswer.count;  
-         }
-
-
-         iCount++;
-      });
-
-      let uLength = aVotes.length;
-      for(let i = 0; i < uLength; i++)
-      {
-         const uPercent = aVotes[i] / uVotes;
-         oVoteData[(iCount - uLength) + i].percent = uPercent;
-      }*/
-
-      //console.log(aVotes + uVotes);
-      console.log(oVoteData);
-   }
-   
-
-   // ## Render answers for questions .........................................
-   {
-      const oTable = oDocument_g.GetTable("TPollAnswer");
-      const uRowCount = oTable.GetRowCount();
-      const aColumnInformation = oTable.GetColumnInformation();
-      const oRecord = new DBRecordContainer(aColumnInformation);
-
-      
-
-      for( let i = 0; i < uRowCount; i++ ) {
-         const oRow = oTable.AsObject(i);
-         oRecord.AddValue(oRow);
+         const sQuestionK = oRow.PollQuestionK; // key to question
+         const eQuestion = document.querySelector(`[data-table="TPollQuestion"] [data-value="${sQuestionK}"]`); // select question bar to
 
          // ### Geneate html for new answer
-         const eAnswer =  document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
-         oRecord.WriteValues(eAnswer);                                      // Write values from record to page elements with matching data-field attributes
+         const eTemplate = document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
 
-         const sAnswerKey = oRow.PollAnswerK;
-         const oVote = oVoteData.find(vote => vote.answerKey === sAnswerKey);
-         const eFillElement = eAnswer.querySelector('.fill');
+         /// ### Calculate vote percentage for this question based on total vote count, we can use this later to render a progress bar or similar visual representation of votes for this question
+         const iVoteCount = Number(oRow.VoteCount) || 0; //
+         const dVotePercentage = iTotalCount > 0 ? (iVoteCount / iTotalCount) * 100 : 0;
+         const iVotePercentageRounded = Math.round(dVotePercentage);
 
+         const eBar = eTemplate.querySelector("[data-target='bar']");         // Select bar target and set witdth based on vote percentage
+         eBar.style.width = `${dVotePercentage}%`;
 
-         if(eFillElement)
-         {
-            if( oVote && oVote.percent ) 
-            { 
-               let percentWidth = parseFloat(oVote.percent); // i dont want decimels, i want Int value
-               percentWidth = Math.min(100, Math.max(0, percentWidth));
-
-               eFillElement.style.width = percentWidth + '%';
-            }           
-         }
-
-
-         if( oVote )
-         {
-            eAnswer.querySelector('[data-field="count"]').textContent = `${oVote.count} Votes`;
-            eAnswer.querySelector('[data-field="percent"]').textContent = `${oVote.percent}%`; 
-         }
-
-         
-         // ------
-
-         // ### Find question container for this answer and append answer element to it @CRITICAL [description: get key to question that marks question container]
-         const sQuestionKey = oRecord.GetValue("PollQuestionK");
-         const eQuestionContainer = ePollContainer.querySelector(`[data-field="PollQuestionK"][data-value="${sQuestionKey}"]`); console.assert(eQuestionContainer, "Could not find question container for answer:", oRow);
-         // #### Get anser section and add answer to it
-         const eAnswerSection = eQuestionContainer.querySelector(`[data-section="answer"]`);
-         if( eAnswerSection ) { eAnswerSection.appendChild(eAnswer); }
+         recordAnswer.WriteValues(eTemplate);
+         const eVotePercentage = eTemplate.querySelector("[data-field='VotePercent']");
+         if( eVotePercentage ) { eVotePercentage.textContent = `${iVotePercentageRounded}%`; }
+         eQuestion.appendChild(eTemplate);
       }
    }
 }
-
    </script>
 </body>
 </html>

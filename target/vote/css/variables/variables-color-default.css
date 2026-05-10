@@ -76,6 +76,12 @@
 
    /* Focus Rings */
    --focus-ring-color: rgba(0, 86, 179, 0.25);
+
+   /* Charts */
+   --chart-background: var(--color-border);
+   --chart-primary: var(--background-success);
+   --chart-secondary: var(--background-info);
+   --chart-line: var(--background-primary);
    
    /* Shadows */
    --shadow-sm: 0 .125rem .25rem rgba(0,0,0,.075);

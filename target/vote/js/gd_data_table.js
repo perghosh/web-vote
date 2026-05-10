@@ -108,6 +108,7 @@ class Table {
     * @param {boolean} [options_.bHeader=true] - When columns_ is 2D data, treat first row as header
     * @param {Array<Array>} [options_.aTable=[]] - Pre-built row data
     * @param {Array} [options_.aColumn=[]] - Pre-built column array (overrides columns_)
+   * @param {Object} [options_.oProperty={}] - Custom named table properties/metadata
     */
    constructor(columns_ = [], options_ = {}) {
       if( columns_ === undefined || columns_ === null ) { columns_ = []; }
@@ -155,11 +156,70 @@ class Table {
       }
 
       this.sName = options_.sName || ""; // Initialize name to empty string if not provided
+      this.oProperty = (options_.oProperty && typeof options_.oProperty === "object") ? Object.assign({}, options_.oProperty) : {};
    }
 
    // Getter/Setter for name property
    get name() { return this.sName; }
    set name(value) { this.sName = value; }
+
+   /** -----------------------------------------------------------------------
+    * Set custom property value on table metadata container
+    *
+    * @param {string} sName_ - Property name
+    * @param {any} vValue_ - Property value
+    * @returns {Table} Current table instance for chaining
+    */
+   SetProperty(sName_, vValue_) {
+      if( typeof sName_ !== "string" || sName_.length === 0 ) { throw new Error("SetProperty: sName_ must be a non-empty string"); }
+      this.oProperty[sName_] = vValue_;
+      return this;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Get custom property value from table metadata container
+    *
+    * @param {string} sName_ - Property name
+    * @param {any} vDefault_ - Optional default value if property is not found
+    * @returns {any} Property value or default value
+    */
+   GetProperty(sName_, vDefault_ = undefined) {
+      if( typeof sName_ !== "string" || sName_.length === 0 ) { return vDefault_; }
+      if( Object.prototype.hasOwnProperty.call(this.oProperty, sName_) === false ) { return vDefault_; }
+      return this.oProperty[sName_];
+   }
+
+   /** -----------------------------------------------------------------------
+    * Check if custom property exists in table metadata container
+    *
+    * @param {string} sName_ - Property name
+    * @returns {boolean} True if property exists, false otherwise
+    */
+   HasProperty(sName_) {
+      if( typeof sName_ !== "string" || sName_.length === 0 ) { return false; }
+      return Object.prototype.hasOwnProperty.call(this.oProperty, sName_);
+   }
+
+   /** -----------------------------------------------------------------------
+    * Remove custom property from table metadata container
+    *
+    * @param {string} sName_ - Property name
+    * @returns {boolean} True if property was removed, false otherwise
+    */
+   RemoveProperty(sName_) {
+      if( this.HasProperty(sName_) === false ) { return false; }
+      delete this.oProperty[sName_];
+      return true;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Get all custom properties from table metadata container
+    *
+    * @returns {Object} Shallow copy of all custom properties
+    */
+   GetProperties() {
+      return Object.assign({}, this.oProperty);
+   }
 
    /** -----------------------------------------------------------------------
     * Get column index for name or alias
@@ -691,7 +751,7 @@ class Table {
          });
       });
 
-      const tableClone = new Table([], { aColumn: aClonedColumns }); // Create new table with cloned columns
+      const tableClone = new Table([], { aColumn: aClonedColumns, oProperty: this.oProperty }); // Create new table with cloned columns and properties
 
       let aRowIndices = []; // Determine which rows to clone
 

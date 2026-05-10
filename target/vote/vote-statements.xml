@@ -38,8 +38,10 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
       <statement name="user-edit_search" format="jinja" type="select">SELECT hex(UserK) id, FAlias alias, FFirstName name, FLastName lastname FROM TUser {?? exists( args::exists( args, "name" ), "WHERE FAlias LIKE ''%{=name}%'' OR FFirstName LIKE ''%{=name}%'' OR FLastName LIKE ''%{=name}%''" ) ??} ORDER BY FAlias</statement>
       <statement name="user-edit_table" format="jinja" type="select">SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}</statement>
 
+
+
       <!-- @API [tag: TPollVote] [description: Statements for voting, there are many tables involved but the main one is TPollVote where votes are stored]
-       | - cast-poll: Select poll header for vote
+       | - cast-poll: Select poll header for vote and number of votes
        | - cast-poll_questions: Select poll questions for vote
        | - cast-poll_answers: Select poll answers for questions
        | -->
@@ -65,7 +67,7 @@ request:AddClientValue("FIp", sBinaryIp)
       </statement>
       <statement name="cast-poll" format="jinja" type="select" description="Select poll header for vote" table="TPoll">
          <ui>{ "table": "PollK;FName,Name;FHeader,Header;FDescription,Description" }</ui>
-         <![CDATA[SELECT hex(PollK) AS PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = {PollK}]]></statement>
+         <![CDATA[SELECT hex(PollK) AS PollK, FName, (SELECT COUNT(*) FROM TPollTie WHERE PollK = {PollK}) AS VoteCount, FHeader, FDescription FROM TPoll WHERE PollK = {PollK}]]></statement>
       <statement name="cast-poll_questions" format="jinja" type="select" description="Select poll questions for vote" table="TPollQuestion">
          <ui>{ "table": "PollQuestionK;FLabel;FName,Name;FQuestion,Question;FQuestionMore,More;FDescription,Description" }</ui>
          <![CDATA[SELECT hex(PollQuestionK) AS PollQuestionK, FLabel, FName, FQuestion, FQuestionMore, FDescription FROM TPollQuestion WHERE PollK = {PollK} ORDER BY FOrder]]></statement>
@@ -113,6 +115,13 @@ request:SetStatus( "abort" )
          <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES ({PollAnswerK}, {FTie})</statement>
       </statement>
       <statement name="cast-poll_count_total" type="select" description="Count total votes for a poll">SELECT COUNT(*) AS count_total_votes FROM TPollVote WHERE PollK = {PollK}</statement>
+      <statement name="cast-poll_answers_and_count" format="jinja" type="select" table="TPollAnswer" description="answers and vote count"><![CDATA[
+SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer, 
+   (SELECT COUNT(*) FROM TPollVote WHERE TPollVote.PollAnswerK = TPollAnswer.PollAnswerK) AS VoteCount 
+FROM TPollAnswer 
+WHERE PollK = {PollK}
+]]></statement>
+
       <statement name="cast-poll_votes" format="jinja" type="select" table="TPollVote" description="Count number of votes per answer"><![CDATA[
 SELECT hex(TPollVote.PollAnswerK) AS PollAnswerK, COUNT(*) AS count 
 FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK 
