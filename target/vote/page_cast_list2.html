@@ -36,7 +36,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .page-title { color: var(--color-body); }
 
 
-      .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+      .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; width: 70%;}
       .container-result:not(:empty) { margin-bottom: 20px; }
       .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
       .container-result tbody tr { border-bottom: 1px solid var(--color-border); transition: background-color 0.3s ease;}
@@ -45,35 +45,69 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .container-result th { padding: 6px 8px; text-align: left; font-weight: 600; color: var(--color-body); border-bottom: 2px solid var(--color-border); }
       .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
 
-      /* Column widths */
-      .container-result table th:nth-child(1),
-      .container-result table td:nth-child(1) {
-         font-size: 15px;
-         width: 40%;
-      }
-
-      .container-result table th:nth-child(2),
-      .container-result table td:nth-child(2) {
-         font-size: 15px;
-         width: 40%;
-      }
-
-      .container-result table th:nth-child(3),
-      .container-result table td:nth-child(3) {
-         font-size: 15px;
-         width: 20%;
-         text-align: right;
-      }
-
       button.button { border: none; }
       .divider { border-radius: 5px; border-top: 2px solid var(--color-border); }
       .group { align-items: flex-end; display: flex; gap: 12px; }
       .label-number { color: var(--background-success); }
       .label-text { color: var(--color-muted); }
       .row { display: flex; width: 100%; }
+
+      /* poll row */
+      .poll-row {
+         display: flex;
+         align-items: center;
+         gap: 12px;
+
+         padding: 16px 18px;
+         margin-bottom: 10px;
+
+         border: 1px solid var(--color-border);
+         border-radius: 10px;
+
+         background: var(--background-light);
+
+         cursor: pointer;
+         transition: all 0.2s ease;
+      }
+
+      .poll-row:hover {
+         background: var(--background-light-hover);
+         transform: translateY(-1px);
+      }
+
+      .poll-row #idName {
+         width: 40%;
+         font-weight: 600;
+         color: var(--color-body);
+      }
+
+      .poll-row #idDescription {
+         width: 40%;
+         color: var(--color-muted);
+
+         overflow: hidden;
+         text-overflow: ellipsis;
+         white-space: nowrap;
+      }
+
+      .poll-row #idVotes {
+         width: 20%;
+         text-align: right;
+         color: var(--background-success);
+         font-weight: 600;
+      }
    </style>
 </head>
 <body>
+
+   <template id="idTemplateRow">
+      <div>
+         <div class="poll-name" id="idName">Name</div>
+         <div class="poll-header" id="idDescription">Description</div>
+         <div class="poll-votes" id="idVotes">Votes</div>
+      </div>
+   </template>
+
    <div id="idContainer" class="page-container container page" data-section="page">
 
     <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
@@ -126,7 +160,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    function PAGE_Initialize() {
       oDocument_g = new CDocument({});
       
-      let oTable = new Table(["id", "Name", "Header", "Votes"], {sName: "search"} );
+      let oTable = new Table(["id", "Name", "Description", "Votes"], {sName: "search"} );
       oDocument_g.AddTable(oTable);
 
       PAGE_TableUpdate();
@@ -144,7 +178,38 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       if( sType === undefined || sType === "search" )
       {
          const oTable = oDocument_g.GetTable("search");
-         if(oTable)
+         if (!oTable) return;
+
+         const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
+         eSelectPoll.innerHTML = "";
+
+         const eTemplate = document.getElementById("idTemplateRow");
+
+         const eRowHeader = eTemplate.content.cloneNode(true).firstElementChild;
+         eRowHeader.classList.add("poll-row");
+         eSelectPoll.appendChild(eRowHeader);
+
+         for(let i = 0; i < oTable.GetRowCount(); i++) 
+         {
+            const eRow = eTemplate.content.cloneNode(true).firstElementChild;
+
+            const sKey = oTable.GetCell(i, 0);
+            const sName = oTable.GetCell(i, 1);
+            const SHeader = oTable.GetCell(i, 2);
+            const sVotes = oTable.GetCell(i, 3);
+
+            eRow.dataset.key = sKey;
+            eRow.classList.add("poll-row");
+
+            eRow.querySelector("#idName").textContent = sName;
+            eRow.querySelector("#idDescription").textContent = SHeader;
+            eRow.querySelector("#idVotes").textContent = sVotes;
+
+            eSelectPoll.appendChild(eRow);
+         }
+
+
+         /*if(oTable)
          {
             const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
             eSelectPoll.innerHTML = "";
@@ -161,7 +226,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
             const oUITable = new UITableLite( eSelectPoll, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, callback: fnSelectPoll} );
             oUITable.Render();
-         }
+         }*/
       }
    }
 
@@ -177,7 +242,20 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          const eTarget = e_.target;
 
          // redirect user to result
-         if(eTarget.tagName === "TD" && eTarget.parentNode.dataset.key)
+         const eRow = eTarget.closest(".poll-row");
+
+         if(eRow && eRow.dataset.key)
+         {
+            e_.stopPropagation();
+
+            const sPollKey = eRow.dataset.key;
+
+            window.location.href = `page_cast_result.html?key=${encodeURIComponent(sPollKey)}`;
+            return;
+         }
+
+
+         /*if(eTarget.tagName === "TD" && eTarget.parentNode.dataset.key)
          {
             e_.stopPropagation();
             
@@ -185,7 +263,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
             window.location.href = `page_cast_result.html?key=${encodeURIComponent(sPollKey)}`;
             return;
-         }
+         }*/
 
          if(!eTarget.dataset.action) return;
          e_.stopPropagation();
@@ -273,7 +351,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             let oTable = oDocument_g.GetTable("search");
             if(!oTable)
             {
-               oTable = new Table(["id", "Name", "Header", "Votes"], {sName: "search"} );
+               oTable = new Table(["id", "Name", "Description", "Votes"], {sName: "search"} );
                oDocument_g.AddTable(oTable);
             }
             else
