@@ -211,7 +211,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
    function PAGE_TableUpdate() {
 
-      const oModifiers = { table: "TPoll", order: ["FName"] };
+      const oModifiers = { table: "TPoll", order: ["2"] };
 
       gd.Send("!db/select?", { query: "#vote-poll_search", modifiers: JSON.stringify(oModifiers) }).then(function(oResult) {
          PAGE_ProcessResponse(oResult, "select-polls");
