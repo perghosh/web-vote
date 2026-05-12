@@ -11,6 +11,12 @@ PAGE_Initialize - Initialize the page by creating necessary objects and loading 
 PAGE_SetListeners - Set event listeners for user interactions on the page
 PAGE_Load - Load poll information from the server and store it in the document
 PAGE_Render - Render the poll results on the page using the loaded data
+
+Queries used in page ==========================================================
+#cast-poll - Fetch main poll information based on poll key
+#cast-poll_questions - Fetch questions related to the poll
+#cast-poll_answers_and_count - Fetch answers related to the poll along with their vote counts
+
 -->
 
 <!DOCTYPE html>

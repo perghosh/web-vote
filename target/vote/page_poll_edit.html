@@ -7,6 +7,13 @@ PAGE_Update -  Update UI elements based on the given type
 PAGE_SetListeners - Configure page listeners, handle page specific events  
 PAGE_ProcessResponse - Handle response data from server and display it in the container
 
+Queries used in page ==========================================================
+vote-poll_search - Fetch polls based on search criteria, works with no criteria to fetch all polls
+vote-poll_get - Fetch poll details based on poll key
+
+
+
+
 Objects:
 CDocument - Manages data and state of the page, including records and tables
 DBRecord - Represents a database record, with methods to read/write values and get arguments for server
@@ -146,26 +153,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    let oToast_g;
    let oDocument_g;
 
-   function CreateButtons(eParent)
-   {
-      
-      /*PAGE_DeleteButtons(eParent);
-
-      const eButtonUpdate = document.createElement("button");
-      eButtonUpdate.className = "button";
-      eButtonUpdate.dataset.action = "update";
-      eButtonUpdate.innerHTML = "Update";
-
-      const eButtonDelete = document.createElement("button");
-      eButtonDelete.className = "button";
-      eButtonDelete.dataset.action = "delete";
-      eButtonDelete.innerHTML = "Delete";
-
-      eParent.appendChild(eButtonUpdate);
-      eParent.appendChild(eButtonDelete);
-      */
-   }
-
    /** ------------------------------------------------------------------------
     * Clears all form input fields within the given parent element
     */
@@ -199,7 +186,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       const sQueryName = "vote-count_questions";
       const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
 
-      gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult)
+      gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
       {
          const aResult = JSON.parse( oResult.data.querySelector("result").textContent );
          console.log(aResult);
@@ -223,8 +210,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    }
 
    function PAGE_TableUpdate() {
-      const sQueryName = "vote-poll_search";
-      gd.SendToServer("", "!db/select", "query=#" + sQueryName).then(function(oResult) {
+
+      const oModifiers = { table: "TPoll", order: ["FName"] };
+
+      gd.Send("!db/select?", { query: "#vote-poll_search", modifiers: JSON.stringify(oModifiers) }).then(function(oResult) {
          PAGE_ProcessResponse(oResult, "select-polls");
       });
    }
@@ -353,10 +342,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             e_.stopPropagation();
             const sKey = eTarget.parentNode.dataset.key;
             //const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
-            const sQueryName = "vote-poll_table";
+            const sQueryName = "vote-poll_get";
             const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
 
-            gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult)
+            gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
             {
                const oData = oResult.data;
                //const aPollResult = JSON.parse( oData.querySelector("result").textContent );
@@ -417,7 +406,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                const sArguments = `record=${oArguments}`;
                gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult);
-                  CreateButtons(document.querySelector("#idButtons"));
                   oToast_g.Show("Skapad!")
                   PAGE_TableUpdate();
                });

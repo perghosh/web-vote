@@ -22,6 +22,9 @@ Or (oneliner) `apt update && apt upgrade -y`
 *Installation folder* =  `/opt/http`  
 
 *Move one file*  
+`scp -i ~/.ssh/id_ed25519 "D:\temp\vps\http" root@64.112.125.165:/opt/http/`
+`scp -i ~/.ssh/id_ed25519 -r "D:\temp\vps\vote" root@64.112.125.165:/opt/http/` - copy all files in selected and subfolders
+
 `scp -i ~/.ssh/id_ed25519 "D:\temp\vps\vote\js\document.js" root@64.112.125.165:/opt/http/vote/js`
 `scp -i ~/.ssh/id_ed25519 root@64.112.125.165:/opt/http/vote/test.sqlite "D:\temp\vps\backup\"`
 
@@ -35,6 +38,9 @@ If it doesn't work then install this also `apt install -y unixodbc`
 
 *Restart server*
 `systemctl restart http`
+
+*Edit configuration file for systemctl*
+`sudo nano /etc/systemd/system/http.service`
 
 ### Replace http server, the http application --
 
