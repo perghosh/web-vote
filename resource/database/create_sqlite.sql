@@ -133,62 +133,76 @@ CREATE TABLE TContainer (
     FDatabase   VARCHAR(100)
 );
 
+/* Used to group users into logical groups for permission and organization purposes */
+CREATE TABLE TUserGroup (
+    UserGroupK  BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
+   ,CreateD     DATETIME
+   ,UpdateD     DATETIME
+   ,FName       VARCHAR(100) NOT NULL-- Name of user group
+   ,FDescription VARCHAR(500)        -- Description of what this group is for
+   ,FIdle       INTEGER DEFAULT 0    -- Group is temporarily disabled
+   ,FDeleted    INTEGER DEFAULT 0    -- Group is deleted but kept in database
+);
+
+CREATE INDEX I_TUserGroup_FName ON TUserGroup(FName);
+
 CREATE TABLE TOrganization (
-   OrganizationK BLOB PRIMARY KEY DEFAULT (randomblob(16)),
-   ParentK BLOB,                    -- Parent organization for hierarchical structure
-   SuperK BLOB,                     -- Owner organization when used in hierarchical structure
-   CreateD DATETIME,                -- when organization was created
-   UpdateD DATETIME,                -- last time organization was updated
-   TypeC INTEGER,                   -- Type of organization (e.g., company, department, team)
-   StateC INTEGER,                  -- State of organization (active, inactive, etc.)
-   ClassC INTEGER,                  -- Class/category of organization
-   FName VARCHAR(500),              -- organization name
-   FCode VARCHAR(100),              -- Short code/abbreviation for the organization
-   FDescription TEXT,               -- describe organization
-   FAddress TEXT,                   -- Physical address
-   FPhone VARCHAR(50),              -- Contact phone
-   FEmail VARCHAR(255),             -- Contact email
-   FWebsite VARCHAR(255),           -- Website URL
-   FTaxId VARCHAR(100),             -- Tax ID / Registration number
-   FDeleted INTEGER DEFAULT 0       -- if organization is deleted
+   OrganizationK BLOB PRIMARY KEY DEFAULT (randomblob(16))
+   ,ParentK BLOB                    -- Parent organization for hierarchical structure
+   ,SuperK BLOB                     -- Owner organization when used in hierarchical structure
+   ,CreateD DATETIME                -- when organization was created
+   ,UpdateD DATETIME                -- last time organization was updated
+   ,TypeC INTEGER                   -- Type of organization (e.g., company, department, team)
+   ,StateC INTEGER                  -- State of organization (active, inactive, etc.)
+   ,ClassC INTEGER                  -- Class/category of organization
+   ,FName VARCHAR(500)              -- organization name
+   ,FCode VARCHAR(100)              -- Short code/abbreviation for the organization
+   ,FDescription TEXT               -- describe organization
+   ,FAddress TEXT                   -- Physical address
+   ,FPhone VARCHAR(50)              -- Contact phone
+   ,FEmail VARCHAR(255)             -- Contact email
+   ,FWebsite VARCHAR(255)           -- Website URL
+   ,FTaxId VARCHAR(100)             -- Tax ID / Registration number
+   ,FDeleted INTEGER DEFAULT 0      -- if organization is deleted
 );
 
 -- Indexes for foreign keys and common lookups
 CREATE INDEX I_TOrganization_ParentK ON TOrganization (ParentK);
 CREATE INDEX I_TOrganization_SuperK ON TOrganization (SuperK);
 
+
+
 /* Used to store user information */
 CREATE TABLE TUser (
-    UserK           BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
-    ContainerK      INTEGER NOT NULL,
-    OrganizationK   BLOB,
-    UserGroupK      INTEGER,
-    CreateD         DATETIME,
-    UpdateD         DATETIME,
-    PermissionS     INTEGER,                             -- rights for this user
-    CountryC        INTEGER,
-    RoleC           INTEGER,
-    FId             INTEGER,
-    FAlias          VARCHAR(100),
-    FLoginName      VARCHAR(100),
-    FDisplayName    VARCHAR(100),
-    FFirstName      VARCHAR(100),
-    FLastName       VARCHAR(100),
-    FDescription    VARCHAR(1000),
-    FMail           VARCHAR(200),
-    FMobile         VARCHAR(100),
-    FLoginD         DATETIME,
-    FLoginCount     INTEGER,
-    FProfile        VARCHAR(100),
-    FIdle           SMALLINT DEFAULT 0,
-    FDeleted        SMALLINT DEFAULT 0,
-    FPassword       VARCHAR(256),
-    FLastLoginD     DATETIME,
-    FLastIp         VARCHAR(100),
-
-    -- Foreign Key
-    CONSTRAINT FK_TUser_ContainerK FOREIGN KEY (ContainerK) REFERENCES TContainer(ContainerK) ON DELETE CASCADE ON UPDATE CASCADE
-    -- CONSTRAINT FK_TUser_OrganizationK FOREIGN KEY (OrganizationK) REFERENCES TOrganization(OrganizationK) ON DELETE SET NULL ON UPDATE CASCADE
+    UserK           BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
+   ,ContainerK      INTEGER NOT NULL
+   ,OrganizationK   BLOB
+   ,UserGroupK      BLOB
+   ,CreateD         DATETIME
+   ,UpdateD         DATETIME
+   ,PermissionS     INTEGER                             -- rights for this user
+   ,CountryC        INTEGER
+   ,RoleC           INTEGER
+   ,FId             INTEGER
+   ,FAlias          VARCHAR(100)
+   ,FLoginName      VARCHAR(100)
+   ,FDisplayName    VARCHAR(100)
+   ,FFirstName      VARCHAR(100)
+   ,FLastName       VARCHAR(100)
+   ,FDescription    VARCHAR(1000)
+   ,FMail           VARCHAR(200)
+   ,FMobile         VARCHAR(100)
+   ,FLoginD         DATETIME
+   ,FLoginCount     INTEGER
+   ,FProfile        VARCHAR(100)
+   ,FIdle           SMALLINT DEFAULT 0
+   ,FDeleted        SMALLINT DEFAULT 0
+   ,FPassword       VARCHAR(256)
+   ,FLastLoginD     DATETIME
+   ,FLastIp         VARCHAR(100)
+   -- Foreign Key
+   ,CONSTRAINT FK_TUser_ContainerK FOREIGN KEY (ContainerK) REFERENCES TContainer(ContainerK) ON DELETE CASCADE ON UPDATE CASCADE
+   -- CONSTRAINT FK_TUser_OrganizationK FOREIGN KEY (OrganizationK) REFERENCES TOrganization(OrganizationK) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 CREATE INDEX I_TUser_ContainerK ON TUser(ContainerK);
@@ -299,24 +313,6 @@ CREATE TABLE TPollCommentVote (
     ,CONSTRAINT FK_Vote_Voter FOREIGN KEY (VoterK) REFERENCES TVoter(VoterK) ON DELETE CASCADE
 );
 
-/* Limits are used to set limits for the poll, like rules what for different questions */
-CREATE TABLE TPollLimit (
-   PollLimitK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
-   ,PollK BLOB
-   ,PollQuestionK BLOB
-   ,UpdateD DATETIME
-   ,limit_type INTEGER      -- limit type
-   ,FDescription TEXT       -- Describe limit
-   ,FLimitInteger INTEGER   -- Integer number for limit
-   ,FLimitDecimal REAL      -- Decimal value for poll limit
-   ,FLimitDate DATETIME     -- Date value for limit
-   ,FLimitText TEXT         -- Text
-   ,CONSTRAINT FK_TPollLimit_PollK FOREIGN KEY (PollK) REFERENCES TPoll(PollK)
-   ,CONSTRAINT FK_TPollLimit_PollQuestionK FOREIGN KEY (PollQuestionK) REFERENCES TPollQuestion(PollQuestionK) ON DELETE CASCADE
-);
-CREATE INDEX IC_TPollLimit_PollK ON TPollLimit (PollK);
-CREATE INDEX I_TPollLimit_PollQuestionK ON TPollLimit (PollQuestionK);
-
 CREATE TABLE TPollQuestion (
 	PollQuestionK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
    ,PollK BLOB
@@ -378,6 +374,25 @@ CREATE TABLE TPollTie (
 );
 
 CREATE INDEX I_TPollTie_PollK ON TPollTie (PollK);
+
+/* Limits are used to set limits for the poll, like rules what for different questions */
+CREATE TABLE TPollLimit (
+   PollLimitK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
+   ,PollK BLOB NOT NULL     -- Poll reference, this is needed to connect limits to the right poll
+   ,PollQuestionK BLOB      -- if limit is connected to a specific question
+   ,UpdateD DATETIME
+   ,limit_type INTEGER      -- limit type
+   ,FDescription TEXT       -- Describe limit
+   ,FLimitInteger INTEGER   -- Integer number for limit
+   ,FLimitDecimal REAL      -- Decimal value for poll limit
+   ,FLimitDate DATETIME     -- Date value for limit
+   ,FLimitText TEXT         -- Text
+   ,CONSTRAINT FK_TPollLimit_PollK FOREIGN KEY (PollK) REFERENCES TPoll(PollK)
+   ,CONSTRAINT FK_TPollLimit_PollQuestionK FOREIGN KEY (PollQuestionK) REFERENCES TPollQuestion(PollQuestionK) ON DELETE CASCADE
+);
+CREATE INDEX IC_TPollLimit_PollK ON TPollLimit (PollK);
+CREATE INDEX I_TPollLimit_PollQuestionK ON TPollLimit (PollQuestionK);
+
 
 CREATE TABLE IF NOT EXISTS TPollVote (
     PollVoteK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),

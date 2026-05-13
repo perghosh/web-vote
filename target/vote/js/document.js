@@ -69,6 +69,33 @@ class CDocument {
    // Set global value by name -----------------------------------------------
    SetValue( sName, value_ ) { this.oValues[sName] = value_; }
 
+   // Merge global value by name without replacing existing values ------------
+   MergeValue( sName, value_ ) {
+      const vExisting = this.oValues[sName];
+
+      // If no value exists yet, store incoming value directly
+      if( vExisting === undefined ) { this.oValues[sName] = value_; return this.oValues[sName]; }
+
+      // Merge arrays by appending only missing items
+      if( Array.isArray(vExisting) && Array.isArray(value_) ) {
+         value_.forEach( vItem_ => {
+            if( vExisting.includes(vItem_) === false ) { vExisting.push(vItem_); }
+         });
+         return vExisting;
+      }
+
+      // Merge plain objects by adding only missing keys
+      if( vExisting !== null && value_ !== null && typeof vExisting === "object" && typeof value_ === "object" && Array.isArray(vExisting) === false && Array.isArray(value_) === false ) {
+         Object.keys(value_).forEach( sKey_ => {
+            if( Object.prototype.hasOwnProperty.call(vExisting, sKey_) === false ) { vExisting[sKey_] = value_[sKey_]; }
+         });
+         return vExisting;
+      }
+
+      // Primitive or incompatible types: keep existing value (no replace)
+      return vExisting;
+   }
+
    // Check if document has unsaved changes ----------------------------------
    IsModified() { return this.bModified; }
 
