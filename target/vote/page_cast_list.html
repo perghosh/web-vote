@@ -52,6 +52,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .label-text { color: var(--color-muted); }
       .row { display: flex; width: 100%; }
 
+      /* select */
+      .filter { padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 5px; background: var(--background-light); color: var(--color-body); transition: all 0.2s ease;}
+      .filter:hover { background: var(--background-light-hover); }
+
       /* poll row */
       .poll-row { align-items: center; border: 1px solid var(--color-border); border-radius: 10px; background: var(--background-light); cursor: pointer; display: flex; gap: 12px; margin-bottom: 10px; padding: 16px 18px; transition: all 0.2s ease; }
 
@@ -85,13 +89,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
         <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Search Polls</h2></div>
 
-        <div>
-            <select>
-               <option value="Test">Test</option>
-               <option value="Test">Test</option>
-               <option value="Test">Test</option>
-            </select>
-        </div>
+
 
         <div data-section="search" class="group">
             <div class="row">
@@ -101,9 +99,22 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                         <span>Search</span>
                     </label>
                   </div>
+
+                  <label class="label-text">Filter:</label>
+
+                  <select class="filter">
+                     <option value="Test">Test</option>
+                     <option value="Test">Test</option>
+                     <option value="Test">Test</option>
+                  </select>
+
                   <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
             </div>
          </div>
+
+         <div>
+
+        </div>
 
         <div data-section="select-polls" class="container-result"></div>
     </form>

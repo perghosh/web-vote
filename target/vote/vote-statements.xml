@@ -130,7 +130,7 @@ GROUP BY TPollVote.PollAnswerK
 ]]></statement>      
 
    <!-- Count votes from poll -->
-   <statement name="list-poll" type="select" format="jinja" description="Count totalvotes of poll"><![CDATA[
+   <statement name="list-poll" format="jinja" type="select" table="TPoll" description="Count totalvotes of poll"><![CDATA[
    SELECT hex(TPoll.PollK) AS PollK,
    TPoll.FName, TPoll.FDescription, 
    (SELECT COUNT(DISTINCT TPollVote.FTie) 
@@ -138,6 +138,9 @@ GROUP BY TPollVote.PollAnswerK
    JOIN TPollQuestion ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK 
    WHERE TPollQuestion.PollK = TPoll.PollK) 
    AS TotalVotes FROM TPoll
+   {?? exists( args::exists( args, "name" ), "WHERE FName LIKE ''%{=name}%'' OR FHeader LIKE ''%{=name}%''" ) ??} 
+   {++orderby} 
+   {++limit}
    ]]></statement>
 
 
