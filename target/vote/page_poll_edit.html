@@ -104,17 +104,15 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          <div class="group" id="idFieldLabels" style="gap: 20px;">
             <div class="row" style="flex: 1; margin-top: 20px;">
-               <label class="label-text" style="visibility: collapse; width: 100%;" data-field="question">Questions:</label>
-               
-               
-               <label class="label-text" style="visibility: collapse; width: 100%;" data-field="answer">Answers:</label>
-               
+               <label class="label-text" style="visibility: collapse; width: 100%;" data-id="idQuestion">Questions:</label>
             </div>
          </div>
 
          <hr class="divider" style="margin-top: 20px">
          
          <div class="row" id="idButtons" style="margin-top: 20px;" data-section="command">
+            <button class="button" data-action="poll-clear">Clear</button>
+            <span style="width: 20px;"></span>
             <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
             <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll" data-idle="poll_key">Update</button>
             <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll" data-idle="poll_key">Delete</button>
@@ -166,48 +164,21 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       aFields.forEach((eField) => { eField.value = ""; });
    }
 
-   /** ------------------------------------------------------------------------
-    * Removes action buttons except the "add" button from the button row
-    */
-   function PAGE_DeleteButtons(eParent)
-   {
-      const aButtons = eParent.querySelectorAll("#idButtons button");
-
-      aButtons.forEach((eButton) => {
-         if(eButton.dataset.action !== "add")
-         {
-            eButton.remove();
-         }
-      });
-   }
-
    function PAGE_UpdateFieldLabels(eParent)
    {
       const aFields = eParent.querySelectorAll("[data-field]"); 
 
-      const sKey = oDocument_g.key_;
+      const sPollK = oDocument_g.GetValue("PollK");                                                console.assert(sPollK, "sPollK is null or empty");
       const sQueryName = "vote-count_questions";
-      const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+      const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sPollK })}`;
 
       gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
       {
          const aResult = JSON.parse( oResult.data.querySelector("result").textContent );
-         console.log(aResult);
-
-         const iQuestionCount = aResult[1]; //?? 0;
-
-         aFields.forEach((eField) => {
-            const sField = eField.dataset.field;
-            if(sField == "question")
-            {
-                 eField.innerHTML = `Questions: ${iQuestionCount}`;
-                 eField.style.visibility = "visible";
-            }
-            else if(sField == "text")
-            {
-                 eField.style.visibility = "visible"; 
-            }
-         });
+         const iQuestionCount = aResult[1]; 
+         const eQuestion = document.querySelector('[data-id="idQuestion"]');
+         eQuestion.textContent = `Questions: ${iQuestionCount}`;
+         eQuestion.style.visibility = "visible";
       });
 
    }
@@ -229,7 +200,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       }
    }
 
-   // Start page initialization -----------------------------------------------
+   // Start page initialization ----------------------------------------------- @API [summary: main]
    document.addEventListener('DOMContentLoaded', function() {
       THEME_Select("color", {});
       PAGE_Initialize();                                                      // Initialize page
@@ -242,7 +213,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       { label: "Description", description: "Description for poll in system", field: "FDescription", type: "string", required: true},
    ]
 
-   /** --------------------------------------------------------------------- @API [tag: initialize]
+   /** ----------------------------------------------------------------------- @API [summary: initialize page]
     * Main initialization function that initializes the page
     */
    function PAGE_Initialize() {
@@ -278,7 +249,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
 
       // ## Start idle timer - call PAGE_OnIdle() once per second
-      //CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+      CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
 
       PAGE_SetListeners();
    }
@@ -311,8 +282,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
             // query header element and add click handlers to th elements
             const eHeader = eUITable.querySelector("thead");
-            if(eHeader)
-            {
+            if(eHeader) {
                const aTh = eHeader.querySelectorAll("th");
                aTh.forEach( (eTh, iIndex) => {
                   eTh.dataset.index = (iIndex + 2);
@@ -322,9 +292,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                      aTh.forEach(eTh_ => eTh_.classList.remove("active"));
                      // Add active class to clicked header
                      eTh.classList.add("active");
-                     
-                     // TODO: Add sorting logic here based on column index (iIndex)
-                     console.log("Sort by column:", iIndex);
                   });
                });
             }
@@ -345,17 +312,29 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
      * Handles idle state by updating UI elements and checking for changes
      */
    const PAGE_OnIdle = (function() {
-      var bLastModified = false;
+      //var bLastModified = false;
 
       return function() {
          const bModified = oDocument_g.IsModified();
+         if( !bModified ) return;
 
+         oDocument_g.SetModified(false);
+
+         const eQuestion = document.querySelector('[data-id="idQuestion"]');
+         const sPollK = oDocument_g.GetValue("PollK");
+         if( typeof sPollK === "string"  ) { eQuestion.style.visibility = "visible";}
+         else { eQuestion.style.visibility = "collapse"; }
+
+         /*
          if( bModified !== bLastModified ) {
-
-            // TODO: Update UI elements based on modified status
+            const eQuestion = document.querySelector('[data-id="idQuestion"]');
+            const sPollK = oDocument_g.GetValue("PollK");
+            if( typeof sPollK === "string"  ) { eQuestion.style.visibility = "visible";}
+            else { eQuestion.style.visibility = "collapse"; }
 
             bLastModified = bModified;
          }
+         */
       }
    })();
 
@@ -373,7 +352,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          {
             e_.stopPropagation();
             const sKey = eTarget.parentNode.dataset.key;
-            //const sSelect = "SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}";
             const sQueryName = "vote-poll_get";
             const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
 
@@ -389,7 +367,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                {
                   oDBRecord.SetValue( aPollResult );
                   oDBRecord.SetKeyValue( sKey );
-                  oDocument_g.key_ = sKey;
+                  oDocument_g.SetValue("PollK", sKey);
 
                   oDBRecord.WriteValues();
 
@@ -401,15 +379,14 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             return;
          }
 
-         if(!eTarget.dataset.action) return;
+         if(!eTarget.dataset.action) return;                                   // if clicked element does not have data-action attribute, ignore
          e_.stopPropagation();
 
          const sAction = eTarget.dataset.action;
 
          // ## User table record and action .....................................
          const oDBRecord = oDocument_g.GetRecord( "TPoll" );                                          console.assert( oDBRecord, "oDBRecord is null" );
-
-         oDBRecord.ReadValues();
+         oDBRecord.ReadValues();                                               // read values from form into record before performing action
 
          switch(sAction) {
             case "sort": {
@@ -472,6 +449,13 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   else {oToast_g.Show("Kunde inte ta bort")}
                });
 
+            } break;
+            case "poll-clear": {
+               oDBRecord.ClearValues();
+               oDocument_g.SetValue("PollK", null);
+               oDBRecord.WriteValues();
+               oDocument_g.SetModified(true);
+               //PAGE_Update();
             } break;
             case "poll-open": {
                // Open poll questions page, pass selected poll key as parameter
