@@ -71,13 +71,13 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 <body>
 
    <template id="idTemplateRow">
-      
       <div class="poll-row">
          <div class="poll-votes" id="idVotes">0</div>
          <div class="poll-content">
             <div class="poll-name" id="idName">Name</div>
             <div class="poll-header" id="idDescription">Description</div>
          </div>
+         <a href="#" data-action="vote" style="margin-left: auto; padding: 8px 12px; border-radius: 999px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;">Rösta</a>
       </div>
    </template>
 
@@ -85,24 +85,24 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
     <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
 
-        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Search Polls</h2></div>
+        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Sök och filtrera omröstningar</h2></div>
 
         <div data-section="search" class="group">
             <div class="row">
                <div style="flex: 1;">
                   <label class="floating">
                      <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
-                     <span>Search</span>
+                     <span>Sök</span>
                   </label>
                </div>
 
-               <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
+               <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
 
-               <label class="label-text">Sort by:</label>
+               <label class="label-text">Sortera efter:</label>
 
                <select class="filter" data-action="sort">
                   
-                  <option value="votes">Most Votes</option>
+                  <!-- <option value="votes">Most Votes</option> -->
                   <option value="ascending" selected>A-Z</option>
                   <option value="descending">Z-A</option>
                </select>
@@ -149,6 +149,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    document.addEventListener('DOMContentLoaded', function() {
       THEME_Select("color", {});
       PAGE_Initialize();                                                      // Initialize page
+      PAGE_SetListeners();
    });
 
 
@@ -165,8 +166,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       PAGE_TableUpdate();
 
       oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
-
-      PAGE_SetListeners();
    }
 
 
@@ -214,6 +213,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       eContainer.addEventListener("click", (e_) => {
          const eTarget = e_.target;
+         const sAction = eTarget.dataset.action;
 
          // redirect user to result
          const eRow = eTarget.closest(".poll-row");
@@ -221,18 +221,22 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          if(eRow && eRow.dataset.key)
          {
             e_.stopPropagation();
+            const sPollK = eRow.dataset.key;
 
-            const sPollKey = eRow.dataset.key;
+            if( sAction === "vote" )
+            {
+               window.location.href = `page_cast.html?key=${encodeURIComponent(sPollK)}`;
+               return;
+            }
 
-            window.location.href = `page_cast_result.html?key=${encodeURIComponent(sPollKey)}`;
+
+            window.location.href = `page_cast_result.html?key=${encodeURIComponent(sPollK)}`;
             return;
          }
 
 
          if(!eTarget.dataset.action) return;
          e_.stopPropagation();
-
-         const sAction = eTarget.dataset.action;
 
          switch(sAction) {
             case "sort": {
@@ -257,7 +261,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                break;
             }
             case "search": {
-               //const sQueryName = "vote-poll_search";
                const sQueryName = "list-poll";
                const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
                const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;

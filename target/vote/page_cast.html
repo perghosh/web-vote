@@ -76,9 +76,10 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
     -->
    <div id="idPage" class="page-container container page" data-section="page">
       <!-- Poll information -->
-      <div id="idPoll" class="container-view margin_b-small page-poll-frame page-poll-header" data-page-state="cast">
+      <div id="idPoll" class="container-view page-poll-frame page-poll-header" data-page-state="cast">
          <h1 class="page-poll-title" data-field="FName">Poll Title</h1>
          <p class="page-poll-description" data-field="FDescription">Poll description goes here...</p>
+         <a href="page_cast_list.html" style="font-size: 0.9rem; color: var(--color-body); text-decoration: none; align-self: flex-end; margin-top: 8px;">← Tillbaka till omröstningar</a>
       </div>
 
       <div id="idPollCommand" data-page-state="cast">
@@ -162,6 +163,14 @@ function PAGE_Initialize() {
    }
    else {
       oDocument_g.SetValue("PollK", sPollK );                                 // Store poll key in document for later use
+
+      // ## Set url for result page with poll key as parameter ................
+      const eGotoResult = document.getElementById("idGotoResult");
+      if( eGotoResult ) {
+         const sResultUrl = `page_cast_result.html?PollK=${sPollK}`;
+         eGotoResult.setAttribute("href", sResultUrl);
+      }
+
       PAGE_Load();                                                            // Load poll information and display it on the page
    }
 
@@ -171,17 +180,10 @@ function PAGE_Initialize() {
       oDocument_g.SetValue("Ip", oIp.ip); // Store client IP in document for later use when casting vote
       console.log("Client IP obtained from server:", oIp.ip);
       const oValues = { PollK: sPollK, FIp: oIp.ip };
-      //const oValues = { PollK: sPollK, FIp: "3E87BBAE5C8CFA568E285CA71AAEA78B" }; // set dummy ip
       gd.SendToServer("", "!db/select", "query=#cast-check_if_voted\nvalues=" + JSON.stringify(oValues)).then((oResult) => {
          const aVoteCheck = XML_GetFirstValue( oResult, undefined, "object" );
          if( Number(aVoteCheck[1][0]) > 0 ) {
-            //oToast_g.Show("You have already voted in this poll. Thank you for your participation!");
             ELEMENT_Show("voted");
-            const eGotoResult = document.getElementById("idGotoResult");
-            if( eGotoResult ) {
-               const sResultUrl = `page_cast_result.html?PollK=${sPollK}`;
-               eGotoResult.setAttribute("href", sResultUrl);
-            }
          }
       }).catch((error) => {
          console.error("Failed to check if user has already voted:", error);
