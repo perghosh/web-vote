@@ -12,6 +12,13 @@ TIP: select name and search in project to find where these statements are used
 
 -->
 <document>
+   <condition-sets>
+      <condition-set name="vote" table="TPoll" description="Filter for vote statements">
+         <condition name="last_7_days" field="CreateD">CreateD &gt;= DATE('now', '-7 days') AND CreateD &lt; DATE('now')</condition>
+         <condition name="last_week" field="CreateD">CreateD &gt;= DATE('now', 'weekday 0', '-7 days') AND CreateD &lt; DATE('now', 'weekday 0')</condition>
+         <condition name="last_month" field="CreateD">CreateD &gt;= DATE('now', '-1 month') AND CreateD &lt; DATE('now')</condition>
+      </condition-set>
+   </condition-sets>
    <statements>
       <!-- @API [tag: TPoll]
        | Statements for main vote page, Table called TPoll is worked on
@@ -48,7 +55,7 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
       <statement name="cast-check_if_voted" format="jinja" type="select" table="TPollTie" description="Check if user has already voted in poll">
          <code><![CDATA[-- #lua v1;
 local sIp = request:GetIpAddress() -- Get user IP address         
-local sValueIp = request:GetClientValue("Ip")
+local sValueIp = request:GetClientValue("FIp")
 
 -- Check if ip matches
 if sValueIp ~= sIp then
@@ -57,7 +64,7 @@ if sValueIp ~= sIp then
    return
 end
 
-request:RemoveClientValue("Ip") -- Remove ip from client values, we don't need it anymore
+request:RemoveClientValue("FIp") -- Remove ip from client values, we don't need it anymore
 
 local expression = Expression:new();
 local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip = sIp } ) -- Convert IP address to binary
@@ -96,7 +103,7 @@ local sBinaryIp = expression:Calculate( [[str::ip_format(ip, "hex", 32 )]], { ip
 local sPollK = request:GetClientValue("PollK") -- print("GetClientValue PollK: " .. sPollK)
 
 local bCanVote = CanVote(sBinaryIp, sPollK)                                    -- Check if user can vote
-bCanVote = true                                                                -- @TODO Remove after testing, allows voting multiple times from same IP
+-- bCanVote = true                                                                -- @TODO Remove after testing, allows voting multiple times from same IP
 if bCanVote then
    -- ## Insert vote into TPollTie to tie votes together
    local database = request:GetDatabase()

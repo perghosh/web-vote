@@ -242,6 +242,7 @@ CREATE TABLE TPoll (
    ,UserK BLOB              -- user that has created this poll
    ,CreateD DATETIME DEFAULT CURRENT_TIMESTAMP-- when poll was created
    ,UpdateD DATETIME        -- last time poll was updated
+   ,AreaC INTEGER           -- Area or domain this poll belongs to, this can be used to connect poll to a specific area or domain in the system
    ,TypeC INTEGER           -- Type of poll
    ,StateC INTEGER          -- State of poll
    ,ClassC INTEGER          -- Class of poll, could be some sort of quality, level or other type of division based on similar attribute
@@ -491,7 +492,7 @@ CREATE INDEX I_TImage_FOrder ON TImage (table_number, FKey, FOrder);
 CREATE INDEX I_TImage_FChecksum ON TImage (FChecksum);
 
 
-
+-- This table is the header for a thread
 CREATE TABLE TThreadHeader (
     ThreadHeaderK BLOB NOT NULL
     ,ThreadK BLOB NOT NULL
@@ -512,6 +513,55 @@ CREATE TABLE TThread (
 
 CREATE INDEX I_TThread_ThreadHeaderK ON TThread (ThreadHeaderK);
 CREATE INDEX I_TThread_FPath ON TThread (FPath);
+
+CREATE TABLE TFeedback (
+    FeedbackK       BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
+    
+    -- Who submitted the feedback
+    VoterK          BLOB,                    -- Preferred for public/anonymous feedback
+    UserK           BLOB,                    -- For logged-in/admin users
+
+    CreateD         DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdateD         DATETIME,
+
+    -- Metadata
+    ResolvedD       DATETIME,                -- When it was resolved/closed
+    ResolvedByUserK BLOB,                    -- Who resolved it (admin)
+
+    -- Polymorphic association (very useful)
+    table_number    INTEGER,                 -- e.g. link to a Poll, Question, Organization, etc.
+    FKey            BLOB,                    -- The actual primary key of the related record
+    
+    -- Core content
+    FTitle          VARCHAR(300) NOT NULL,   -- Short subject / title
+    FDescription    TEXT NOT NULL,           -- Detailed feedback
+    
+    -- Classification
+    TypeC           INTEGER,                 -- Suggestion, Bug, Feature Request, Complaint, Praise, Other...
+    StateC          INTEGER,                 -- New, In Review, Accepted, Rejected, Implemented, Closed...
+    PriorityC       INTEGER,                 -- Low, Medium, High, Critical
+    SeverityC       INTEGER,                 -- Optional: Minor, Major, Critical (especially for bugs)
+    
+    
+    -- Additional useful fields
+    FExpectedResult TEXT,                    -- For bugs/suggestions: what did you expect?
+    FActualResult   TEXT,                    -- For bugs: what happened instead?
+    FReproduceSteps TEXT,                    -- Reproduction steps for bugs
+    FVersion        VARCHAR(100),            -- App version, poll version, etc.
+    FBrowser        VARCHAR(100),            -- Or device info if not using Voter table
+    FIp             BLOB,
+    
+    -- Status flags
+    FIdle           INTEGER DEFAULT 0,
+    FDeleted        INTEGER DEFAULT 0,
+    FPinned         INTEGER DEFAULT 0,       -- For important feedback visible to admins
+    
+    -- Foreign Keys
+    CONSTRAINT FK_TFeedback_VoterK FOREIGN KEY (VoterK) REFERENCES TVoter(VoterK) ON DELETE SET NULL,
+    CONSTRAINT FK_TFeedback_UserK FOREIGN KEY (UserK) REFERENCES TUser(UserK) ON DELETE SET NULL,
+    CONSTRAINT FK_TFeedback_ResolvedBy FOREIGN KEY (ResolvedByUserK) REFERENCES TUser(UserK) ON DELETE SET NULL
+);
+
 
 CREATE TABLE "TSystemStatement" (
     "SystemStatementK" INTEGER PRIMARY KEY AUTOINCREMENT
@@ -550,6 +600,7 @@ INSERT INTO table_number (number, name, description) VALUES (1200, 'TLink', 'Tab
 INSERT INTO table_number (number, name, description) VALUES (1300, 'TImage', 'Table for storing images related to any record');
 INSERT INTO table_number (number, name, description) VALUES (1400, 'TThreadHeader', 'Table for storing thread headers for nested comments');
 INSERT INTO table_number (number, name, description) VALUES (1410, 'TThread', 'Table for storing thread entries for nested comments');
+INSERT INTO table_number (number, name, description) VALUES (1420, 'TFeedback', 'Table for storing user feedback, suggestions, and bug reports');
 INSERT INTO table_number (number, name, description) VALUES (1500, 'TSystemStatement', 'Table for storing predefined system statements');
 
 
@@ -576,11 +627,12 @@ INSERT INTO TCodeGroup (CodeGroupK, FName, FDescription, FTable, FMainTable) VAL
 
 -- TPoll codes (table_number 1060)
 INSERT INTO TCodeGroup (CodeGroupK, FName, FDescription, FTable, FMainTable) VALUES
-    (10601, 'TPoll.TypeC', 'Poll type codes (Survey, Quiz, Voting, etc.)', 'TPoll', 'TPoll'),
-    (10602, 'TPoll.StateC', 'Poll state codes (Draft, Published, Closed, Archived, etc.)', 'TPoll', 'TPoll'),
-    (10603, 'TPoll.ClassC', 'Poll class/category codes', 'TPoll', 'TPoll'),
-    (10604, 'TPoll.ChartC', 'Poll chart presentation type codes', 'TPoll', 'TPoll'),
-    (10605, 'TPoll.DisplayC', 'Poll display type codes', 'TPoll', 'TPoll');
+    (10601, 'TPoll.AreaC', 'Poll area codes (Survey, Quiz, Voting, etc.)', 'TPoll', 'TPoll'),
+    (10602, 'TPoll.TypeC', 'Poll type codes (Survey, Quiz, Voting, etc.)', 'TPoll', 'TPoll'),
+    (10603, 'TPoll.StateC', 'Poll state codes (Draft, Published, Closed, Archived, etc.)', 'TPoll', 'TPoll'),
+    (10604, 'TPoll.ClassC', 'Poll class/category codes', 'TPoll', 'TPoll'),
+    (10605, 'TPoll.ChartC', 'Poll chart presentation type codes', 'TPoll', 'TPoll'),
+    (10606, 'TPoll.DisplayC', 'Poll display type codes', 'TPoll', 'TPoll');
 
 -- TPollSection codes (table_number 1070)
 INSERT INTO TCodeGroup (CodeGroupK, FName, FDescription, FTable, FMainTable) VALUES
@@ -604,6 +656,22 @@ INSERT INTO TCodeGroup (CodeGroupK, FName, FDescription, FTable, FMainTable) VAL
 INSERT INTO TCodeGroup (CodeGroupK, FName, FDescription, FTable, FMainTable) VALUES
     (11101, 'TPollAnswer.TypeC', 'Poll answer type codes', 'TPollAnswer', 'TPoll'),
     (11102, 'TPollAnswer.StateC', 'Poll answer state codes', 'TPollAnswer', 'TPoll');
+
+-- TPollVote codes (table_number 1130)
+INSERT INTO TCodeGroup (CodeGroupK, FName, FDescription, FTable, FMainTable) VALUES
+    (11301, 'TPollVote.TypeC', 'Poll vote type codes', 'TPollVote', 'TPoll'),
+    (11302, 'TPollVote.StateC', 'Poll vote state codes', 'TPollVote', 'TPoll');    
+
+-- TLink codes (table_number 1200)
+INSERT INTO TCodeGroup (CodeGroupK, FName, FDescription, FTable, FMainTable) VALUES
+    (12001, 'TLink.TypeC', 'Link type codes (Web, Document, Video, Social Media, API, etc.)', 'TLink', 'TLink'),
+    (12002, 'TLink.CategoryC', 'Link category codes', 'TLink', 'TLink');
+
+-- TImage codes (table_number 1300)
+INSERT INTO TCodeGroup (CodeGroupK, FName, FDescription, FTable, FMainTable) VALUES
+    (13001, 'TImage.TypeC', 'Image type codes (Photo, Logo, Banner, Thumbnail, Icon, etc.)', 'TImage', 'TImage'),
+    (13002, 'TImage.StateC', 'Image state codes', 'TImage', 'TImage'),
+    (13003, 'TImage.CategoryC', 'Image category codes', 'TImage', 'TImage');    
 
 -- Insert a common/default organization with zero key
 INSERT INTO TOrganization (OrganizationK,ParentK,SuperK,CreateD,UpdateD,TypeC,StateC,ClassC,FName,FCode,FDescription,FAddress,FPhone,FEmail,FWebsite,FTaxId,FDeleted)

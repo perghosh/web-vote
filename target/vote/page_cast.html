@@ -82,14 +82,14 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
       </div>
 
       <div id="idPollCommand" data-page-state="cast">
-         <button class="button-primary page-command" data-command="insert" data-action="cast-vote" data-table="TPoll">Press to Vote</button>
+         <button class="button-primary page-command" data-command="insert" data-action="cast-vote" data-table="TPoll">Tryck för att rösta</button>
       </div>
 
       <div class="container-view margin_b-small page-poll-frame page-poll-header page-auto_hide" data-page-state="voted">
-         <h2 class="page-poll-title">You have already voted in this poll</h2>
-         <p class="page-poll-description">Thank you for your participation!</p>
+         <h2 class="page-poll-title">Du har röstat i denna omröstning</h2>
+         <p class="page-poll-description">Tack för ditt deltagande!</p>
          <!-- link to vote result -->
-         <a id="idGotoResult" href="#" class="page-poll-link">View Results</a>
+            <a id="idGotoResult" href="#" class="page-poll-link" style="font-size: 1.5rem; font-weight: 800; text-decoration: underline; text-decoration-thickness: 2px;"><strong>Visa resultat</strong></a>
    </div>
 
 
@@ -100,9 +100,9 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
                <div class="page-question-header">
                   <div class="page-question-title-row">
                      <span class="page-label page-question-tag page-auto_hide" data-field="FLabel"></span>
-                     <h3 class="margin_b-small page-question-title" data-field="FName">Question name</h3>
+                     <h3 class="margin_b-small page-question-title" data-field="FName">Fråga namn</h3>
                   </div>
-                  <p class="margin_b-small page-question-description" data-field="FQuestion">Question text goes here...</p>
+                  <p class="margin_b-small page-question-description" data-field="FQuestion">Frågetext går här...</p>
                </div>
                <input type="hidden" value="1" data-field="FMinSelect"> <!-- Min selectable answers for this question -->
                <input type="hidden" value="1" data-field="FMaxSelect"> <!-- Max selectable answers for this question -->
@@ -119,7 +119,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
          <label class="vote-answer-option" data-description="single selectable answer option">
             <input class="vote-answer-input" type="checkbox" data-value="" value="" data-field="PollAnswerK">
             <span class="vote-answer-box" aria-hidden="true"></span>
-            <span class="vote-answer-text" data-field="FAnswer">Answer text goes here...</span>
+            <span class="vote-answer-text" data-field="FAnswer">Svarstext går här...</span>
          </label>
          <input type="hidden" value="" data-field="PollQuestionK">
       </div>
@@ -170,7 +170,8 @@ function PAGE_Initialize() {
       const oIp = XML_GetFirstValue( oResult, undefined, "object" );
       oDocument_g.SetValue("Ip", oIp.ip); // Store client IP in document for later use when casting vote
       console.log("Client IP obtained from server:", oIp.ip);
-      const oValues = { PollK: sPollK, Ip: oIp.ip };
+      const oValues = { PollK: sPollK, FIp: oIp.ip };
+      //const oValues = { PollK: sPollK, FIp: "3E87BBAE5C8CFA568E285CA71AAEA78B" }; // set dummy ip
       gd.SendToServer("", "!db/select", "query=#cast-check_if_voted\nvalues=" + JSON.stringify(oValues)).then((oResult) => {
          const aVoteCheck = XML_GetFirstValue( oResult, undefined, "object" );
          if( Number(aVoteCheck[1][0]) > 0 ) {
@@ -236,6 +237,7 @@ function PAGE_SetListeners() {
                   }
                   const iCount = parseInt(oVote.count) || 0;
                   oToast_g.Show(`Successfully cast ${iCount} votes.`);
+                  ELEMENT_Show("voted");
                }).catch((error) => {
                   console.error("Failed to cast votes:", error);
                   const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";

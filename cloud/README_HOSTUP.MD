@@ -50,3 +50,14 @@ If it doesn't work then install this also `apt install -y unixodbc`
 *Set attributes* `chmod +x /opt/http/http`  
 *Start service* `systemctl start http`  
 
+
+### Create secret folder
+UUID_NAME=$(uuidgen) && mkdir "$UUID_NAME" && echo "Din dolda mapp heter: $UUID_NAME"
+mv page_poll_edit.html page_poll_question_edit.html "$UUID_NAME/"
+ls -l "$UUID_NAME"
+cp -r js "$UUID_NAME/"
+cp -r css "$UUID_NAME/"
+
+
+current name: 86949df8-6faf-4d71-90bb-f4c359b63a8a
+
