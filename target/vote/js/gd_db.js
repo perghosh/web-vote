@@ -727,7 +727,7 @@ DBRecord.extend = function(sName, fn) {
 class DBRecordContainer extends DBRecord {
 
    /** -----------------------------------------------------------------------
-    * @param {Array|Object|string} columns_         - Column definitions (same as DBRecord)
+    * @param {Array|Object|string|Element} columns_  - Column definitions (same as DBRecord)
     * @param {Object}              [options_={}]    - All DBRecord options, plus:
     * @param {Element}             [options_.oContainer]   - Container element to bind immediately
     * @param {Function[]}          [options_.aStrategies]  - Query strategy chain (replaces defaults)
@@ -737,7 +737,7 @@ class DBRecordContainer extends DBRecord {
       // ## Check for html element for columns_ parameter .....................
       if(columns_ instanceof Element) {
          const eContainer = columns_;
-         const aAttributes = ['data-field', 'data-column', 'name'];
+         let aAttributes = typeof options_ === 'string' ? [options_] : ['data-field', 'data-column', 'name'];
          let sAttribute;
          // ### loop to check first found attribute
          for(const s_ of aAttributes) {  if(eContainer.querySelector(`[${s_}]`)) { sAttribute = s_; break; }  }
