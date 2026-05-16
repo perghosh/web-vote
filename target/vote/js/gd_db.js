@@ -734,6 +734,23 @@ class DBRecordContainer extends DBRecord {
     * @param {Function}            [options_.fnQuery]      - Single strategy appended after defaults
     */
    constructor(columns_ = [], options_ = {}) {
+      // ## Check for html element for columns_ parameter .....................
+      if(columns_ instanceof Element) {
+         const eContainer = columns_;
+         const aAttributes = ['data-field', 'data-column', 'name'];
+         let sAttribute;
+         // ### loop to check first found attribute
+         for(const s_ of aAttributes) {  if(eContainer.querySelector(`[${s_}]`)) { sAttribute = s_; break; }  }
+         if(!sAttribute) { throw new Error("No recognizable field attribute found in container"); }
+
+         // ### Harvest all elements with that attribute and extract column names
+         const aElements = eContainer.querySelectorAll(`[${sAttribute}]`);
+         columns_ = Array.from(aElements).map(e_ => {
+            const sName = e_.getAttribute(sAttribute);
+            return { sName, sAlias: sName, sType: "string" };                 // Default type to string
+         });
+      }
+
       super(columns_, options_);
 
       this.mapElements  = new Map();  // sName → { element, fnGet, fnSet, _manual }
@@ -754,8 +771,8 @@ class DBRecordContainer extends DBRecord {
       (e_, column) => e_.querySelector(`[data-field="${column.sName}"]`),
       (e_, column) => e_.querySelector(`[data-column="${column.sName}"]`),
       (e_, column) => e_.querySelector(`[name="${column.sName}"]`),
-      (e_, column) => e_.querySelector(`#${column.sName}`),
-      (e_, column) => e_.querySelector(`[id$="_${column.sName}"]`),
+      //(e_, column) => e_.querySelector(`#${column.sName}`),
+      //(e_, column) => e_.querySelector(`[id$="_${column.sName}"]`),
    ];
 
    // ==========================================================================
@@ -811,7 +828,7 @@ class DBRecordContainer extends DBRecord {
    ScanContainer() {
       if(!this.container_) { throw new Error("ScanContainer: No container bound. Call BindContainer() first."); }
 
-      const { element: oContainer, aStrategies, bRescan } = this.container_;
+      const { element: eContainer, aStrategies, bRescan } = this.container_;
 
       let fnLockedStrategy = this.container_.fnLockedStrategy || null;  // Persist lock across re-scans
 
@@ -825,9 +842,9 @@ class DBRecordContainer extends DBRecord {
          // ## Try locked strategy first if one has been established ............
          if(fnLockedStrategy) {
             try {
-               const oFound = fnLockedStrategy(oContainer, oColumn);
-               if(oFound instanceof Element) {
-                  this.mapElements.set(sName, { element: oFound, fnGet: null, fnSet: null, _auto: true });
+               const eFound = fnLockedStrategy(eContainer, oColumn);
+               if(eFound instanceof Element) {
+                  this.mapElements.set(sName, { element: eFound, fnGet: null, fnSet: null, _auto: true });
                   return;                              // Done — locked strategy worked
                }
             }
@@ -837,9 +854,9 @@ class DBRecordContainer extends DBRecord {
          // ## No lock yet, or locked strategy missed — run full chain ..........
          for(const fnStrategy of aStrategies) {
             try {
-               const oFound = fnStrategy(oContainer, oColumn);
-               if(oFound instanceof Element) {
-                  this.mapElements.set(sName, { element: oFound, fnGet: null, fnSet: null, _auto: true });
+               const eFound = fnStrategy(eContainer, oColumn);
+               if(eFound instanceof Element) {
+                  this.mapElements.set(sName, { element: eFound, fnGet: null, fnSet: null, _auto: true });
 
                   // ## Lock onto first winning strategy if not already locked ..
                   if(!fnLockedStrategy) {

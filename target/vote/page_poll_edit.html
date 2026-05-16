@@ -57,6 +57,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       button.button { border: none; }
       .divider { border-radius: 5px; border-top: 2px solid var(--color-border); }
+
+      .container-form .floating select { appearance: none; -webkit-appearance: none; background: var(--background-input) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E") no-repeat right 12px center; border: 2px solid var(--color-border); border-radius: 6px; color: var(--color-input); cursor: pointer; display: block; font-size: 1rem; padding: 22px 32px 8px 12px; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; }
+      .container-form .floating select:focus { border-color: var(--color-link); box-shadow: 0 0 0 3px rgba(188, 108, 37, 0.25); outline: none; }
+      .container-form .floating:has(select) span { color: var(--color-link) !important; font-size: 0.8rem; font-weight: bold; top: -10px; transform: translateY(0); }
       .group { align-items: flex-end; display: flex; gap: 12px; }
       .label-number { color: var(--background-success); }
       .label-text { color: var(--color-muted); }
@@ -65,41 +69,54 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 </head>
 <body>
    <div id="idContainer" class="page-container container page" data-section="page">
-
-
-
       <form id="idForm" class="container-form margin_b-small" onsubmit="event.preventDefault();"">
 
         <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Edit Poll Details</h2></div>
-
          <div data-section="poll-form">
             <div class="group" style="gap: 20px;">
                <div style="flex: 1">
                   <label class="floating">
                      <input type="text" placeholder=" " data-field="FName">
-                     <span>Name</span>
+                     <span>Namn</span>
                   </label>
                </div>
 
                <div style="flex: 1">
                   <label class="floating">
                      <input type="text" placeholder=" " data-field="FHeader">
-                     <span>Header</span>
+                     <span>Rubrik</span>
                   </label>
                </div>
             </div>
 
-            <!--<div class="group" style="margin-top: 20px; width: 50%;">
-
-               
-            </div>-->
-
             <div class="group" style="margin-top: 20px;">
                <label class="floating" style="width: 100%;">
                   <textarea placeholder=" " data-field="FDescription"></textarea>
-                  <span>Description</span>
+                  <span>Beskrivning</span>
                </label>
             </div>
+
+            <div class="grid-row cols-3" style="margin-top: 20px;">
+               <label class="floating">
+                  <select data-field="AreaC">
+                     <option value=""></option>
+                  </select>
+                  <span>Område</span>
+               </label>
+               <label class="floating">
+                  <select data-field="TypeC">
+                     <option value=""></option>
+                  </select>
+                  <span>Typ</span>
+               </label>
+               <label class="floating">
+                  <select data-field="StateC">
+                     <option value=""></option>
+                  </select>
+                  <span>Status</span>
+               </label>
+            </div>
+            <input type="hidden" data-field="PollK">
          </div>
 
          <div class="group" id="idFieldLabels" style="gap: 20px;">
@@ -128,17 +145,17 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
     <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
 
-        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Search Polls</h2></div>
+        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Sök Omröstningar</h2></div>
 
         <div data-section="search" class="group">
             <div class="row">
                   <div style="flex: 1;">
                     <label class="floating">
                         <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
-                        <span>Search</span>
+                        <span>Sök</span>
                     </label>
                   </div>
-                  <button class="button" data-action="search" style="margin-left: 10px;">Search</button>
+                  <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
             </div>
          </div>
 
@@ -177,27 +194,12 @@ gd.SetBaseUrl(sBaseUrl_g);
 
       PAGE_TableUpdate();
 
-      const fnRead = function(sName, oRecord)
-      {
-         const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
-         const eField = ePollform.querySelector(`[data-field="${sName}"]`);
-         if( eField ) { this.SetValue(sName, eField.value); }
-      };
-
-      const fnWrite = function(sName, oRecord)
-      {
-         const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
-         const eField = ePollform.querySelector(`[data-field="${sName}"]`);
-         if( eField ) { eField.value = this.GetValue(sName); }
-      };
-
-      let oRecord = new DBRecord([], { fnRead, fnWrite });
+      const eForm = document.querySelector("#idForm");
+      let oRecord = new DBRecordContainer( document.querySelector("#idForm") );
+      oRecord.SetColumnMember("PollK", { bKey: true } );                     // Set key column and type for PollK field
       oRecord.table = "TPoll";
-      console.log(oRecord);
 
-      // Adds fields from `aEditField` to record
-      oRecord.AddColumn(aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"})
-      oDocument_g.AddRecord(oRecord);                                          // add record to document
+      oDocument_g.AddRecord(oRecord);                                         // add record to document
 
       LoadLists();
 
@@ -213,13 +215,45 @@ gd.SetBaseUrl(sBaseUrl_g);
     */
    function LoadLists()
    {
+      const eForm = document.querySelector("#idForm");
+
+      // callback that takes table and fills dropdown options
+      const fnFillDropdown = function(oTable, sFieldName) {
+         const eSelect = eForm.querySelector(`[data-field="${sFieldName}"]`);
+         eSelect.innerHTML = '<option value=""></option>';                    // clear existing options
+         // ## add new options from table ....................................
+         for(let i = 0; i < oTable.GetRowCount(); i++) {
+            const sValue = oTable.GetCellValue(i, 0);
+            const sText = oTable.GetCellValue(i, 1);
+            const eOption = document.createElement("option");
+            eOption.value = sValue;
+            eOption.textContent = sText;
+            eSelect.appendChild(eOption);
+         }
+      };
 
       gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) }).then(function(oResult) {
          const eResult = oResult?.data?.querySelector("result");
          const aResult = JSON.parse(eResult.textContent);
-         const oTable = new Table(aResult);
-         oTable.name = "areas";
+         const oTable = new Table(aResult, { sName: "area" });
          oDocument_g.AddTable(oTable);
+         fnFillDropdown(oTable, "AreaC");
+      });
+
+      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10602 }) }).then(function(oResult) {
+         const eResult = oResult?.data?.querySelector("result");
+         const aResult = JSON.parse(eResult.textContent);
+         const oTable = new Table(aResult, { sName: "type" });
+         oDocument_g.AddTable(oTable);
+         fnFillDropdown(oTable, "TypeC");
+      });
+
+      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10603 }) }).then(function(oResult) {
+         const eResult = oResult?.data?.querySelector("result");
+         const aResult = JSON.parse(eResult.textContent);
+         const oTable = new Table(aResult, { sName: "state" });
+         oDocument_g.AddTable(oTable);
+         fnFillDropdown(oTable, "StateC");   
       });
    }
 
@@ -259,12 +293,14 @@ gd.SetBaseUrl(sBaseUrl_g);
       }
    }
 
+   /*
    const aEditField = [
       { field: "PollK", type: "string", key: true},
       { label: "Name", description: "Name for poll in system", field: "FName", type: "string", required: true},
       { label: "Header", description: "Header for poll in system", field: "FHeader", type: "string", required: true},
       { label: "Description", description: "Description for poll in system", field: "FDescription", type: "string", required: true},
    ]
+      */
 
    /** ---------------------------------------------------------------------------
     * Update UI elements
@@ -335,17 +371,6 @@ gd.SetBaseUrl(sBaseUrl_g);
          const sPollK = oDocument_g.GetValue("PollK");
          if( typeof sPollK === "string"  ) { eQuestion.style.visibility = "visible";}
          else { eQuestion.style.visibility = "collapse"; }
-
-         /*
-         if( bModified !== bLastModified ) {
-            const eQuestion = document.querySelector('[data-id="idQuestion"]');
-            const sPollK = oDocument_g.GetValue("PollK");
-            if( typeof sPollK === "string"  ) { eQuestion.style.visibility = "visible";}
-            else { eQuestion.style.visibility = "collapse"; }
-
-            bLastModified = bModified;
-         }
-         */
       }
    })();
 
@@ -380,7 +405,7 @@ gd.SetBaseUrl(sBaseUrl_g);
                   oDBRecord.SetKeyValue( sKey );
                   oDocument_g.SetValue("PollK", sKey);
 
-                  oDBRecord.WriteValues();
+                  oDBRecord.WriteValues( document.querySelector("#idForm") ); // write values to form
 
                   PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
                }
