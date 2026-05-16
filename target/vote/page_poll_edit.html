@@ -422,7 +422,7 @@ gd.SetBaseUrl(sBaseUrl_g);
 
          // ## User table record and action .....................................
          const oDBRecord = oDocument_g.GetRecord( "TPoll" );                                          console.assert( oDBRecord, "oDBRecord is null" );
-         oDBRecord.ReadValues();                                               // read values from form into record before performing action
+         oDBRecord.ReadValues( document.querySelector("#idForm") );                                               // read values from form into record before performing action
 
          switch(sAction) {
             case "sort": {
