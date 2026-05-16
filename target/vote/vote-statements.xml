@@ -20,6 +20,12 @@ TIP: select name and search in project to find where these statements are used
       </condition-set>
    </condition-sets>
    <statements>
+      <!-- @API [tag: TCode]
+       | Statements for main vote page, Table called TPoll is worked on
+       |-->
+      <statement name="code-get_list" format="jinja" type="select" description="Get first poll, used for development">SELECT CodeK, FName FROM TCode WHERE CodeGroupK = {CodeGroupK} ORDER BY FName</statement>
+
+
       <!-- @API [tag: TPoll]
        | Statements for main vote page, Table called TPoll is worked on
        | - vote-get_first: Get first poll, used to determine if there are any polls at all

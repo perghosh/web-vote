@@ -154,14 +154,73 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    let oToast_g;
    let oDocument_g;
 
-   /** ------------------------------------------------------------------------
-    * Clears all form input fields within the given parent element
-    */
-   function PAGE_DeleteFieldInputs(eParent)
-   {
-      const aFields = eParent.querySelectorAll("[data-field]");
+   // ## Prepare base url .....................................................
+const sBaseUrl_g = gd.GetBaseUrl();
+gd.SetBaseUrl(sBaseUrl_g);
 
-      aFields.forEach((eField) => { eField.value = ""; });
+
+      // Start page initialization ----------------------------------------------- @API [summary: main]
+   document.addEventListener('DOMContentLoaded', function() {
+      THEME_Select("color", {});
+      PAGE_Initialize();                                                      // Initialize page
+      PAGE_SetListeners();                                                     // Set page listeners
+   });
+
+      /** ----------------------------------------------------------------------- @API [summary: initialize page]
+    * Main initialization function that initializes the page
+    */
+   function PAGE_Initialize() {
+      oDocument_g = new CDocument({});
+      
+      let oTable = new Table(["id", "name", "header"], {sName: "search"} );
+      oDocument_g.AddTable(oTable);
+
+      PAGE_TableUpdate();
+
+      const fnRead = function(sName, oRecord)
+      {
+         const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
+         const eField = ePollform.querySelector(`[data-field="${sName}"]`);
+         if( eField ) { this.SetValue(sName, eField.value); }
+      };
+
+      const fnWrite = function(sName, oRecord)
+      {
+         const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
+         const eField = ePollform.querySelector(`[data-field="${sName}"]`);
+         if( eField ) { eField.value = this.GetValue(sName); }
+      };
+
+      let oRecord = new DBRecord([], { fnRead, fnWrite });
+      oRecord.table = "TPoll";
+      console.log(oRecord);
+
+      // Adds fields from `aEditField` to record
+      oRecord.AddColumn(aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"})
+      oDocument_g.AddRecord(oRecord);                                          // add record to document
+
+      LoadLists();
+
+      oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
+
+      // ## Start idle timer - call PAGE_OnIdle() once per second
+      CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+   }
+
+   /** ---------------------------------------------------------------------------
+    * Load lists of data for the page, such as search results or dropdown options
+    * This function can be called to refresh the data displayed on the page
+    */
+   function LoadLists()
+   {
+
+      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) }).then(function(oResult) {
+         const eResult = oResult?.data?.querySelector("result");
+         const aResult = JSON.parse(eResult.textContent);
+         const oTable = new Table(aResult);
+         oTable.name = "areas";
+         oDocument_g.AddTable(oTable);
+      });
    }
 
    function PAGE_UpdateFieldLabels(eParent)
@@ -200,60 +259,12 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       }
    }
 
-   // Start page initialization ----------------------------------------------- @API [summary: main]
-   document.addEventListener('DOMContentLoaded', function() {
-      THEME_Select("color", {});
-      PAGE_Initialize();                                                      // Initialize page
-   });
-
    const aEditField = [
       { field: "PollK", type: "string", key: true},
       { label: "Name", description: "Name for poll in system", field: "FName", type: "string", required: true},
       { label: "Header", description: "Header for poll in system", field: "FHeader", type: "string", required: true},
       { label: "Description", description: "Description for poll in system", field: "FDescription", type: "string", required: true},
    ]
-
-   /** ----------------------------------------------------------------------- @API [summary: initialize page]
-    * Main initialization function that initializes the page
-    */
-   function PAGE_Initialize() {
-      oDocument_g = new CDocument({});
-      
-      let oTable = new Table(["id", "name", "header"], {sName: "search"} );
-      oDocument_g.AddTable(oTable);
-
-      PAGE_TableUpdate();
-
-      const fnRead = function(sName, oRecord)
-      {
-         const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
-         const eField = ePollform.querySelector(`[data-field="${sName}"]`);
-         if( eField ) { this.SetValue(sName, eField.value); }
-      };
-
-      const fnWrite = function(sName, oRecord)
-      {
-         const ePollform = document.querySelector('#idForm div[data-section="poll-form"]');
-         const eField = ePollform.querySelector(`[data-field="${sName}"]`);
-         if( eField ) { eField.value = this.GetValue(sName); }
-      };
-
-      let oRecord = new DBRecord([], { fnRead, fnWrite });
-      oRecord.table = "TPoll";
-      console.log(oRecord);
-
-      // Adds fields from `aEditField` to record
-      oRecord.AddColumn(aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"})
-      oDocument_g.AddRecord(oRecord);                                          // add record to document
-
-      oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
-
-      // ## Start idle timer - call PAGE_OnIdle() once per second
-      CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
-
-      PAGE_SetListeners();
-   }
-
 
    /** ---------------------------------------------------------------------------
     * Update UI elements
@@ -548,10 +559,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                oTable = new Table(["id", "name", "header"], {sName: "search"} );
                oDocument_g.AddTable(oTable);
             }
-            else
-            {
-               oTable.Clear();
-            }
+            else { oTable.Clear(); }
             
 
             // loop array and add rows to table

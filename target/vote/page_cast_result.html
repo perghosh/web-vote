@@ -47,7 +47,11 @@ Queries used in page ==========================================================
       .page-answer-block:not(:last-child) { border-bottom: 1px solid var(--color-border); }
 
       .page-answer-row { align-items: center; column-gap: 14px; display: grid; grid-template-columns: 88px 1fr; }
-      .page-answer-percentage { align-items: center; color: var(--chart-line, var(--color-active)); display: flex; font-size: 1.45rem; font-weight: 700; justify-content: flex-end; line-height: 1; min-height: 54px; }
+
+      .page-answer-percentage { display: flex; justify-content: center; }
+      .page-answer-count { display: flex; justify-content: center; }
+      
+
       .page-answer-content { display: grid; gap: 8px; }
       .page-answer-content [data-field="FAnswer"] { margin-bottom: 0; }
 
@@ -98,7 +102,10 @@ Queries used in page ==========================================================
          <div data-field="PollAnswerK" data-value="" data-table="TPollAnswer" data-description="key for answer">
             <div data-section="record" data-table="TPollAnswer">
                <div class="page-answer-row">
-                  <div class="page-answer-percentage" data-field="VotePercent">0%</div>
+                  <div style="color: var(--chart-line, var(--color-active)); font-weight: 700;">
+                     <span class="page-answer-percentage" style="font-size: 1.45rem; line-height: 1; min-height: 20px;" data-id="VotePercent">0%</span>
+                     <span class="page-answer-count" style="font-size: 1rem;" data-field="VoteCount">0</span>
+                  </div>
                   <div class="page-answer-content">
                      <p class="margin_b-small" data-field="FAnswer">Answer text goes here...</p>
                      <div class="page-bar" data-field="VoteCount" data-value="">
@@ -254,7 +261,7 @@ function PAGE_RenderResult() {
          eBar.style.width = `${dVotePercentage}%`;
 
          recordAnswer.WriteValues(eTemplate);
-         const eVotePercentage = eTemplate.querySelector("[data-field='VotePercent']");
+         const eVotePercentage = eTemplate.querySelector("[data-id='VotePercent']");
          if( eVotePercentage ) { eVotePercentage.textContent = `${iVotePercentageRounded}%`; }
          eQuestion.appendChild(eTemplate);
       }

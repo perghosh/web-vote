@@ -59,5 +59,9 @@ cp -r js "$UUID_NAME/"
 cp -r css "$UUID_NAME/"
 
 
-current name: 86949df8-6faf-4d71-90bb-f4c359b63a8a
+## Caddy
+
+*Check configuration*
+cat /etc/caddy/Caddyfile
+
 
