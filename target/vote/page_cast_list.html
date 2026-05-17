@@ -59,37 +59,26 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       @media (max-width: 768px) { .label-text { display: none; } .filter { width: 70px; } }
 
       /* poll row */
-      .poll-row { align-items: center; border: 1px solid var(--color-border); border-radius: 10px; background: var(--background-light); cursor: pointer; display: flex; gap: 12px; margin-bottom: 10px; padding: 16px 18px; transition: all 0.2s ease; }
+      .poll-row { align-items: center; border: 1px solid var(--color-border); border-radius: 10px; background: var(--background-light); cursor: pointer; display: flex; gap: 12px; margin-bottom: 10px; padding: 8px 18px; transition: all 0.2s ease; }
       .poll-row:hover { background: var(--background-light-hover); transform: translateY(-1px); }
       .poll-content { flex: 1; min-width: 0; }
-      .poll-row #idName { color: var(--color-body); font-weight: 600; }
-      .poll-row #idDescription { color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .poll-row #idVotes { color: var(--background-success); font-size: 24px; font-weight: 600; max-width: 200px; text-align: center; }
+      .poll-row [data-id='idName'] { color: var(--color-body); font-weight: 600; }
+      .poll-row [data-id='idDescription'] { color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .poll-row [data-id='idVotes'] { color: var(--background-success); font-size: 30px; font-weight: 600; max-width: 200px; text-align: center; }
 
 
       .container-form {height: 100%;}
    </style>
 </head>
 <body>
-
-   <template id="idTemplateRow">
-      <div class="poll-row">
-         <div class="poll-votes" id="idVotes">0</div>
-         <div class="poll-content">
-            <div class="poll-name" id="idName">Name</div>
-            <div class="poll-header" id="idDescription">Description</div>
-         </div>
-         <a href="#" data-action="vote" style="margin-left: auto; padding: 8px 12px; border-radius: 999px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;">Rösta</a>
-      </div>
-   </template>
-
    <div id="idContainer" class="page-container container page" data-section="page">
-
-    <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
-
-        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Sök och filtrera omröstningar</h2></div>
-
-        <div data-section="search" class="group">
+      <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();"
+         style="margin-top: 10px;">
+         <div class="title" style="margin-bottom: 20px;">
+            <h2 class="page-title">Sök och filtrera omröstningar</h2>
+         </div>
+   
+         <div data-section="search" class="group">
             <div class="row">
                <div style="flex: 1;">
                   <label class="floating">
@@ -97,9 +86,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                      <span>Sök</span>
                   </label>
                </div>
-
+   
                <label class="label-text">Sortera efter:</label>
-
+   
                <select class="filter" data-action="sort">
                   <!-- <option value="votes">Most Votes</option> -->
                   <option value="ascending" selected>A-Z</option>
@@ -108,12 +97,21 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
             </div>
          </div>
-
-        <div data-section="select-polls" class="container-result"></div>
-    </form>
-
+   
+         <div data-section="select-polls" class="container-result"></div>
+      </form>
    </div>
 
+   <template id="idTemplateRow">
+      <div class="poll-row">
+         <div class="poll-votes" data-id="idVotes">0</div>
+         <div class="poll-content">
+            <div class="poll-name" data-id="idName">Name</div>
+            <div class="poll-header" data-id="idDescription">Description</div>
+         </div>
+         <a href="#" data-action="vote" style="margin-left: auto; padding: 8px 12px; border-radius: 50px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;">Rösta</a>
+      </div>
+   </template>
    
 
    <script>
@@ -175,14 +173,14 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          const sKey = oTable.GetCell(i, 0);
          const sName = oTable.GetCell(i, 1);
-         const SHeader = oTable.GetCell(i, 2);
+         const sHeader = oTable.GetCell(i, 2);
          const sVotes = oTable.GetCell(i, 3);
 
          eRow.dataset.key = sKey;
 
-         eRow.querySelector("#idName").textContent = sName;
-         eRow.querySelector("#idDescription").textContent = SHeader;
-         eRow.querySelector("#idVotes").textContent = sVotes;
+         eRow.querySelector("[data-id='idName']").textContent = sName;
+         eRow.querySelector("[data-id='idDescription']").textContent = sHeader;
+         eRow.querySelector("[data-id='idVotes']").textContent = sVotes;
 
          eSelectPoll.appendChild(eRow);
       }
