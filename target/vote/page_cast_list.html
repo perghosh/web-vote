@@ -48,6 +48,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       button.button { border: none; }
       .divider { border-radius: 5px; border-top: 2px solid var(--color-border); }
       .group { align-items: flex-end; display: flex; gap: 12px; }
+      .search-group { align-items: stretch; display: block; }
       .label-number { color: var(--background-success); }
       .label-text { color: var(--color-muted); text-align: right;}
       .row { display: flex; width: 100%; flex-wrap: wrap;}
@@ -55,6 +56,12 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       /* select */
       .filter { padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 5px; background: var(--background-light); color: var(--color-body); transition: all 0.2s ease;}
       .filter:hover { background: var(--background-light-hover); }
+
+      .advanced-search { border-top: 1px solid var(--color-border); display: none; margin-top: 10px; padding-top: 10px; width: 100%; }
+      .advanced-search[data-visible="true"] { display: block; }
+      .advanced-search-row { align-items: center; display: flex; gap: 10px; }
+      .advanced-search-label { color: var(--color-muted); font-size: 12px; min-width: 80px; }
+      .advanced-search-select { max-width: 220px; min-width: 160px; }
 
       @media (max-width: 768px) { .label-text { display: none; } .filter { width: 70px; } }
 
@@ -78,11 +85,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             <h2 class="page-title">Sök och filtrera omröstningar</h2>
          </div>
    
-         <div data-section="search" class="group">
+         <div data-section="search" class="group search-group">
             <div class="row">
                <div style="flex: 1;">
                   <label class="floating">
-                     <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
+                     <input type="text" placeholder=" " id="idSearchInput" data-id="search">
                      <span>Sök</span>
                   </label>
                </div>
@@ -95,6 +102,16 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   <option value="descending">Z-A</option>
                </select>
                <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
+               <button class="button" data-action="search-advanced" style="margin-left: 10px;">Mer...</button>
+            </div>
+
+            <div id="idSearchAdvanced" class="advanced-search" data-visible="false">
+               <div class="advanced-search-row">
+                  <label class="advanced-search-label" for="idSearchArea">Område:</label>
+                  <select id="idSearchArea" class="filter advanced-search-select" data-id="area">
+                     <option value="">Alla</option>
+                  </select>
+               </div>
             </div>
          </div>
    
@@ -148,8 +165,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          const sArea = localStorage.getItem("area");
          if(sArea && !isNaN(parseInt(sArea))) { oDocument_g.SetValue("area", parseInt(sArea, 10)); }
       }
-      
-      POLL_GetResult();
+
+      LoadSearchValues();
+      GetPollResult();
 
       oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
    }
@@ -225,15 +243,30 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             case "sort": {
                console.log("Sort action triggered");
 
-               if( eTarget.value === "votes" ) { POLL_GetResult( {"order": [-3]} );}
-               else if( eTarget.value === "ascending" ) { POLL_GetResult( {"order": [2]} ); }
-               else if( eTarget.value === "descending" ) { POLL_GetResult( {"order": [-2]} ); }
+               if( eTarget.value === "votes" ) { GetPollResult( {"order": [-3]} );}
+               else if( eTarget.value === "ascending" ) { GetPollResult( {"order": [2]} ); }
+               else if( eTarget.value === "descending" ) { GetPollResult( {"order": [-2]} ); }
                else { return; }
             } break;
+            case "search-advanced": {
+               const eAdvancedSearch = eContainer.querySelector("#idSearchAdvanced");
+               if(!eAdvancedSearch) { return; }
+
+               const bVisible = eAdvancedSearch.dataset.visible === "true";
+               eAdvancedSearch.dataset.visible = bVisible ? "false" : "true";
+            } break;
             case "search": {
-               const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
+               const sSearchValue = eContainer.querySelector('[data-id="search"]').value;
+               const sArea = eContainer.querySelector('[data-id="area"]').value;
                oDocument_g.SetValue("search", sSearchValue);
-               POLL_GetResult();
+
+               if(sArea === "") { oDocument_g.SetValue("area", null); localStorage.removeItem("area"); }
+               else if(!isNaN(parseInt(sArea, 10))) {
+                  oDocument_g.SetValue("area", parseInt(sArea, 10));
+                  localStorage.setItem("area", sArea);
+               }
+
+               GetPollResult();
             } break;
             default:
                console.error("Unknown action:", sAction);
@@ -241,9 +274,25 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       });
 
+      // ## Area select change listener - trigger search on area change ......
+      const eAreaSelect = eContainer.querySelector('[data-id="area"]');
+      if(eAreaSelect) {
+         eAreaSelect.addEventListener("change", (e_) => {
+            const sArea = e_.target.value;
+
+            if(sArea === "") { oDocument_g.SetValue("area", null); localStorage.removeItem("area"); }
+            else if(!isNaN(parseInt(sArea, 10))) {
+               oDocument_g.SetValue("area", parseInt(sArea, 10));
+               localStorage.setItem("area", sArea);
+            }
+
+            GetPollResult();
+         });
+      }
+
    }
 
-   /** ---------------------------------------------------------------------
+   /** -----------------------------------------------------------------------
     * Handle response data from server and display it in the container
     *
     * Response data format is { type: <format>, data: <data> } and type can be any of
@@ -305,12 +354,48 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       }
    }
 
-   /** --------------------------------------------------------------------- @API [tag: update]
+   /** ----------------------------------------------------------------------- @API [tag: search, load]
+    * Load options for advanced Area filter dropdown in search panel
+    */
+   function LoadSearchValues() {
+      const eSearchArea = document.getElementById("idSearchArea");
+      if(!eSearchArea) { return; }
+
+      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) }).then(function(oResult) {
+         const eResult = oResult?.data?.querySelector("result");
+         if(!eResult || !eResult.textContent) { return; }
+
+         const aResult = JSON.parse(eResult.textContent);                      // parse result as array
+         if(Array.isArray(aResult) && aResult.length > 0) { aResult.shift(); } // remove first row that is the column names
+
+         for(let i = 0; i < aResult.length; i++)
+         {
+            const aRow = aResult[i];
+            if(!Array.isArray(aRow) || aRow.length < 2) { continue; }
+
+            const sValue = String(aRow[0] ?? "");
+            const sText = String(aRow[1] ?? "");
+            if(sValue === "" || sText === "") { continue; }
+
+            const eOption = document.createElement("option");
+            eOption.value = sValue;
+            eOption.textContent = sText;
+            eSearchArea.appendChild(eOption);
+         }
+
+         // ## set selected area if it exists in options ......................
+         const iArea = oDocument_g.GetValue("area");
+         if(iArea !== undefined && iArea !== null) {
+            const sArea = String(iArea);
+            if(eSearchArea.querySelector(`option[value="${sArea}"]`)) { eSearchArea.value = sArea; } 
+         }
+      });
+   }
+
+   /** --------------------------------------------------------------------- @API [tag: result, poll]
     * Update Poll result based on options, options can include filters, sorting and pagination parameters
     */
-   function POLL_GetResult( options_ ) {
-      //const sQueryName = "vote-poll_search";
-
+   function GetPollResult( options_ ) {
       const oModifiers = { table: "TPoll", order: [2], "limit": [0, 10] };  
 
       if( typeof options_ === "object" )
