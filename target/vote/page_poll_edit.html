@@ -487,14 +487,14 @@ gd.SetBaseUrl(sBaseUrl_g);
             case "poll-open": {
                // Open poll questions page, pass selected poll key as parameter
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-                  const sPollKey = oDBPollRecord.GetKeyValue();                console.assert(sPollKey, "sPollKey is null or empty");
+               const sPollKey = oDBPollRecord.GetKeyValue();                   console.assert(sPollKey, "sPollKey is null or empty");
 
-                  window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
+               window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
             } break;
             case "poll-open": {
                // Open poll questions page, pass selected poll key as parameter
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-                  const sPollKey = oDBPollRecord.GetKeyValue();                console.assert(sPollKey, "sPollKey is null or empty");
+               const sPollKey = oDBPollRecord.GetKeyValue();                   console.assert(sPollKey, "sPollKey is null or empty");
 
                   window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
             } break;
@@ -599,6 +599,7 @@ gd.SetBaseUrl(sBaseUrl_g);
             const oInsert = JSON.parse(eInsert.textContent);                  // parse result to get new poll key
             const sPollK = oInsert.PollK;                                     // set new poll key in document to trigger update and show buttons for new poll
             oDocument_g.SetValue("PollK", sPollK);
+            oDocument_g.GetRecord("TPoll").SetKeyValue(sPollK);               // set key value in record to enable update and delete actions
             oDocument_g.SetModified(true);                                    // trigger update in idle to show buttons
          }
       }
