@@ -267,6 +267,7 @@ CREATE TABLE TPoll (
 );
 CREATE INDEX "IC_TPoll_ParentK" ON TPoll (ParentK);
 CREATE INDEX "I_TPoll_PollGroupK" ON TPoll (PollGroupK);
+CREATE INDEX "I_TPoll_AreaC" ON TPoll (AreaC);
 
 CREATE TABLE TPollSection (
    PollSectionK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))

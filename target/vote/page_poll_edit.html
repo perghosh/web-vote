@@ -44,7 +44,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .page-title { color: var(--color-body); }
 
 
-      .container-result { border: 1px solid var(--color-border); border-radius: 4px; margin-top: 10px; overflow: hidden; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+      .container-result { border: 1px solid var(--color-border); border-radius: 4px; margin-top: 10px; overflow: hidden; overflow-x: auto; max-height: 500px; overflow-y: auto; }
       .container-result:not(:empty) { margin-bottom: 20px; }
       .container-result table { border-collapse: collapse; font-size: 16px; table-layout: fixed; width: 100%; }
       .container-result tbody tr:nth-child(odd) { background-color: var(--background-light); border-bottom: 1px solid var(--color-border); }
@@ -294,15 +294,6 @@ gd.SetBaseUrl(sBaseUrl_g);
       }
    }
 
-   /*
-   const aEditField = [
-      { field: "PollK", type: "string", key: true},
-      { label: "Name", description: "Name for poll in system", field: "FName", type: "string", required: true},
-      { label: "Header", description: "Header for poll in system", field: "FHeader", type: "string", required: true},
-      { label: "Description", description: "Description for poll in system", field: "FDescription", type: "string", required: true},
-   ]
-      */
-
    /** ---------------------------------------------------------------------------
     * Update UI elements
     */
@@ -395,7 +386,6 @@ gd.SetBaseUrl(sBaseUrl_g);
             gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
             {
                const oData = oResult.data;
-               //const aPollResult = JSON.parse( oData.querySelector("result").textContent );
                const aPollResult = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
                const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
                oDBRecord.ClearValues();
@@ -452,7 +442,7 @@ gd.SetBaseUrl(sBaseUrl_g);
                const oArguments = `{ "table": "TPoll", "values": ${sValues}, "returning": "PollK" }`;
                const sArguments = `record=${oArguments}`;
                gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
-                  PAGE_ProcessResponse(oResult);
+                  PAGE_ProcessResponse(oResult, "poll-add");
                   oToast_g.Show("Skapad!")
                   PAGE_TableUpdate();
                });
@@ -490,8 +480,8 @@ gd.SetBaseUrl(sBaseUrl_g);
             case "poll-clear": {
                oDBRecord.ClearValues();
                oDocument_g.SetValue("PollK", null);
-               oDBRecord.WriteValues();
-               oDocument_g.SetModified(true);
+               oDBRecord.WriteValues(  document.querySelector("#idForm") );
+               oDocument_g.SetModified(true);                                  // trigger update in idle
                //PAGE_Update();
             } break;
             case "poll-open": {
@@ -602,7 +592,14 @@ gd.SetBaseUrl(sBaseUrl_g);
                   eRow.dataset.key = sKey;
                }
             };
-            
+         }
+         else if( sOperation === "poll-add" )
+         {
+            const eInsert = eResults.querySelector('result[command="insert"]');// get insert result element
+            const oInsert = JSON.parse(eInsert.textContent);                  // parse result to get new poll key
+            const sPollK = oInsert.PollK;                                     // set new poll key in document to trigger update and show buttons for new poll
+            oDocument_g.SetValue("PollK", sPollK);
+            oDocument_g.SetModified(true);                                    // trigger update in idle to show buttons
          }
       }
 

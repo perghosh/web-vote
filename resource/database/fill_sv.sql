@@ -17,7 +17,9 @@ INSERT INTO "TCode" (
 (10601009, 10601, datetime('now'), 'Livsstil', 'Frågor om vardagsliv, konsumtion, mat, trender och mode.'),
 (10601010, 10601, datetime('now'), 'Relationer', 'Frågor om mänskligt beteende, dejting, familjeliv och moraliska dilemman.'),
 (10601011, 10601, datetime('now'), 'Underhållning', 'Frågor om gaming, streamingtjänster, influencers och popkultur.'),
-(10601012, 10601, datetime('now'), 'Politiska Partier', 'Frågor om partiprogram, ideologier, regeringsbildning och specifika partiledare.');
+(10601012, 10601, datetime('now'), 'Politiska Partier', 'Frågor om partiprogram, ideologier, regeringsbildning och specifika partiledare.'),
+(10601013, 10601, datetime('now'), 'Medier, Nyheter & Aktualiteter', 'Frågor om nyhetsrapportering, pressetik, journalistik samt det aktuella medielandskapet och omvärldshändelser.'),
+(10601014, 10601, datetime('now'), 'Övrigt', 'För frågor och ämnen som inte passar in i någon av de andra specifika kategorierna.');
 
 
 
