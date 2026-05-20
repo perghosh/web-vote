@@ -1,0 +1,649 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+PAGE_Initialize - Initialize the page
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+PAGE_Update -  Update UI elements based on the given type
+PAGE_SetListeners - Configure page listeners, handle page specific events  
+PAGE_ProcessResponse - Handle response data from server and display it in the container
+
+Queries used in page ==========================================================
+vote-poll_search - Fetch polls based on search criteria, works with no criteria to fetch all polls
+vote-poll_get - Fetch poll details based on poll key
+
+
+
+
+Objects:
+CDocument - Manages data and state of the page, including records and tables
+DBRecord - Represents a database record, with methods to read/write values and get arguments for server
+UITableLite - A lightweight table UI component for displaying data in a table format
+
+<method name> - <description>
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="css/variables/variables-color-default.css">
+   <link rel="stylesheet" href="css/variables/variables-icon.css">
+   <link rel="stylesheet" href="css/poll.css">
+   <link rel="stylesheet" href="css/elements.css">
+   <link rel="stylesheet" href="css/input-effects.css">
+   <script src="js/gd_server.js"></script>
+   <script src="js/gd_ui_toast.js"></script>
+   <script src="js/gd_ui_tablelite.js"></script>
+   <script src="js/gd_db.js"></script>
+   <script src="js/gd_data_table.js"></script>
+   <script src="js/document.js"></script>
+   <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      .page-title { color: var(--color-body); }
+
+
+      .container-result { border: 1px solid var(--color-border); border-radius: 4px; margin-top: 10px; overflow: hidden; overflow-x: auto; max-height: 500px; overflow-y: auto; }
+      .container-result:not(:empty) { margin-bottom: 20px; }
+      .container-result table { border-collapse: collapse; font-size: 16px; table-layout: fixed; width: 100%; }
+      .container-result tbody tr:nth-child(odd) { background-color: var(--background-light); border-bottom: 1px solid var(--color-border); }
+      .container-result tbody tr:nth-child(even) { background-color: rgba(0, 0, 0, 0.02); border-bottom: 1px solid var(--color-border); }
+      .container-result tbody tr:hover { background-color: var(--background-light-hover) !important; cursor: pointer; }
+      .container-result td { cursor: pointer; padding: 5px 8px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .container-result th { border-bottom: 2px solid var(--color-border); color: var(--color-body); cursor: pointer; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; text-transform: uppercase; transition: background-color 0.2s ease; }
+      .container-result th:hover { background-color: var(--background-light-hover); }
+      .container-result th.active { background-color: var(--background-active); color: var(--color-active); }
+      .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+
+      button.button { border: none; }
+      .divider { border-radius: 5px; border-top: 2px solid var(--color-border); }
+
+      .container-form .floating select { appearance: none; background: var(--background-input) var(--icon-select-chevron) no-repeat right 12px center; border: 2px solid var(--color-border); border-radius: 6px; color: var(--color-input); cursor: pointer; display: block; font-size: 1rem; padding: 22px 32px 8px 12px; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; }
+      .container-form .floating select:focus { border-color: var(--color-link); box-shadow: 0 0 0 3px rgba(188, 108, 37, 0.25); outline: none; }
+      .container-form .floating:has(select) span { color: var(--color-link) !important; font-size: 0.8rem; font-weight: bold; top: -10px; transform: translateY(0); }
+      .group { align-items: flex-end; display: flex; gap: 12px; }
+      .label-number { color: var(--background-success); }
+      .label-text { color: var(--color-muted); }
+      .row { display: flex; width: 100%; }
+   </style>
+</head>
+<body>
+   <div id="idContainer" class="page-container container page" data-section="page">
+      <form id="idForm" class="container-form margin_b-small" onsubmit="event.preventDefault();"">
+
+        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Edit Poll Details</h2></div>
+         <div data-section="poll-form">
+            <div class="group" style="gap: 20px;">
+               <div style="flex: 1">
+                  <label class="floating">
+                     <input type="text" placeholder=" " data-field="FName">
+                     <span>Namn</span>
+                  </label>
+               </div>
+
+               <div style="flex: 1">
+                  <label class="floating">
+                     <input type="text" placeholder=" " data-field="FHeader">
+                     <span>Rubrik</span>
+                  </label>
+               </div>
+            </div>
+
+            <div class="group" style="margin-top: 20px;">
+               <label class="floating" style="width: 100%;">
+                  <textarea placeholder=" " data-field="FDescription"></textarea>
+                  <span>Beskrivning</span>
+               </label>
+            </div>
+
+            <div class="grid-row cols-3" style="margin-top: 20px;">
+               <label class="floating">
+                  <select data-field="AreaC">
+                     <option value=""></option>
+                  </select>
+                  <span>Område</span>
+               </label>
+               <label class="floating">
+                  <select data-field="TypeC">
+                     <option value=""></option>
+                  </select>
+                  <span>Typ</span>
+               </label>
+               <label class="floating">
+                  <select data-field="StateC">
+                     <option value=""></option>
+                  </select>
+                  <span>Status</span>
+               </label>
+            </div>
+
+            <input type="hidden" data-field="PollK">
+         </div>
+
+         <div class="group" id="idFieldLabels" style="gap: 20px;">
+            <div class="row" style="flex: 1; margin-top: 20px;">
+               <label class="label-text" style="visibility: collapse; width: 100%;" data-id="idQuestion">Questions:</label>
+            </div>
+         </div>
+
+         <hr class="divider" style="margin-top: 20px">
+         
+         <div class="row" id="idButtons" style="margin-top: 20px;" data-section="command">
+            <button class="button" data-action="poll-clear">Clear</button>
+            <span style="width: 20px;"></span>
+            <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
+            <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll" data-idle="poll_key">Update</button>
+            <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll" data-idle="poll_key">Delete</button>
+            <!-- align to right -->
+         </div>
+         <div class="row" style="justify-content: flex-end; flex: 1;">
+            <button class="button" style="visibility: hidden;" data-action="poll-open" data-table="TPoll" data-idle="poll_key">Edit poll ...</button>
+            <button class="button" style="visibility: hidden;" data-action="poll-cast" data-table="TPoll" data-idle="poll_key">Casting ...</button>
+            <button class="button" style="visibility: hidden;" data-action="poll-result" data-table="TPoll" data-idle="poll_key">Result ...</button>
+         </div>
+
+      </form>
+
+      <form id="idFormLink" class="container-form margin_b-small" onsubmit="event.preventDefault();"">
+
+        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Edit Link Details</h2></div>
+         <div data-section="poll-form">
+            <div>
+               <label class="floating">
+                  <input type="text" placeholder=" " data-field="FUrl">
+                  <span>URL</span>
+               </label>
+            </div>
+
+            <div class="group" style="margin-top: 20px;">
+               <label class="floating" style="width: 100%;">
+                  <textarea placeholder=" " data-field="FDescription"></textarea>
+                  <span>Länk Beskrivning</span>
+               </label>
+            </div>
+         </div>
+
+         <hr class="divider" style="margin-top: 20px">
+
+          <div class="row" style="margin-top: 20px;" data-section="command">
+            <button class="button" data-action="poll-clear">Clear</button>
+            <span style="width: 20px;"></span>
+            <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
+            <!-- align to right -->
+         </div>
+
+         <input type="hidden" data-field="LinkK">
+         <input type="hidden" data-field="FKey">
+      </form>
+
+      <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
+
+         <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Sök Omröstningar</h2></div>
+
+         <div data-section="search" class="group">
+               <div class="row">
+                     <div style="flex: 1;">
+                     <label class="floating">
+                           <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
+                           <span>Sök</span>
+                     </label>
+                     </div>
+                     <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
+               </div>
+            </div>
+
+         <div data-section="select-polls" class="container-result"></div>
+      </form>
+
+   </div>
+
+   
+
+   <script>
+
+   let oToast_g;
+   let oDocument_g;
+
+   // ## Prepare base url .....................................................
+const sBaseUrl_g = gd.GetBaseUrl();
+gd.SetBaseUrl(sBaseUrl_g);
+
+
+      // Start page initialization ----------------------------------------------- @API [summary: main]
+   document.addEventListener('DOMContentLoaded', function() {
+      THEME_Select("color", {});
+      PAGE_Initialize();                                                      // Initialize page
+      PAGE_SetListeners();                                                     // Set page listeners
+   });
+
+      /** ----------------------------------------------------------------------- @API [summary: initialize page]
+    * Main initialization function that initializes the page
+    */
+   function PAGE_Initialize() {
+      oDocument_g = new CDocument({});
+      
+      let oTable = new Table(["id", "name", "header"], {sName: "search"} );
+      oDocument_g.AddTable(oTable);
+
+      PAGE_TableUpdate();
+
+      //const eForm = document.querySelector("#idForm");
+      let oRecord = new DBRecordContainer( document.querySelector("#idForm") );
+      oRecord.SetColumnMember("PollK", { bKey: true } );                     // Set key column and type for PollK field
+      oRecord.table = "TPoll";
+
+      let oLinkRecord = new DBRecordContainer( document.querySelector("#idFormLink") );
+      oLinkRecord.SetColumnMember("LinkK", { bKey: true } );  
+      oRecord.table = "TLink";
+
+      oDocument_g.AddRecord(oRecord);                                         // add record to document
+      oDocument_g.AddRecord(oLinkRecord);
+
+      LoadLists();
+
+      oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
+
+      // ## Start idle timer - call PAGE_OnIdle() once per second
+      CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+   }
+
+   /** ---------------------------------------------------------------------------
+    * Load lists of data for the page, such as search results or dropdown options
+    * This function can be called to refresh the data displayed on the page
+    */
+   function LoadLists()
+   {
+      const eForm = document.querySelector("#idForm");
+
+      // callback that takes table and fills dropdown options
+      const fnFillDropdown = function(oTable, sFieldName) {
+         const eSelect = eForm.querySelector(`[data-field="${sFieldName}"]`);
+         eSelect.innerHTML = '<option value=""></option>';                    // clear existing options
+         // ## add new options from table ....................................
+         for(let i = 0; i < oTable.GetRowCount(); i++) {
+            const sValue = oTable.GetCellValue(i, 0);
+            const sText = oTable.GetCellValue(i, 1);
+            const eOption = document.createElement("option");
+            eOption.value = sValue;
+            eOption.textContent = sText;
+            eSelect.appendChild(eOption);
+         }
+      };
+
+      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) }).then(function(oResult) {
+         const eResult = oResult?.data?.querySelector("result");
+         const aResult = JSON.parse(eResult.textContent);
+         const oTable = new Table(aResult, { sName: "area" });
+         oDocument_g.AddTable(oTable);
+         fnFillDropdown(oTable, "AreaC");
+      });
+
+      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10602 }) }).then(function(oResult) {
+         const eResult = oResult?.data?.querySelector("result");
+         const aResult = JSON.parse(eResult.textContent);
+         const oTable = new Table(aResult, { sName: "type" });
+         oDocument_g.AddTable(oTable);
+         fnFillDropdown(oTable, "TypeC");
+      });
+
+      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10603 }) }).then(function(oResult) {
+         const eResult = oResult?.data?.querySelector("result");
+         const aResult = JSON.parse(eResult.textContent);
+         const oTable = new Table(aResult, { sName: "state" });
+         oDocument_g.AddTable(oTable);
+         fnFillDropdown(oTable, "StateC");   
+      });
+   }
+
+   function PAGE_UpdateFieldLabels(eParent)
+   {
+      const aFields = eParent.querySelectorAll("[data-field]"); 
+
+      const sPollK = oDocument_g.GetValue("PollK");                                                console.assert(sPollK, "sPollK is null or empty");
+      const sQueryName = "vote-count_questions";
+      const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sPollK })}`;
+
+      gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
+      {
+         const aResult = JSON.parse( oResult.data.querySelector("result").textContent );
+         const iQuestionCount = aResult[1]; 
+         const eQuestion = document.querySelector('[data-id="idQuestion"]');
+         eQuestion.textContent = `Questions: ${iQuestionCount}`;
+         eQuestion.style.visibility = "visible";
+      });
+
+   }
+
+   function PAGE_TableUpdate( sType, options_ ) {
+
+      if( sType === undefined || sType === "search" )
+      {  
+         const oModifiers = { table: "TPoll", order: ["2"], "limit": [0,10] };
+         
+         if(typeof options_ === "object")  {
+            // merge options_ into oModifiers
+            for(const key in options_) { oModifiers[key] = options_[key]; }
+         }
+         oDocument_g.MergeValue( "search", oModifiers );
+         gd.Send("!db/select?", { query: "#vote-poll_search", modifiers: JSON.stringify(oModifiers) }).then(function(oResult) {
+            PAGE_ProcessResponse(oResult, "select-polls");
+         });
+      }
+   }
+
+   /** ---------------------------------------------------------------------------
+    * Update UI elements
+    */
+   function PAGE_Update( sType ) {
+      if( sType === undefined || sType === "search" )
+      {
+         const oTable = oDocument_g.GetTable("search");
+         if(oTable)
+         {
+            const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
+            eSelectPoll.innerHTML = "";
+
+            const fnSelectPoll = (sEvent, oParameter) => {
+               if(sEvent === "row")
+               {
+                  const iRow = oParameter.iOriginalIndex;
+                  const eRow = oParameter.eRow;
+                  const sKey = oTable.GetCell(iRow, 0);
+                  eRow.dataset.key = sKey;
+               }
+            };
+
+            const oUITable = new UITableLite( eSelectPoll, oTable, { iSort: 0, aColumns: [1,2], bHeader: true, bIndices: true, callback: fnSelectPoll} );
+            const eUITable = oUITable.Render();
+
+            // query header element and add click handlers to th elements
+            const eHeader = eUITable.querySelector("thead");
+            if(eHeader) {
+               const aTh = eHeader.querySelectorAll("th");
+               aTh.forEach( (eTh, iIndex) => {
+                  eTh.dataset.index = (iIndex + 2);
+                  eTh.dataset.action = "sort";
+                  eTh.addEventListener("click", (e_) => {
+                     // Remove active class from all headers
+                     aTh.forEach(eTh_ => eTh_.classList.remove("active"));
+                     // Add active class to clicked header
+                     eTh.classList.add("active");
+                  });
+               });
+            }
+         }
+      }
+
+      const oDBRecordPoll = oDocument_g.GetRecord("TPoll");
+      const bPollHasKey = oDBRecordPoll.HasKeyValue();
+
+      const ePoll = document.getElementById("idForm");
+      const aPollButtons = ePoll.querySelectorAll("[data-idle='poll_key']");
+
+      const sVisibility = bPollHasKey === true ? "visible" : "hidden";
+      aPollButtons.forEach( eButton => { eButton.style.visibility = sVisibility; });
+   }
+
+    /** --------------------------------------------------------------------- @API [tag: onidle]
+     * Handles idle state by updating UI elements and checking for changes
+     */
+   const PAGE_OnIdle = (function() {
+      //var bLastModified = false;
+
+      return function() {
+         const bModified = oDocument_g.IsModified();
+         if( !bModified ) return;
+
+         oDocument_g.SetModified(false);
+
+         const eQuestion = document.querySelector('[data-id="idQuestion"]');
+         const sPollK = oDocument_g.GetValue("PollK");
+         if( typeof sPollK === "string"  ) { eQuestion.style.visibility = "visible";}
+         else { eQuestion.style.visibility = "collapse"; }
+      }
+   })();
+
+   /** --------------------------------------------------------------------- @API [tag: event, command]
+   * Configure page listeners, handle page specific events
+   */
+   function PAGE_SetListeners() {
+      const eContainer = document.querySelector("#idContainer");
+
+      eContainer.addEventListener("click", (e_) => {
+         const eTarget = e_.target;
+
+         // ## Special case for clicking on table row to load poll details into form
+         if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key)
+         {
+            e_.stopPropagation();
+            const sKey = eTarget.parentNode.dataset.key;
+            const sQueryName = "vote-poll_get";
+            const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+
+            gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
+            {
+               const oData = oResult.data;
+               const aPollResult = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
+               const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
+               oDBRecord.ClearValues();
+
+               if( aPollResult.length > 1)
+               {
+                  oDBRecord.SetValue( aPollResult );
+                  oDBRecord.SetKeyValue( sKey );
+                  oDocument_g.SetValue("PollK", sKey);
+
+                  oDBRecord.WriteValues( document.querySelector("#idForm") ); // write values to form
+
+                  PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
+               }
+
+               PAGE_Update();
+            });
+            return;
+         }
+
+         if(!eTarget.dataset.action) return;                                   // if clicked element does not have data-action attribute, ignore
+         e_.stopPropagation();
+
+         const sAction = eTarget.dataset.action;
+
+         // ## User table record and action .....................................
+         const oDBRecord = oDocument_g.GetRecord( "TPoll" );                                          console.assert( oDBRecord, "oDBRecord is null" );
+         oDBRecord.ReadValues( document.querySelector("#idForm") );                                               // read values from form into record before performing action
+
+         switch(sAction) {
+            case "sort": {
+               const oSearch = oDocument_g.GetValue("search") || {  };
+               const iIndex = Number(eTarget.dataset.index);
+               const iIndexCurrent = Number(oSearch.order[0]);
+               if( Math.abs(iIndexCurrent) === iIndex )
+               {
+                  if(iIndexCurrent > 0) { oSearch.order[0] = "-" + iIndex; }
+                  else { oSearch.order[0] = iIndex; }
+               }
+               else { oSearch.order[0] = iIndex;}
+               PAGE_TableUpdate("search", oSearch );
+            } break;
+            case "search": {
+               const sQueryName = "vote-poll_search";
+               const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
+               const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+
+               gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
+                  PAGE_ProcessResponse(oResult, "select-polls");
+               });
+            } break;
+            case "poll-add": {
+               const sValues = JSON.stringify(oDBRecord.GetFilledValues());
+               const oArguments = `{ "table": "TPoll", "values": ${sValues}, "returning": "PollK" }`;
+               const sArguments = `record=${oArguments}`;
+               gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
+                  PAGE_ProcessResponse(oResult, "poll-add");
+                  oToast_g.Show("Skapad!")
+                  PAGE_TableUpdate();
+               });
+            } break;
+            case "poll-update": {
+               const sKey = oDBRecord.GetKeyValue();
+               const sValues = JSON.stringify(oDBRecord.GetFilledValues());
+               const sWhere = `{"PollK": "${sKey}"}`;
+               let sArguments = `{ "table": "TPoll", "values": ${sValues}, "where": ${sWhere} }`;
+               sArguments = `record=${sArguments}`;
+               gd.SendToServer("", "!db/update?", sArguments).then(function(oResult) {
+                  let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+
+                  if( iCount !== 0) { oToast_g.Show("Updaterad!"); }
+                  else {oToast_g.Show("Kunde inte uppdatera")}
+               });
+            } break;
+            case "poll-delete": {
+               const sKey = oDBRecord.GetKeyValue();
+               const sWhere = `{"PollK": "${sKey}"}`;
+               let sArguments = `{ "table": "TPoll", "where": ${sWhere} }`;
+               sArguments = `record=${sArguments}`;
+
+               gd.SendToServer("", "!db/delete?", sArguments).then(function(oResult) {
+                  let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+
+                  if( iCount !== 0) { 
+                     PAGE_TableUpdate();
+                     oToast_g.Show("Raderad!"); 
+                  }
+                  else {oToast_g.Show("Kunde inte ta bort")}
+               });
+
+            } break;
+            case "poll-clear": {
+               oDBRecord.ClearValues();
+               oDocument_g.SetValue("PollK", null);
+               oDBRecord.WriteValues(  document.querySelector("#idForm") );
+               oDocument_g.SetModified(true);                                  // trigger update in idle
+               //PAGE_Update();
+            } break;
+            case "poll-open": {
+               // Open poll questions page, pass selected poll key as parameter
+               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+               const sPollKey = oDBPollRecord.GetKeyValue();                   console.assert(sPollKey, "sPollKey is null or empty");
+
+               window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
+            } break;
+            case "poll-open": {
+               // Open poll questions page, pass selected poll key as parameter
+               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+               const sPollKey = oDBPollRecord.GetKeyValue();                   console.assert(sPollKey, "sPollKey is null or empty");
+
+                  window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
+            } break;
+            case "poll-cast": {
+               // Open poll casting page, pass selected poll key as parameter
+               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+                  const sPollKey = oDBPollRecord.GetKeyValue();                console.assert(sPollKey, "sPollKey is null or empty");
+
+                  window.location.href = `page_cast.html?key=${encodeURIComponent(sPollKey)}`;
+            } break;
+            case "poll-result": {
+               // Open poll result page, pass selected poll key as parameter
+               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
+                  const sPollKey = oDBPollRecord.GetKeyValue();                console.assert(sPollKey, "sPollKey is null or empty");
+
+                  window.location.href = `page_cast_result.html?key=${encodeURIComponent(sPollKey)}`;
+            } break;
+            default:
+               console.error("Unknown action:", sAction);
+         }
+
+      });
+
+   }
+
+   /** ---------------------------------------------------------------------
+    * Handle response data from server and display it in the container
+    *
+    * Response data format is { type: <format>, data: <data> } and type can be any of
+    * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
+    *
+    * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+    */
+   function PAGE_ProcessResponse(oData, sOperation) {
+      let sResult = '';
+      let eResults = null;
+
+      switch(oData.type) {
+         case 'json':
+            sResult = JSON.stringify(oData.data, null, 2);
+            break;
+         case 'xml':
+
+            // If oData.data is an XML Document object, serialize it to string
+            if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+               //sResult = (new XMLSerializer()).serializeToString(oData.data);
+
+               // ## query results element
+               eResults = oData.data.querySelector('results');                   // get results element holding result elements
+            } else {
+               // If it's already a string, use it directly
+               sResult = oData.data;
+            }
+
+            break;
+         case 'text':
+            sResult = oData.data;
+            break;
+         default:
+            console.error("Unknown response type:", oData.type);
+      }
+      
+
+      if(eResults)
+      {
+         if( sOperation === "select-polls")
+         {
+            const eSelect = eResults.querySelector('result[command="select"]');
+            const aPoll = JSON.parse(eSelect.textContent);
+            aPoll.shift();
+
+            const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
+            eSelectPoll.innerHTML = "";
+
+            let oTable = oDocument_g.GetTable("search");
+            if(!oTable)
+            {
+               oTable = new Table(["id", "name", "header"], {sName: "search"} );
+               oDocument_g.AddTable(oTable);
+            }
+            else { oTable.Clear(); }
+            
+
+            // loop array and add rows to table
+            for(const aRow of aPoll) {oTable.Add(aRow);}
+
+            PAGE_Update("search");
+
+            const fnSelectPoll = (sEvent, oParameter) => {
+               if(sEvent === "row")
+               {
+                  const iRow = oParameter.iOriginalIndex;
+                  const eRow = oParameter.eRow;
+                  const sKey = oTable.GetCell(iRow, 0);
+                  eRow.dataset.key = sKey;
+               }
+            };
+         }
+         else if( sOperation === "poll-add" )
+         {
+            const eInsert = eResults.querySelector('result[command="insert"]');// get insert result element
+            const oInsert = JSON.parse(eInsert.textContent);                  // parse result to get new poll key
+            const sPollK = oInsert.PollK;                                     // set new poll key in document to trigger update and show buttons for new poll
+            oDocument_g.SetValue("PollK", sPollK);
+            oDocument_g.GetRecord("TPoll").SetKeyValue(sPollK);               // set key value in record to enable update and delete actions
+            oDocument_g.SetModified(true);                                    // trigger update in idle to show buttons
+         }
+      }
+
+      
+   }
+   </script>
+</body>
+</html>
