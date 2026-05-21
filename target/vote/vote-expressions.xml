@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<document>
+   <expressions table="TPoll">
+      <expression id="poll-search" type="string" column="search"
+      expression="(FName LIKE ''%{=search}%'' OR FHeader LIKE ''%{=search}%'')" />
+      <expression id="poll-area" type="int32" column="area"
+      expression="AreaC = {=area}" />
+   </expressions>
+</document>
