@@ -117,7 +117,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   <span>Status</span>
                </label>
             </div>
-
             <input type="hidden" data-field="PollK">
          </div>
 
@@ -145,58 +144,24 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       </form>
 
-      <form id="idFormLink" class="container-form margin_b-small" onsubmit="event.preventDefault();"">
+    <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
 
-        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Edit Link Details</h2></div>
-         <div data-section="poll-form">
-            <div>
-               <label class="floating">
-                  <input type="text" placeholder=" " data-field="FUrl">
-                  <span>URL</span>
-               </label>
-            </div>
+        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Sök Omröstningar</h2></div>
 
-            <div class="group" style="margin-top: 20px;">
-               <label class="floating" style="width: 100%;">
-                  <textarea placeholder=" " data-field="FDescription"></textarea>
-                  <span>Länk Beskrivning</span>
-               </label>
+        <div data-section="search" class="group">
+            <div class="row">
+                  <div style="flex: 1;">
+                    <label class="floating">
+                        <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
+                        <span>Sök</span>
+                    </label>
+                  </div>
+                  <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
             </div>
          </div>
 
-         <hr class="divider" style="margin-top: 20px">
-
-          <div class="row" style="margin-top: 20px;" data-section="command">
-            <button class="button" data-action="link-clear">Clear</button>
-            <span style="width: 20px;"></span>
-            <button class="button" data-action="link-add" data-table="TLink">Add</button>
-            <!-- align to right -->
-         </div>
-
-         <input type="hidden" data-field="LinkK">
-         <input type="hidden" data-field="FKey">
-         <input type="hidden" data-field="table_number">
-         
-      </form>
-
-      <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
-
-         <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Sök Omröstningar</h2></div>
-
-         <div data-section="search" class="group">
-               <div class="row">
-                     <div style="flex: 1;">
-                     <label class="floating">
-                           <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
-                           <span>Sök</span>
-                     </label>
-                     </div>
-                     <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
-               </div>
-            </div>
-
-         <div data-section="select-polls" class="container-result"></div>
-      </form>
+        <div data-section="select-polls" class="container-result"></div>
+    </form>
 
    </div>
 
@@ -230,18 +195,12 @@ gd.SetBaseUrl(sBaseUrl_g);
 
       PAGE_TableUpdate();
 
-      //const eForm = document.querySelector("#idForm");
+      const eForm = document.querySelector("#idForm");
       let oRecord = new DBRecordContainer( document.querySelector("#idForm") );
       oRecord.SetColumnMember("PollK", { bKey: true } );                     // Set key column and type for PollK field
       oRecord.table = "TPoll";
 
       oDocument_g.AddRecord(oRecord);                                         // add record to document
-
-      let oLinkRecord = new DBRecordContainer( document.querySelector("#idFormLink") );
-      oLinkRecord.SetColumnMember("LinkK", { bKey: true } );  
-      oLinkRecord.table = "TLink";
-      
-      oDocument_g.AddRecord(oLinkRecord);                                      // add link record to document
 
       LoadLists();
 
@@ -456,10 +415,6 @@ gd.SetBaseUrl(sBaseUrl_g);
          const oDBRecord = oDocument_g.GetRecord( "TPoll" );                                          console.assert( oDBRecord, "oDBRecord is null" );
          oDBRecord.ReadValues( document.querySelector("#idForm") );                                               // read values from form into record before performing action
 
-         const oDBRecordLink = oDocument_g.GetRecord( "TLink" );                                          console.assert( oDBRecord, "oDBRecord is null" );
-         oDBRecordLink.ReadValues( document.querySelector("#idFormLink") );
-         
-
          switch(sAction) {
             case "sort": {
                const oSearch = oDocument_g.GetValue("search") || {  };
@@ -557,21 +512,6 @@ gd.SetBaseUrl(sBaseUrl_g);
 
                   window.location.href = `page_cast_result.html?key=${encodeURIComponent(sPollKey)}`;
             } break;
-            case "link-add": {
-               const sPollK = oDocument_g.GetValue("PollK");
-
-               oDBRecordLink.SetValue("FKey", sPollK);
-               oDBRecordLink.SetValue("table_number", 1060);
-
-               const sValues = JSON.stringify(oDBRecordLink.GetFilledValues());
-               const oArguments = `{ "table": "TLink", "values": ${sValues}, "returning": "LinkK" }`;
-               const sArguments = `record=${oArguments}`;
-               gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
-                  PAGE_ProcessResponse(oResult, "link-add");
-                  oToast_g.Show("Skapad!")
-               });
-
-            } break;
             default:
                console.error("Unknown action:", sAction);
          }
@@ -661,15 +601,6 @@ gd.SetBaseUrl(sBaseUrl_g);
             oDocument_g.SetValue("PollK", sPollK);
             oDocument_g.GetRecord("TPoll").SetKeyValue(sPollK);               // set key value in record to enable update and delete actions
             oDocument_g.SetModified(true);                                    // trigger update in idle to show buttons
-         }
-         else if( sOperation === "link-add" )
-         {
-            const eInsert = eResults.querySelector('result[command="insert"]');
-            const oInsert = JSON.parse(eInsert.textContent);
-            const sLinkK = oInsert.LinkK;
-
-            oDocument_g.GetRecord("TLink").SetKeyValue(sLinkK);
-
          }
       }
 
