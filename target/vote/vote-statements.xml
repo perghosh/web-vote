@@ -174,7 +174,8 @@ GROUP BY TPollVote.PollAnswerK
    {++limit}
    
    -->
-
+   <!--Link-->
+   <statement name="vote-link_get" format="jinja" type="select" table="TLink" description="Get link for a poll by foreign key">SELECT hex(LinkK) AS LinkK, FUrl, FDescription FROM TLink WHERE FKey = {FKey} AND table_number = {table_number} LIMIT 1</statement>
 
    </statements>
 
