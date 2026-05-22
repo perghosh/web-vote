@@ -64,4 +64,22 @@ cp -r css "$UUID_NAME/"
 *Check configuration*
 cat /etc/caddy/Caddyfile
 
+*Sample to configure to folketsröst*
+```
+{
+    servers {
+        protocols h1 h2
+    }
+}
+
+xn--folketsrst-lcb.se {
+    reverse_proxy localhost:8001
+}
+
+123.45.67.89:80 {
+    reverse_proxy localhost:8001
+}
+```
+
+
 

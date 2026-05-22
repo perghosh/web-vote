@@ -149,13 +149,26 @@ GROUP BY TPollVote.PollAnswerK
       JOIN TPollQuestion ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK 
       WHERE TPollQuestion.PollK = TPoll.PollK) 
       AS TotalVotes FROM TPoll
+   {++where} 
+   {++orderby} 
+   {++limit}
+   ]]></statement>
+
+   <!--
+   <statement name="list-poll" format="jinja" type="select" table="TPoll" description="Count totalvotes of poll"><![CDATA[
+   SELECT hex(TPoll.PollK) AS PollK, TPoll.FName, TPoll.FDescription, 
+      (SELECT COUNT(DISTINCT TPollVote.FTie) FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK 
+      JOIN TPollQuestion ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK 
+      WHERE TPollQuestion.PollK = TPoll.PollK) 
+      AS TotalVotes FROM TPoll
    {?? exists( args::exists( args, "search", "area" ), "WHERE " ) ??}       
    {?? exists( args::exists( args, "search" ), " (FName LIKE ''%{=search}%'' OR FHeader LIKE ''%{=search}%'')" ) ??} 
    {?? exists( args::all_exists( args, "search", "area" ), " AND " ) ??} 
    {?? exists( args::exists( args, "area" ), "AreaC = {=area}" ) ??} 
    {++orderby} 
    {++limit}
-   ]]></statement>
+   
+   -->
 
 
    </statements>
