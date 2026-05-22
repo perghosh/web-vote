@@ -145,7 +145,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       </form>
 
-      <form id="idFormLink" class="container-form margin_b-small" onsubmit="event.preventDefault();"">
+      <form id="idFormLink" class="container-form margin_b-small" style="display: none;" onsubmit="event.preventDefault();">
 
         <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Edit Link Details</h2></div>
          <div data-section="poll-form">
@@ -299,6 +299,30 @@ gd.SetBaseUrl(sBaseUrl_g);
       });
    }
 
+   /** ---------------------------------------------------------------------------
+    * Load link details for the current poll and display them in the link form
+   */
+   function LoadLink(sPollK)
+   {
+      const sQueryName = "vote-link_get";
+      const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ FKey: sPollK, table_number: 1060 })}`;
+
+      gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
+      {
+         const oData = oResult.data;
+         const eResults = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
+         const oDBRecordLink = oDocument_g.GetRecord("TLink");
+         oDBRecordLink.ClearValues();
+
+         if(eResults.length > 1)
+         {
+            oDBRecordLink.SetValue( eResults );
+            oDBRecordLink.SetKeyValue( eResults[1].LinkK );
+            oDBRecordLink.WriteValues( document.querySelector("#idFormLink") );
+         }
+      });
+   }
+
    function PAGE_UpdateFieldLabels(eParent)
    {
       const aFields = eParent.querySelectorAll("[data-field]"); 
@@ -386,6 +410,9 @@ gd.SetBaseUrl(sBaseUrl_g);
 
       const sVisibility = bPollHasKey === true ? "visible" : "hidden";
       aPollButtons.forEach( eButton => { eButton.style.visibility = sVisibility; });
+
+      const eFormLink = document.querySelector("#idFormLink");
+      eFormLink.style.display = bPollHasKey === true ? "block" : "none";
    }
 
     /** --------------------------------------------------------------------- @API [tag: onidle]
@@ -440,6 +467,7 @@ gd.SetBaseUrl(sBaseUrl_g);
                   oDBRecord.WriteValues( document.querySelector("#idForm") ); // write values to form
 
                   PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
+                  LoadLink(sKey);
                }
 
                PAGE_Update();
