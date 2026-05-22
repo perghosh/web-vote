@@ -6,4 +6,8 @@
       <expression id="poll-area" type="int32" column="area"
       expression="AreaC = {=area}" />
    </expressions>
+   <expressions group="date-created" table="TPoll" description="Fixed conditions for CreatedD column">
+      <expression id="last_7_days" column="CreatedD" expression="(CreateD &gt;= DATE('now', '-7 days') AND CreateD &lt; DATE('now'))" />
+      <expression id="last_month" column="CreatedD" expression="(CreateD &gt;= DATE('now', '-1 month') AND CreateD &lt; DATE('now'))" />
+   </expressions>
 </document>

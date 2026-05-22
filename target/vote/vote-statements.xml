@@ -36,11 +36,18 @@ TIP: select name and search in project to find where these statements are used
       <statement name="vote-poll_search" format="jinja" type="select" table="TPoll">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll {?? exists( args::exists( args, "name" ), "WHERE FName LIKE ''%{=name}%'' OR FHeader LIKE ''%{=name}%''" ) ??} {++orderby} {++limit}</statement>
       <statement name="vote-poll_get" format="jinja" type="select" table="TPoll" description="Get poll details by poll key">SELECT PollK, FName, FHeader, FDescription, AreaC, TypeC, StateC FROM TPoll WHERE PollK = {PollK}</statement>
 
+      <!-- @API [tag: voting] [description: questions used to edit polls, these are used in admin interface for votes]
+       | Statements for main vote page, Table called TPoll is worked on
+       | - vote-count: Count number of votes for poll, used to show number of votes on poll card on vote page
+       | - vote-count_questions: Count number of questions for poll, used to show number of questions on poll card on vote page
+       | - vote-get: Get poll details, used for editing poll in admin interface
+       | - vote-get_polls: Get poll questions for poll, used for list all questions connected to poll in admin interface
+       | - vote-all_questions: Get all questions and answers for poll, used for editing poll in admin interface, shows all questions and answers in one list
+       |-->
       <statement name="vote-count" format="jinja" type="select">SELECT COUNT(*) AS uCount FROM TPoll WHERE PollK = {PollK}</statement>
       <statement name="vote-count_questions" format="jinja" type="select" table="TPollQuestion">SELECT COUNT(*) AS uCount FROM TPollQuestion WHERE PollK = {PollK}</statement>
       <statement name="vote-get" format="jinja" type="select" table="TPoll">SELECT hex(PollK) AS PollK, TypeC, StateC, FName, FHeader, FDescription FROM TPoll WHERE PollK = {PollK}</statement>
       <statement name="vote-get_polls" format="jinja" type="select" table="TPollQuestion">SELECT hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollQuestion WHERE PollK = {PollK}</statement>
-      <statement name="vote-get_answers" format="jinja" type="select">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollAnswer WHERE PollK = {PollK}</statement>
       <statement name="vote-all_questions" format="jinja" type="select" table="TPoll"><![CDATA[
 SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuestionK, hex(TPollAnswer.PollAnswerK) AS PollAnswerK,
          TPollQuestion.FName AS Q_FName, TPollQuestion.FLabel AS Q_FLabel, TPollQuestion.FDescription AS Q_FDescription, TPollQuestion.FOrder AS Q_FOrder,
@@ -48,15 +55,13 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
          FROM TPoll LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK LEFT JOIN TPollAnswer ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK
          WHERE TPoll.PollK = {PollK} ORDER BY 1,TPollQuestion.FOrder, 2,TPollAnswer.FOrder]]></statement>
 
-      <statement name="user-edit_search" format="jinja" type="select">SELECT hex(UserK) id, FAlias alias, FFirstName name, FLastName lastname FROM TUser {?? exists( args::exists( args, "name" ), "WHERE FAlias LIKE ''%{=name}%'' OR FFirstName LIKE ''%{=name}%'' OR FLastName LIKE ''%{=name}%''" ) ??} ORDER BY FAlias</statement>
-      <statement name="user-edit_table" format="jinja" type="select">SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}</statement>
-
-
 
       <!-- @API [tag: TPollVote] [description: Statements for voting, there are many tables involved but the main one is TPollVote where votes are stored]
+       | - cast-check_if_voted: Check if user has already voted in poll, used to prevent multiple votes from same user, this is done by storing user IP address in TPollTie table and checking if there is already a vote from that IP address for the poll
        | - cast-poll: Select poll header for vote and number of votes
-       | - cast-poll_questions: Select poll questions for vote
-       | - cast-poll_answers: Select poll answers for questions
+       | - cast-poll_questions: Select poll questions for vote, used to render questions on vote page
+       | - cast-poll_answers: Select poll answers for questions, used to render answers for each question on vote page
+       | - cast-add_vote: Add vote for user, this is done in multiple steps, first we check if user can vote by checking if there is already a vote from the same IP address for the poll, if not we insert a new record in TPollTie table to tie the votes together and then we insert the vote in TPollVote table
        | -->
       <statement name="cast-check_if_voted" format="jinja" type="select" table="TPollTie" description="Check if user has already voted in poll">
          <code><![CDATA[-- #lua v1;
@@ -172,5 +177,11 @@ GROUP BY TPollVote.PollAnswerK
 
 
    </statements>
+
+   <!-- depreciated but in use for deprecated code in frontend
+      <statement name="user-edit_search" format="jinja" type="select">SELECT hex(UserK) id, FAlias alias, FFirstName name, FLastName lastname FROM TUser {?? exists( args::exists( args, "name" ), "WHERE FAlias LIKE ''%{=name}%'' OR FFirstName LIKE ''%{=name}%'' OR FLastName LIKE ''%{=name}%''" ) ??} ORDER BY FAlias</statement>
+      <statement name="user-edit_table" format="jinja" type="select">SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}</statement>
+   -->
+
 
 </document>
