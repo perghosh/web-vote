@@ -20,7 +20,7 @@
    10. **form-sub**
 */
 
-.button { background-color: var(--background-primary); border-radius: 8px; color: var(--color-primary); cursor: pointer; min-width: 80px; padding: 8px 16px; text-align: center; transition: background-color 0.2s, color 0.2s; }
+.button { background-color: var(--background-primary); border-radius: 8px; color: var(--color-primary); cursor: pointer; font: inherit; font-size: 0.9rem; min-width: 80px; padding: 6px 12px; text-align: center; transition: background-color 0.2s, color 0.2s; }
 .button-small { padding: 5px 14px; font-size: 0.9rem; }
 .button:hover { background-color: var(--background-primary-hover); }
 .button-primary { background-color: var(--background-primary); color: var(--color-primary); }
@@ -136,3 +136,12 @@
   .container-form .third,
   .container-form .quarter { flex: 1 1 100%; }
 }
+
+/* Custom arrow */
+.dropdown-menu details[open] summary.button::after { transform: rotate(180deg); }
+.dropdown-menu summary.button::after { margin-left: 6px; transition: transform 0.2s; }
+/* The panel */
+.dropdown-menu-panel { background: var(--background-input); border: 1px solid var(--color-border); border-radius: 6px; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15); display: flex; flex-direction: column; gap: 6px; margin-top: 8px; min-width: 200px; padding: 10px; position: absolute; right: 0; z-index: 10; }
+/* Hide when closed */
+details:not([open]) .dropdown-menu-panel { display: none; }      
+

@@ -136,13 +136,22 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll" data-idle="poll_key">Update</button>
             <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll" data-idle="poll_key">Delete</button>
             <!-- align to right -->
+            <div class="row" style="justify-content: flex-end; flex: 1;">
+            <div class="dropdown-menu" data-idle="poll_key" style="margin-left: auto; position: relative;">
+               <details>
+                  <summary class="button">
+                     Open page ...
+                  </summary>
+                  
+                  <div class="dropdown-menu-panel">
+                     <button class="button" type="button" data-action="poll-open" data-table="TPoll">Edit poll ...</button>
+                     <button class="button" type="button" data-action="poll-cast" data-table="TPoll">Casting ...</button>
+                     <button class="button" type="button" data-action="poll-result" data-table="TPoll">Result ...</button>
+                  </div>
+               </details>
+            </div>             
+            </div>
          </div>
-         <div class="row" style="justify-content: flex-end; flex: 1;">
-            <button class="button" style="visibility: hidden;" data-action="poll-open" data-table="TPoll" data-idle="poll_key">Edit poll ...</button>
-            <button class="button" style="visibility: hidden;" data-action="poll-cast" data-table="TPoll" data-idle="poll_key">Casting ...</button>
-            <button class="button" style="visibility: hidden;" data-action="poll-result" data-table="TPoll" data-idle="poll_key">Result ...</button>
-         </div>
-
       </form>
 
       <form id="idFormLink" class="container-form margin_b-small" style="display: none;" onsubmit="event.preventDefault();">
