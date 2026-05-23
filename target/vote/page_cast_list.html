@@ -7,6 +7,10 @@ PAGE_Render -  Render the page, update UI elements based on current document sta
 PAGE_SetListeners - Configure page listeners, handle page specific events  
 PAGE_ProcessResponse - Handle response data from server and display it in the container
 
+PollList.Render - Render the poll list based on current document state
+PollList.LoadSearchValues - Load options for advanced Area filter dropdown in search panel
+PollList.GetResult - Update Poll result based on options, options can include filters, sorting and pagination parameters
+
 Objects:
 CDocument - Manages data and state of the page, including records and tables
 DBRecord - Represents a database record, with methods to read/write values and get arguments for server
@@ -166,8 +170,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          if(sArea && !isNaN(parseInt(sArea))) { oDocument_g.SetValue("area", parseInt(sArea, 10)); }
       }
 
-      LoadSearchValues();
-      GetPollResult();
+      PollList.LoadSearchValues();
+      PollList.GetResult();
 
       oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
    }
@@ -177,31 +181,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
     * Update UI elements
     */
    function PAGE_Render() {
-      const oTable = oDocument_g.GetTable("search");
-      if (!oTable) return;
-
-      const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
-      eSelectPoll.innerHTML = "";
-
-      const eTemplate = document.getElementById("idTemplateRow");
-
-      for(let i = 0; i < oTable.GetRowCount(); i++) 
-      {
-         const eRow = eTemplate.content.cloneNode(true).firstElementChild;
-
-         const sKey = oTable.GetCell(i, 0);
-         const sName = oTable.GetCell(i, 1);
-         const sHeader = oTable.GetCell(i, 2);
-         const sVotes = oTable.GetCell(i, 3);
-
-         eRow.dataset.key = sKey;
-
-         eRow.querySelector("[data-id='idName']").textContent = sName;
-         eRow.querySelector("[data-id='idDescription']").textContent = sHeader;
-         eRow.querySelector("[data-id='idVotes']").textContent = sVotes;
-
-         eSelectPoll.appendChild(eRow);
-      }
+      PollList.Render();
    }
 
 
@@ -243,9 +223,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             case "sort": {
                console.log("Sort action triggered");
 
-               if( eTarget.value === "votes" ) { GetPollResult( {"order": [-3]} );}
-               else if( eTarget.value === "ascending" ) { GetPollResult( {"order": [2]} ); }
-               else if( eTarget.value === "descending" ) { GetPollResult( {"order": [-2]} ); }
+               if( eTarget.value === "votes" ) { PollList.GetResult( {"order": [-3]} );}
+               else if( eTarget.value === "ascending" ) { PollList.GetResult( {"order": [2]} ); }
+               else if( eTarget.value === "descending" ) { PollList.GetResult( {"order": [-2]} ); }
                else { return; }
             } break;
             case "search-advanced": {
@@ -266,7 +246,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   localStorage.setItem("area", sArea);
                }
 
-               GetPollResult();
+               PollList.GetResult();
             } break;
             default:
                console.error("Unknown action:", sAction);
@@ -286,7 +266,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                localStorage.setItem("area", sArea);
             }
 
-            GetPollResult();
+            PollList.GetResult();
          });
       }
 
@@ -354,72 +334,108 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       }
    }
 
-   /** ----------------------------------------------------------------------- @API [tag: search, load]
-    * Load options for advanced Area filter dropdown in search panel
-    */
-   function LoadSearchValues() {
-      const eSearchArea = document.getElementById("idSearchArea");
-      if(!eSearchArea) { return; }
 
-      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) }).then(function(oResult) {
-         const eResult = oResult?.data?.querySelector("result");
-         if(!eResult || !eResult.textContent) { return; }
+   const PollList = {
+      /** ---------------------------------------------------------------------------
+       * Update UI elements
+       */
+      Render() {
+         const oTable = oDocument_g.GetTable("search");
+         if (!oTable) return;
 
-         const aResult = JSON.parse(eResult.textContent);                      // parse result as array
-         if(Array.isArray(aResult) && aResult.length > 0) { aResult.shift(); } // remove first row that is the column names
+         const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
+         eSelectPoll.innerHTML = "";
 
-         for(let i = 0; i < aResult.length; i++)
+         const eTemplate = document.getElementById("idTemplateRow");
+
+         for(let i = 0; i < oTable.GetRowCount(); i++)
          {
-            const aRow = aResult[i];
-            if(!Array.isArray(aRow) || aRow.length < 2) { continue; }
+            const eRow = eTemplate.content.cloneNode(true).firstElementChild;
 
-            const sValue = String(aRow[0] ?? "");
-            const sText = String(aRow[1] ?? "");
-            if(sValue === "" || sText === "") { continue; }
+            const sKey = oTable.GetCell(i, 0);
+            const sName = oTable.GetCell(i, 1);
+            const sHeader = oTable.GetCell(i, 2);
+            const sVotes = oTable.GetCell(i, 3);
 
-            const eOption = document.createElement("option");
-            eOption.value = sValue;
-            eOption.textContent = sText;
-            eSearchArea.appendChild(eOption);
+            eRow.dataset.key = sKey;
+
+            eRow.querySelector("[data-id='idName']").textContent = sName;
+            eRow.querySelector("[data-id='idDescription']").textContent = sHeader;
+            eRow.querySelector("[data-id='idVotes']").textContent = sVotes;
+
+            eSelectPoll.appendChild(eRow);
+         }
+      },
+
+      /** ----------------------------------------------------------------------- @API [tag: search, load]
+       * Load options for advanced Area filter dropdown in search panel
+       */
+      LoadSearchValues() {
+         const eSearchArea = document.getElementById("idSearchArea");
+         if(!eSearchArea) { return; }
+
+         gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) }).then(function(oResult) {
+            const eResult = oResult?.data?.querySelector("result");
+            if(!eResult || !eResult.textContent) { return; }
+
+            const aResult = JSON.parse(eResult.textContent);                   // parse result as array
+            if(Array.isArray(aResult) && aResult.length > 0) { aResult.shift(); } // remove first row that is the column names
+
+            for(let i = 0; i < aResult.length; i++)
+            {
+               const aRow = aResult[i];
+               if(!Array.isArray(aRow) || aRow.length < 2) { continue; }
+
+               const sValue = String(aRow[0] ?? "");
+               const sText = String(aRow[1] ?? "");
+               if(sValue === "" || sText === "") { continue; }
+
+               const eOption = document.createElement("option");
+               eOption.value = sValue;
+               eOption.textContent = sText;
+               eSearchArea.appendChild(eOption);
+            }
+
+            // ## set selected area if it exists in options ......................
+            const iArea = oDocument_g.GetValue("area");
+            if(iArea !== undefined && iArea !== null) {
+               const sArea = String(iArea);
+               if(eSearchArea.querySelector(`option[value="${sArea}"]`)) { eSearchArea.value = sArea; } // select option if it exists
+            }
+         });
+      },
+
+      /** --------------------------------------------------------------------- @API [tag: result, poll]
+       * Update Poll result based on options, options can include filters, sorting and pagination parameters
+       */
+      GetResult(options_) {
+         const oModifiers = { table: "TPoll", order: [2], "limit": [0, 20] };
+
+         if( typeof options_ === "object" )
+         {
+            // merge options_ into oModifiers
+            for(const sKey in options_) { oModifiers[sKey] = options_[sKey]; }
          }
 
-         // ## set selected area if it exists in options ......................
+         oDocument_g.MergeValue( "modifiers", oModifiers );                   // merge to keep old values, only update changed values
+
+         let oArguments = { query: "#list-poll", modifiers: JSON.stringify(oModifiers) };
+         let oValues = {};
          const iArea = oDocument_g.GetValue("area");
-         if(iArea !== undefined && iArea !== null) {
-            const sArea = String(iArea);
-            if(eSearchArea.querySelector(`option[value="${sArea}"]`)) { eSearchArea.value = sArea; } 
-         }
-      });
-   }
+         if(iArea) { oValues["area"] = iArea; }
+         const sSearch = oDocument_g.GetValue("search");
+         if(sSearch) { oValues["search"] = sSearch; }
 
-   /** --------------------------------------------------------------------- @API [tag: result, poll]
-    * Update Poll result based on options, options can include filters, sorting and pagination parameters
-    */
-   function GetPollResult( options_ ) {
-      const oModifiers = { table: "TPoll", order: [2], "limit": [0, 20] };  
+         //oValues["__expression"] = "date-created.last_7_days";                 // default filter to only show polls created in the last 7 days, this is done by adding a fixed condition to the query using expressions defined in vote-expressions.xml
 
-      if( typeof options_ === "object" )
-      {
-         // merge options_ into oModifiers
-         for(const key in options_) { oModifiers[key] = options_[key]; }
+         // ## Add oValues if not empty
+         if(Object.keys(oValues).length > 0) { oArguments.values = JSON.stringify(oValues); }
+
+         gd.Send("!db/select?", oArguments).then(function(oResult) {
+            PAGE_ProcessResponse(oResult, "select-polls");
+         });
       }
-
-      oDocument_g.MergeValue( "modifiers", oModifiers );
-
-      let oArguments = { query: "#list-poll", modifiers: JSON.stringify(oModifiers) };
-      let oValues = {};
-      const iArea = oDocument_g.GetValue("area");
-      if(iArea) { oValues["area"] = iArea; }
-      const sSearch = oDocument_g.GetValue("search");
-      if(sSearch) { oValues["search"] = sSearch; }
-
-      // ## Add oValues if not empty
-      if(Object.keys(oValues).length > 0) { oArguments.values = JSON.stringify(oValues); }
-
-      gd.Send("!db/select?", oArguments).then(function(oResult) {
-         PAGE_ProcessResponse(oResult, "select-polls");
-      });
-   }
+   };
 
 
    </script>
