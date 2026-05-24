@@ -139,6 +139,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          data-idle="poll_key">Update</button>
       <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll"
          data-idle="poll_key">Delete</button>
+
+      <button class="button" style="visibility: hidden;" data-action="link-show" data-table="TPoll" data-idle="poll_key">Add link</button>
       <!-- align to right -->
       <div class="row" style="justify-content: flex-end; flex: 1;">
          <div class="dropdown-menu" data-idle="poll_key" style="margin-left: auto; position: relative;">
@@ -345,6 +347,8 @@ gd.SetBaseUrl(sBaseUrl_g);
 
       gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
       {
+         const eFormLink = document.querySelector("#idFormLink");
+
          const oData = oResult.data;
          const eResults = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
          const oDBRecordLink = oDocument_g.GetRecord("TLink");
@@ -355,6 +359,15 @@ gd.SetBaseUrl(sBaseUrl_g);
             oDBRecordLink.SetValue( eResults );
             oDBRecordLink.SetKeyValue( eResults[1].LinkK );
             oDBRecordLink.WriteValues( document.querySelector("#idFormLink") );
+
+            eFormLink.style.display = "block";
+         }
+         else
+         {
+            oDBRecordLink.ClearValues();
+            oDBRecordLink.WriteValues(document.querySelector("#idFormLink"));
+            
+            eFormLink.style.display = "none";
          }
       });
    }
@@ -430,8 +443,8 @@ gd.SetBaseUrl(sBaseUrl_g);
       const sVisibility = bPollHasKey === true ? "visible" : "hidden";
       aPollButtons.forEach( eButton => { eButton.style.visibility = sVisibility; });
 
-      const eFormLink = document.querySelector("#idFormLink");
-      eFormLink.style.display = bPollHasKey === true ? "block" : "none";
+      /*const eFormLink = document.querySelector("#idFormLink");
+      eFormLink.style.display = bPollHasKey === true ? "block" : "none";*/
    }
 
     /** --------------------------------------------------------------------- @API [tag: onidle]
@@ -615,6 +628,11 @@ gd.SetBaseUrl(sBaseUrl_g);
                });
 
             } break;
+            case "link-show": {
+               const eFormLink = document.querySelector("#idFormLink");
+               eFormLink.style.display = "block";
+               break;
+            }
             default:
                console.error("Unknown action:", sAction);
          }
