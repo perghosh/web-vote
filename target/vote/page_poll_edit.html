@@ -71,142 +71,169 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 <body>
    <div id="idContainer" class="page-container container page" data-section="page">
       <form id="idForm" class="container-form margin_b-small" onsubmit="event.preventDefault();"">
-
-        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Edit Poll Details</h2></div>
-         <div data-section="poll-form">
-            <div class="group" style="gap: 20px;">
-               <div style="flex: 1">
-                  <label class="floating">
-                     <input type="text" placeholder=" " data-field="FName">
-                     <span>Namn</span>
-                  </label>
+   
+           <div class=" title" style="margin-bottom: 20px;">
+         <h2 class="page-title">Edit Poll Details</h2>
+   </div>
+   <div data-section="poll-form">
+      <div class="group" style="gap: 20px;">
+         <div style="flex: 1">
+            <label class="floating">
+               <input type="text" placeholder=" " data-field="FName">
+               <span>Namn</span>
+            </label>
+         </div>
+   
+         <div style="flex: 1">
+            <label class="floating">
+               <input type="text" placeholder=" " data-field="FHeader">
+               <span>Rubrik</span>
+            </label>
+         </div>
+      </div>
+   
+      <div class="group" style="margin-top: 20px;">
+         <label class="floating" style="width: 100%;">
+            <textarea placeholder=" " data-field="FDescription"></textarea>
+            <span>Beskrivning</span>
+         </label>
+      </div>
+   
+      <div class="grid-row cols-3" style="margin-top: 20px;">
+         <label class="floating">
+            <select data-field="AreaC">
+               <option value=""></option>
+            </select>
+            <span>Område</span>
+         </label>
+         <label class="floating">
+            <select data-field="TypeC">
+               <option value=""></option>
+            </select>
+            <span>Typ</span>
+         </label>
+         <label class="floating">
+            <select data-field="StateC">
+               <option value=""></option>
+            </select>
+            <span>Status</span>
+         </label>
+      </div>
+   
+      <input type="hidden" data-field="PollK">
+   </div>
+   
+   <div class="group" id="idFieldLabels" style="gap: 20px;">
+      <div class="row" style="flex: 1; margin-top: 20px;">
+         <label class="label-text" style="visibility: collapse; width: 100%;" data-id="idQuestion">Questions:</label>
+      </div>
+   </div>
+   
+   <hr class="divider" style="margin-top: 20px">
+   
+   <div class="row" id="idButtons" style="margin-top: 20px;" data-section="command">
+      <button class="button" data-action="poll-clear">Clear</button>
+      <span style="width: 20px;"></span>
+      <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
+      <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll"
+         data-idle="poll_key">Update</button>
+      <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll"
+         data-idle="poll_key">Delete</button>
+      <!-- align to right -->
+      <div class="row" style="justify-content: flex-end; flex: 1;">
+         <div class="dropdown-menu" data-idle="poll_key" style="margin-left: auto; position: relative;">
+            <details>
+               <summary class="button">
+                  Open page ...
+               </summary>
+   
+               <div class="dropdown-menu-panel">
+                  <button class="button" type="button" data-action="poll-open" data-table="TPoll">Edit poll ...</button>
+                  <button class="button" type="button" data-action="poll-cast" data-table="TPoll">Casting ...</button>
+                  <button class="button" type="button" data-action="poll-result" data-table="TPoll">Result ...</button>
                </div>
-
-               <div style="flex: 1">
-                  <label class="floating">
-                     <input type="text" placeholder=" " data-field="FHeader">
-                     <span>Rubrik</span>
-                  </label>
-               </div>
-            </div>
-
-            <div class="group" style="margin-top: 20px;">
-               <label class="floating" style="width: 100%;">
-                  <textarea placeholder=" " data-field="FDescription"></textarea>
-                  <span>Beskrivning</span>
-               </label>
-            </div>
-
-            <div class="grid-row cols-3" style="margin-top: 20px;">
+            </details>
+         </div>
+      </div>
+   </div>
+   </form>
+   
+   <!-- ## Link Form ...................................................... -->
+   <form id="idFormLink" class="container-form margin_b-small" style="display: none;" onsubmit="event.preventDefault();">
+      <div class="title" style="margin-bottom: 20px;">
+         <h2 class="page-title">Edit Link Details</h2>
+      </div>
+      <div data-section="poll-form">
+         <div>
+            <label class="floating">
+               <input type="text" placeholder=" " data-field="FUrl">
+               <span>URL</span>
+            </label>
+         </div>
+   
+         <div class="group" style="margin-top: 20px;">
+            <label class="floating" style="width: 100%;">
+               <textarea placeholder=" " data-field="FDescription"></textarea>
+               <span>Länk Beskrivning</span>
+            </label>
+         </div>
+      </div>
+   
+      <hr class="divider" style="margin-top: 20px">
+   
+      <div class="row" style="margin-top: 20px;" data-section="command">
+         <button class="button" data-action="link-clear">Clear</button>
+         <span style="width: 20px;"></span>
+         <button class="button" data-action="link-add" data-table="TLink">Add</button>
+         <!-- align to right -->
+      </div>
+   
+      <input type="hidden" data-field="LinkK">
+      <input type="hidden" data-field="FKey">
+      <input type="hidden" data-field="table_number">
+   </form>
+   
+   <!-- ## Search Form .................................................... -->
+   <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();"
+      style="margin-top: 10px;">
+   
+      <div class="title" style="margin-bottom: 20px;">
+         <h2 class="page-title">Sök Omröstningar</h2>
+      </div>
+   
+      <div data-section="search">
+         <div class="row">
+            <div style="flex: 1;">
                <label class="floating">
-                  <select data-field="AreaC">
-                     <option value=""></option>
-                  </select>
-                  <span>Område</span>
-               </label>
-               <label class="floating">
-                  <select data-field="TypeC">
-                     <option value=""></option>
-                  </select>
-                  <span>Typ</span>
-               </label>
-               <label class="floating">
-                  <select data-field="StateC">
-                     <option value=""></option>
-                  </select>
-                  <span>Status</span>
+                  <input type="text" placeholder=" " id="idSearchInput" data-id="search-text">
+                  <span>Sök</span>
                </label>
             </div>
-
-            <input type="hidden" data-field="PollK">
+            <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
          </div>
-
-         <div class="group" id="idFieldLabels" style="gap: 20px;">
-            <div class="row" style="flex: 1; margin-top: 20px;">
-               <label class="label-text" style="visibility: collapse; width: 100%;" data-id="idQuestion">Questions:</label>
-            </div>
-         </div>
-
-         <hr class="divider" style="margin-top: 20px">
-         
-         <div class="row" id="idButtons" style="margin-top: 20px;" data-section="command">
-            <button class="button" data-action="poll-clear">Clear</button>
-            <span style="width: 20px;"></span>
-            <button class="button" data-action="poll-add" data-table="TPoll">Add</button>
-            <button class="button" style="visibility: hidden;" data-action="poll-update" data-table="TPoll" data-idle="poll_key">Update</button>
-            <button class="button" style="visibility: hidden;" data-action="poll-delete" data-table="TPoll" data-idle="poll_key">Delete</button>
-            <!-- align to right -->
-            <div class="row" style="justify-content: flex-end; flex: 1;">
-            <div class="dropdown-menu" data-idle="poll_key" style="margin-left: auto; position: relative;">
-               <details>
-                  <summary class="button">
-                     Open page ...
-                  </summary>
-                  
-                  <div class="dropdown-menu-panel">
-                     <button class="button" type="button" data-action="poll-open" data-table="TPoll">Edit poll ...</button>
-                     <button class="button" type="button" data-action="poll-cast" data-table="TPoll">Casting ...</button>
-                     <button class="button" type="button" data-action="poll-result" data-table="TPoll">Result ...</button>
-                  </div>
-               </details>
-            </div>             
-            </div>
-         </div>
-      </form>
-
-      <form id="idFormLink" class="container-form margin_b-small" style="display: none;" onsubmit="event.preventDefault();">
-
-        <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Edit Link Details</h2></div>
-         <div data-section="poll-form">
-            <div>
-               <label class="floating">
-                  <input type="text" placeholder=" " data-field="FUrl">
-                  <span>URL</span>
+         <div class="row">
+            <div class="group">
+               <label class="label-text">
+                  <input type="radio" name="period" value="" checked>
+                  <span>none</span>
                </label>
-            </div>
-
-            <div class="group" style="margin-top: 20px;">
-               <label class="floating" style="width: 100%;">
-                  <textarea placeholder=" " data-field="FDescription"></textarea>
-                  <span>Länk Beskrivning</span>
+               <label class="label-text">
+                  <input type="radio" name="period" value="date-created.last_7_days">
+                  <span>week</span>
+               </label>
+               <label class="label-text">
+                  <input type="radio" name="period" value="date-created.last_month">
+                  <span>month</span>
                </label>
             </div>
          </div>
-
-         <hr class="divider" style="margin-top: 20px">
-
-          <div class="row" style="margin-top: 20px;" data-section="command">
-            <button class="button" data-action="link-clear">Clear</button>
-            <span style="width: 20px;"></span>
-            <button class="button" data-action="link-add" data-table="TLink">Add</button>
-            <!-- align to right -->
-         </div>
-
-         <input type="hidden" data-field="LinkK">
-         <input type="hidden" data-field="FKey">
-         <input type="hidden" data-field="table_number">
-         
-      </form>
-
-      <form id="idFormSearch" class="container-form margin_b-small" onsubmit="event.preventDefault();" style="margin-top: 10px;">
-
-         <div class="title" style="margin-bottom: 20px;"><h2 class="page-title">Sök Omröstningar</h2></div>
-
-         <div data-section="search" class="group">
-               <div class="row">
-                     <div style="flex: 1;">
-                     <label class="floating">
-                           <input type="text" placeholder=" " id="idSearchInput" data-field-type="search">
-                           <span>Sök</span>
-                     </label>
-                     </div>
-                     <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
-               </div>
-            </div>
-
-         <div data-section="select-polls" class="container-result"></div>
-      </form>
-
+      </div>
+   
+      <div class="row">
+      <div data-section="select-polls" class="container-result"></div>
+      </div>
+   </form>
+   
    </div>
 
    
@@ -511,13 +538,29 @@ gd.SetBaseUrl(sBaseUrl_g);
                PAGE_TableUpdate("search", oSearch );
             } break;
             case "search": {
-               const sQueryName = "vote-poll_search";
-               const sSearchValue = eContainer.querySelector('[data-field-type="search"]').value;
-               const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+               //const sQueryName = "vote-poll_search";
+               const sSearchValue = eContainer.querySelector('[data-id="search-text"]').value; // get search input value
+               const oValues = { name: sSearchValue };
+               //const sArguments = "query=vote-poll_search" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+               const oModifiers = { table: "TPoll", order: ["2"], "limit": [0,10] };
+               const sPeriodValue = document.querySelector('input[name="period"]:checked')?.value;
+               let oXml;
+               if(sSearchValue || sPeriodValue) {
+                  const eRoot = XML.Create("conditions").root;
+                  sSearchValue && XML.Add( eRoot, "where", { id: "poll-search", meta_type: "expression", type_part: "where", table: "TPoll", name: "search", value: sSearchValue } );
+                  sPeriodValue && XML.Add( eRoot, "where", { id: sPeriodValue, meta_type: "expression", type_part: "where", table: "TPoll" } ); 
+                  oXml = eRoot.ownerDocument;                                 // set to xml document
+               }
 
+               const oArguments = { query: "vote-poll_search", values: JSON.stringify(oValues), modifiers: JSON.stringify(oModifiers) };
+               gd.Send("!db/select?", oArguments, oXml).then(function(oResult) {
+                   PAGE_ProcessResponse(oResult, "select-polls");
+               });
+/*
                gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult, "select-polls");
                });
+               */
             } break;
             case "poll-add": {
                const sValues = JSON.stringify(oDBRecord.GetFilledValues());

@@ -1,4 +1,15 @@
+/* 
+Method Documentation:
+=========================
+CDocument - Page-level data cache and state container for key-value pairs, DOM elements, records, and tables with O(1) lookup by id and convenience lookup by name. IDs are auto-generated if not provided.
+XML_GetFirstValue - Extracts the first value from the second row of an XML result node, with support for CDATA JSON parsing and error handling for missing nodes or invalid structure.   
+XML_GetFirstArray - Extracts an array of values from the first result node in an XML document, with error handling for missing nodes or invalid CDATA structure.
+XML_AppendElement - Appends an XML element with specified attributes and optional value to a parent element, with error handling for invalid input.
+XML_AppendObject - Appends an object as a new node to an XML document, handling both primitive and complex values as attributes or child elements, with error handling for invalid input.
+FIELD_CopyValues - Copies field values from a source element or object to a target element, with optional filtering by field names and error handling for invalid input.
+THEME_Select - Selects and applies a theme based on a given name, with support for persistence in localStorage, configurable theme options, and error handling for unknown themes.
 
+*/
 
 /** ---------------------------------------------------------------------------
  * CDocument — Page-level data cache and state container.
@@ -306,6 +317,21 @@ function XML_GetFirstArray(xml_ , sNode = "result") {
  * @param {*} value_ - Optional value to set on a child value element (undefined = no child)
  * @param {string} sNode - Name of the child value element (default "value")
  * @returns {{ parent: Element, element: Element|null }} Parent element and created value element
+ *
+ * @example
+ * // Append: <field name="title" type="text">Vote title</field>
+ * const oParser = new DOMParser();
+ * const oDocument = oParser.parseFromString("<values></values>", "application/xml");
+ * const eValues = oDocument.documentElement;
+ *
+ * const oResult = XML_AppendElement(
+ *    eValues,
+ *    { name: "title", type: "text" },
+ *    "Vote title",
+ *    "field"
+ * );
+ *
+ * console.log(oResult.element.outerHTML);
  */
 function XML_AppendElement(eParent, oValues, value_, sNode = "value") {
    if(!(eParent instanceof Element)) { throw new Error("eParent must be a valid Element"); }
@@ -316,15 +342,11 @@ function XML_AppendElement(eParent, oValues, value_, sNode = "value") {
 
    // ## Set object values as attributes on the created element
    for(const [sKey, vValue] of Object.entries(oValues)) {
-      if(vValue !== undefined && vValue !== null) {
-         eValue.setAttribute(sKey, String(vValue));
-      }
+      if(vValue !== undefined && vValue !== null) { eValue.setAttribute(sKey, String(vValue));}
    }
 
-   // ## Set value_ as text content if provided
-   if(value_ !== undefined) {
-      eValue.textContent = String(value_);
-   }
+   // ## Set value_ as text content if provided ..............................
+   if(value_ !== undefined) { eValue.textContent = String(value_);}
 
    return { parent: eParent, element: eValue };
 }
@@ -345,6 +367,27 @@ function XML_AppendElement(eParent, oValues, value_, sNode = "value") {
  * @param {string} sField - Name of the attribute that holds the value (default "value")
  * @param {string} sRoot - Name of the root element when creating a new document (default "document")
  * @returns {{ document: Document, element: Element }} XML document and the created element node
+ *
+ * @example
+ * // Create a new XML document and append one object
+ * const [oDocument, eValues] = XML_AppendObject(
+ *    null,
+ *    {
+ *       pollName: "Lunch choice",
+ *       isActive: true,
+ *       options: ["Pizza", "Salad", "Soup"]
+ *    },
+ *    "poll",
+ *    "field",
+ *    "document"
+ * );
+ *
+ * console.log(oDocument.documentElement.outerHTML);
+ * // Outputs: <document><poll pollName="Lunch choice" isActive="true"><field name="options" value="[&quot;Pizza&quot;,&quot;Salad&quot;,&quot;Soup&quot;]"></field></poll></document>
+ *
+ * @example
+ * // Append another object into an existing values element
+ * XML_AppendObject(eValues, { pollName: "Drink choice", isActive: false }, "poll", "field");
  */
 function XML_AppendObject(document_, oValues, sNode = "values", sField = "value", sRoot = "document") {
    let oDocument; // XML Document to append to, created if null
@@ -357,9 +400,7 @@ function XML_AppendObject(document_, oValues, sNode = "values", sField = "value"
       oDocument.appendChild(eRoot);
    }
    // ## If Document provided, use it
-   else if(document_ instanceof Document) {
-      oDocument = document_;
-   }
+   else if(document_ instanceof Document) { oDocument = document_; }
    // ## If Element provided, use its ownerDocument and treat element as values node
    else if(document_ instanceof Element) {
       eValues = document_;
@@ -417,6 +458,65 @@ function XML_AppendObject(document_, oValues, sNode = "values", sField = "value"
    return [ oDocument, eValues ];                                             // returns document and parent values element
 }
 
+
+const XML = {
+   // Create a new XML document with a specified root element name (default "root")
+   Create(sRootName = "root") {
+      const doc = document.implementation.createDocument("", "", null);
+      const eRoot = doc.createElement(sRootName);
+      doc.appendChild(eRoot);
+      return { document: doc, root: eRoot };
+   },
+
+   // Add element (returns element for chaining)
+   Add(parent_, name_, attributes_ = {}, text = null) {
+      return XML_AppendElement(parent_, attributes_, text, name_).element;
+   },
+
+   /** -------------------------------------------------------------------------  XML.Attr
+    * Get or set a single attribute on an element.
+    * - Read (value_ omitted): returns attribute string or null
+    * - Write (value_ provided): sets attribute and returns element for chaining
+    *
+    * @param {Element} eElement - Target element
+    * @param {string} sName - Attribute name
+    * @param {*} [value_] - Value to set (omit to read)
+    * @returns {string|null|Element} Attribute value when reading, element when writing
+    *
+    * @example
+    * const sType = XML.Attr(eField, "type");             // read → "text"
+    * XML.Attr(eField, "type", "number").Attr ...         // write → element (chainable via wrapper)
+    */
+   Attr(eElement, sName, value_) {
+      if(value_ === undefined) { return eElement.getAttribute(sName); }
+      eElement.setAttribute(sName, String(value_));
+      return eElement;
+   },   
+
+   /** -------------------------------------------------------------------------  XML.FromString
+    * Parse an XML string into a Document. Throws if the string is malformed.
+    *
+    * @param {string} sXml - Well-formed XML string to parse
+    * @returns {Document} Parsed XML document
+    *
+    * @example
+    * const oDocument = XML.FromString("<poll><option>Pizza</option></poll>");
+    * const eOption = XML.Find(oDocument.documentElement, "option");
+    */
+   FromString(sXml) {
+      const oParser = new DOMParser();
+      const oDocument = oParser.parseFromString(sXml, "application/xml");
+      const eError = oDocument.querySelector("parsererror");
+      if(eError) { throw new Error(`XML parse error: ${eError.textContent.trim()}`); }
+      return oDocument;
+   },   
+
+   // Serialize an XML document to a string
+   ToString(document_) {
+      const serializer = new XMLSerializer();
+      return serializer.serializeToString(document_);
+   }
+};
 
 /** --------------------------------------------------------------------------- FIELD_CopyValues
  * Copies field values from one element to another.
@@ -697,17 +797,4 @@ function ELEMENT_Show(words_, oOptions = {}) {
          }
       });
    }
-
-   // ## Dispatch custom event for listeners to react to visibility change ....
-   const oEvent = new CustomEvent("gd-visibility", {
-      detail: {
-         keywords: aKeywords,
-         visibleCount: aVisible.length,
-         totalManaged: aTarget.length,
-         container: eContainer
-      }
-   });
-   eContainer.dispatchEvent(oEvent);
-
-   return aVisible;
 }
