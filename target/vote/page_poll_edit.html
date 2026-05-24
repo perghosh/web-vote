@@ -718,6 +718,10 @@ gd.SetBaseUrl(sBaseUrl_g);
    }
 
    const PollList= {
+      /**
+       * Read search arguments from the search form and construct XML conditions for the search query
+       * Returns an array with the arguments object and the XML document
+       */
       ReadSearchArguments() {
          const eForm = document.querySelector("#idFormSearch");               // container form for search
          const sSearchValue = eForm.querySelector('[data-id="search-text"]').value; // free text search value
@@ -742,6 +746,7 @@ gd.SetBaseUrl(sBaseUrl_g);
          return [ oArguments, oXml ];
       },
 
+      // Perform search with current arguments and update search results
       UpdateSearchResult() {
          const [oArguments, oXml] = this.ReadSearchArguments();
          gd.Send("!db/select?", oArguments, oXml).then(function(oResult) {
