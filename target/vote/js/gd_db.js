@@ -414,7 +414,7 @@ class DBRecord {
 
       return aKeyColumns.some(column => {
          const value = this.mapValues.get(column.sName);
-         return value != null;                                                 // Checks for both null AND undefined
+         return !!value;                                                      // Checks if key is truthy (not null, undefined, or empty)
       });
    }
 
