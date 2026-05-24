@@ -264,7 +264,7 @@ gd.SetBaseUrl(sBaseUrl_g);
       let oTable = new Table(["id", "name", "header"], {sName: "search"} );
       oDocument_g.AddTable(oTable);
 
-      PAGE_TableUpdate();
+      PollList.UpdateSearchResult();
 
       //const eForm = document.querySelector("#idForm");
       let oRecord = new DBRecordContainer( document.querySelector("#idForm") );
@@ -376,23 +376,6 @@ gd.SetBaseUrl(sBaseUrl_g);
          eQuestion.style.visibility = "visible";
       });
 
-   }
-
-   function PAGE_TableUpdate( sType, options_ ) {
-
-      if( sType === undefined || sType === "search" )
-      {  
-         const oModifiers = { table: "TPoll", order: ["2"], "limit": [0,10] };
-         
-         if(typeof options_ === "object")  {
-            // merge options_ into oModifiers
-            for(const key in options_) { oModifiers[key] = options_[key]; }
-         }
-         oDocument_g.MergeValue( "search", oModifiers );
-         gd.Send("!db/select?", { query: "#vote-poll_search", modifiers: JSON.stringify(oModifiers) }).then(function(oResult) {
-            PAGE_ProcessResponse(oResult, "select-polls");
-         });
-      }
    }
 
    /** ---------------------------------------------------------------------------
@@ -535,32 +518,12 @@ gd.SetBaseUrl(sBaseUrl_g);
                   else { oSearch.order[0] = iIndex; }
                }
                else { oSearch.order[0] = iIndex;}
-               PAGE_TableUpdate("search", oSearch );
+               oDocument_g.MergeValue( "search", oSearch );
+
+               PollList.UpdateSearchResult();
             } break;
             case "search": {
-               //const sQueryName = "vote-poll_search";
-               const sSearchValue = eContainer.querySelector('[data-id="search-text"]').value; // get search input value
-               const oValues = { name: sSearchValue };
-               //const sArguments = "query=vote-poll_search" + sQueryName + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
-               const oModifiers = { table: "TPoll", order: ["2"], "limit": [0,10] };
-               const sPeriodValue = document.querySelector('input[name="period"]:checked')?.value;
-               let oXml;
-               if(sSearchValue || sPeriodValue) {
-                  const eRoot = XML.Create("conditions").root;
-                  sSearchValue && XML.Add( eRoot, "where", { id: "poll-search", meta_type: "expression", type_part: "where", table: "TPoll", name: "search", value: sSearchValue } );
-                  sPeriodValue && XML.Add( eRoot, "where", { id: sPeriodValue, meta_type: "expression", type_part: "where", table: "TPoll" } ); 
-                  oXml = eRoot.ownerDocument;                                 // set to xml document
-               }
-
-               const oArguments = { query: "vote-poll_search", values: JSON.stringify(oValues), modifiers: JSON.stringify(oModifiers) };
-               gd.Send("!db/select?", oArguments, oXml).then(function(oResult) {
-                   PAGE_ProcessResponse(oResult, "select-polls");
-               });
-/*
-               gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
-                  PAGE_ProcessResponse(oResult, "select-polls");
-               });
-               */
+               PollList.UpdateSearchResult();
             } break;
             case "poll-add": {
                const sValues = JSON.stringify(oDBRecord.GetFilledValues());
@@ -568,8 +531,8 @@ gd.SetBaseUrl(sBaseUrl_g);
                const sArguments = `record=${oArguments}`;
                gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
                   PAGE_ProcessResponse(oResult, "poll-add");
-                  oToast_g.Show("Skapad!")
-                  PAGE_TableUpdate();
+                  oToast_g.Show("Skapad!");
+                  PollList.UpdateSearchResult();
                });
             } break;
             case "poll-update": {
@@ -595,7 +558,7 @@ gd.SetBaseUrl(sBaseUrl_g);
                   let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
 
                   if( iCount !== 0) { 
-                     PAGE_TableUpdate();
+                     PollList.UpdateSearchResult();
                      oToast_g.Show("Raderad!"); 
                   }
                   else {oToast_g.Show("Kunde inte ta bort")}
@@ -752,8 +715,39 @@ gd.SetBaseUrl(sBaseUrl_g);
 
          }
       }
+   }
 
-      
+   const PollList= {
+      ReadSearchArguments() {
+         const eForm = document.querySelector("#idFormSearch");               // container form for search
+         const sSearchValue = eForm.querySelector('[data-id="search-text"]').value; // free text search value
+         const sPeriodValue = eForm.querySelector('input[name="period"]:checked')?.value; // date period value from radio buttons
+
+         let oXml;
+         if(sSearchValue || sPeriodValue) {
+            const eRoot = XML.Create("conditions").root;
+            sSearchValue && XML.Add( eRoot, "where", { id: "poll-search", meta_type: "expression", type_part: "where", table: "TPoll", name: "search", value: sSearchValue } );
+            sPeriodValue && XML.Add( eRoot, "where", { id: sPeriodValue, meta_type: "expression", type_part: "where", table: "TPoll" } ); 
+            oXml = eRoot.ownerDocument;                                 // set to xml document
+         }
+
+         let oModifiers = oDocument_g.GetValue("search");
+         if( !oModifiers ) {
+            oModifiers = { table: "TPoll", order: ["2"], "limit": [0,10] };
+            oDocument_g.MergeValue( "search", oModifiers );
+         }
+
+         const oArguments = { query: "vote-poll_search", modifiers: JSON.stringify(oModifiers) };
+
+         return [ oArguments, oXml ];
+      },
+
+      UpdateSearchResult() {
+         const [oArguments, oXml] = this.ReadSearchArguments();
+         gd.Send("!db/select?", oArguments, oXml).then(function(oResult) {
+            PAGE_ProcessResponse(oResult, "select-polls");
+         });
+      }
    }
    </script>
 </body>
