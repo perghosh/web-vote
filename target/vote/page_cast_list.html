@@ -67,16 +67,22 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .advanced-search-label { color: var(--color-muted); font-size: 12px; min-width: 80px; }
       .advanced-search-select { max-width: 220px; min-width: 160px; }
 
-      @media (max-width: 768px) { .label-text { display: none; } .filter { width: 70px; } }
 
       /* poll row */
       .poll-row { align-items: center; border: 1px solid var(--color-border); border-radius: 10px; background: var(--background-light); cursor: pointer; display: flex; gap: 12px; margin-bottom: 10px; padding: 8px 18px; transition: all 0.2s ease; }
       .poll-row:hover { background: var(--background-light-hover); transform: translateY(-1px); }
       .poll-content { flex: 1; min-width: 0; }
-      .poll-row [data-id='idName'] { color: var(--color-body); font-weight: 600; }
-      .poll-row [data-id='idDescription'] { color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .poll-row [data-id='idVotes'] { color: var(--background-success); font-size: 30px; font-weight: 600; max-width: 200px; text-align: center; }
+      .poll-row [data-field='CreateD'] { border-bottom: 1px solid var(--color-border); color: var(--color-muted); display: inline-block; font-size: 70%; margin-right: 5px; }
+      .poll-row [data-field='FName'] { color: var(--color-body); font-weight: 600; }
+      .poll-row [data-field='FDescription'] { color: var(--color-muted); font-size: 90%; overflow: hidden; padding-top: 2pt; text-overflow: ellipsis; white-space: nowrap; }
+      .poll-row [data-field='TotalVotes'] { color: var(--background-success); font-size: 30px; font-weight: 600; max-width: 200px; text-align: center; }
 
+      @media (max-width: 768px) { 
+         .label-text { display: none; } 
+         .filter { width: 70px; } 
+         .poll-row [data-field='CreateD'] { display: none; } 
+         .poll-row [data-field='FDescription'] { display: none; }
+      }
 
       .container-form {height: 100%;}
    </style>
@@ -102,8 +108,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    
                <select class="filter" data-action="sort">
                   <!-- <option value="votes">Most Votes</option> -->
-                  <option value="ascending" selected>A-Z</option>
-                  <option value="descending">Z-A</option>
+                  <option value="2" selected>A-Z</option>
+                  <option value="-2">Z-A</option>
+                  <option value="3">Nya</option>
+                  <option value="-3">Gamla</option>
                </select>
                <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
                <button class="button" data-action="search-advanced" style="margin-left: 10px;">Mer...</button>
@@ -119,18 +127,20 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             </div>
          </div>
    
-         <div data-section="select-polls" class="container-result"></div>
+         <div data-section="list-poll" class="container-result"></div>
       </form>
    </div>
 
    <template id="idTemplateRow">
-      <div class="poll-row">
-         <div class="poll-votes" data-id="idVotes">0</div>
-         <div class="poll-content">
-            <div class="poll-name" data-id="idName">Name</div>
-            <div class="poll-header" data-id="idDescription">Description</div>
+      <div>
+         <div class="poll-row" data-field="PollK" data-value="">
+            <div data-field="TotalVotes">0</div>
+            <div class="poll-content">
+               <div> <span data-field="CreateD"></span> <span data-field="FName"></span></div>
+               <div data-field="FDescription"></div>
+            </div>
+            <a href="#" data-action="vote" style="margin-left: auto; padding: 8px 12px; border-radius: 50px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;">Rösta</a>
          </div>
-         <a href="#" data-action="vote" style="margin-left: auto; padding: 8px 12px; border-radius: 50px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;">Rösta</a>
       </div>
    </template>
    
@@ -155,7 +165,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    function PAGE_Initialize() {
       oDocument_g = new CDocument({});
       
-      let oTable = new Table(["id", "Name", "Description", "Votes"], {sName: "search"} );
+      let oTable = new Table(["PollK", "FName", "FDescription", "CreateD", "TotalVotes"], {sName: "search"} );
       oDocument_g.AddTable(oTable);
 
       // ## Read arguments from url and set to document
@@ -198,18 +208,12 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          // redirect user to result
          const eRow = eTarget.closest(".poll-row");
+         const sPollK = eRow?.dataset?.value;
 
-         if(eRow && eRow.dataset.key)
+         if(eRow && sPollK)
          {
             e_.stopPropagation();
-            const sPollK = eRow.dataset.key;
-
-            if( sAction === "vote" )
-            {
-               window.location.href = `page_cast.html?key=${encodeURIComponent(sPollK)}`;
-               return;
-            }
-
+            if( sAction === "vote" ) { window.location.href = `page_cast.html?key=${encodeURIComponent(sPollK)}`;  return;}
 
             window.location.href = `page_cast_result.html?key=${encodeURIComponent(sPollK)}`;
             return;
@@ -221,12 +225,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          switch(sAction) {
             case "sort": {
-               console.log("Sort action triggered");
-
-               if( eTarget.value === "votes" ) { PollList.GetResult( {"order": [-3]} );}
-               else if( eTarget.value === "ascending" ) { PollList.GetResult( {"order": [2]} ); }
-               else if( eTarget.value === "descending" ) { PollList.GetResult( {"order": [-2]} ); }
-               else { return; }
+               const sOrderColumn = eTarget.value;
+               const iOrderColumn = parseInt(sOrderColumn, 10);
+               PollList.GetResult( {"order": [iOrderColumn]} );
             } break;
             case "search-advanced": {
                const eAdvancedSearch = eContainer.querySelector("#idSearchAdvanced");
@@ -312,7 +313,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       if(eResults)
       {
-         if( sOperation === "select-polls")
+         if( sOperation === "list-poll")
          {
             const eSelect = eResults.querySelector('result[command="select"]');
             const aPoll = JSON.parse(eSelect.textContent);
@@ -321,7 +322,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             let oTable = oDocument_g.GetTable("search");
             if(!oTable)
             {
-               oTable = new Table(["id", "Name", "Description", "Votes"], {sName: "search"} );
+               oTable = new Table(["id", "Name", "Description", "CreateD", "Votes"], {sName: "search"} );
                oDocument_g.AddTable(oTable);
             }
             else { oTable.Clear(); }
@@ -343,25 +344,18 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          const oTable = oDocument_g.GetTable("search");
          if (!oTable) return;
 
-         const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="select-polls"]');
+         const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="list-poll"]');
          eSelectPoll.innerHTML = "";
+
+         const oRecord = new DBRecordContainer(oTable.GetColumnInformation()); // create a record to write values
 
          const eTemplate = document.getElementById("idTemplateRow");
 
          for(let i = 0; i < oTable.GetRowCount(); i++)
          {
             const eRow = eTemplate.content.cloneNode(true).firstElementChild;
-
-            const sKey = oTable.GetCell(i, 0);
-            const sName = oTable.GetCell(i, 1);
-            const sHeader = oTable.GetCell(i, 2);
-            const sVotes = oTable.GetCell(i, 3);
-
-            eRow.dataset.key = sKey;
-
-            eRow.querySelector("[data-id='idName']").textContent = sName;
-            eRow.querySelector("[data-id='idDescription']").textContent = sHeader;
-            eRow.querySelector("[data-id='idVotes']").textContent = sVotes;
+            oRecord.AddValue(oTable.AsObject(i));                             // write values of the current row to the record
+            oRecord.WriteValues(eRow);
 
             eSelectPoll.appendChild(eRow);
          }
@@ -419,7 +413,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          oDocument_g.MergeValue( "modifiers", oModifiers );                   // merge to keep old values, only update changed values
 
-         let oArguments = { query: "#list-poll", modifiers: JSON.stringify(oModifiers) };
+         let oArguments = { query: "list-poll", modifiers: JSON.stringify(oModifiers) };
          let oValues = {};
          const iArea = oDocument_g.GetValue("area");
          if(iArea) { oValues["area"] = iArea; }
@@ -432,7 +426,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          if(Object.keys(oValues).length > 0) { oArguments.values = JSON.stringify(oValues); }
 
          gd.Send("!db/select?", oArguments).then(function(oResult) {
-            PAGE_ProcessResponse(oResult, "select-polls");
+            PAGE_ProcessResponse(oResult, "list-poll");
          });
       }
    };
