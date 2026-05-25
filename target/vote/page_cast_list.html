@@ -63,9 +63,14 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       .advanced-search { border-top: 1px solid var(--color-border); display: none; margin-top: 10px; padding-top: 10px; width: 100%; }
       .advanced-search[data-visible="true"] { display: block; }
-      .advanced-search-row { align-items: center; display: flex; gap: 10px; }
-      .advanced-search-label { color: var(--color-muted); font-size: 12px; min-width: 80px; }
+      .advanced-search-row { align-items: center; display: flex; flex-wrap: wrap; gap: 12px 20px; }
+      .advanced-search-group { align-items: center; display: flex; gap: 10px; }
+      .advanced-search-label { color: var(--color-muted); font-size: 12px;  }
       .advanced-search-select { max-width: 220px; min-width: 160px; }
+      .advanced-search-period-group { border: 0; margin: 0; min-inline-size: 0; padding: 0; }
+      .advanced-search-period-options { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
+      .advanced-search-period-option { align-items: center; color: var(--color-muted); display: inline-flex; gap: 5px; }
+      .advanced-search-period-option input { margin: 0; }
 
 
       /* poll row */
@@ -119,27 +124,30 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
             <div id="idSearchAdvanced" class="advanced-search" data-visible="false">
                <div class="advanced-search-row">
-                  <span class="group">
-                  <label class="advanced-search-label">Område:</label>
-                  <select id="idSearchArea" class="filter advanced-search-select" data-id="id-area">
-                     <option value="">Alla</option>
-                  </select>
-                  </span>
-                  <span class="group">
-                     <label class="advanced-search-label">Period:</label>
-                     <label class="label-text">
-                        <input type="radio" name="period" value="" checked>
-                        <span>none</span>
-                     </label>
-                     <label class="label-text">
-                        <input type="radio" name="period" value="date-created.last_7_days">
-                        <span>week</span>
-                     </label>
-                     <label class="label-text">
-                        <input type="radio" name="period" value="date-created.last_month">
-                        <span>month</span>
-                     </label>
-                  </span>
+                  <div class="advanced-search-group">
+                     <label class="advanced-search-label" for="idSearchArea">Område:</label>
+                     <select id="idSearchArea" class="filter advanced-search-select" data-id="id-area">
+                        <option value="">Alla</option>
+                     </select>
+                  </div>
+
+                  <fieldset class="advanced-search-group advanced-search-period-group">
+                     <legend class="advanced-search-label">Period:</legend>
+                     <div class="advanced-search-period-options">
+                        <label class="advanced-search-period-option">
+                           <input type="radio" name="period" value="" checked>
+                           <span>Alla</span>
+                        </label>
+                        <label class="advanced-search-period-option">
+                           <input type="radio" name="period" value="date-created.last_7_days">
+                           <span>Vecka</span>
+                        </label>
+                        <label class="advanced-search-period-option">
+                           <input type="radio" name="period" value="date-created.last_month">
+                           <span>Månad</span>
+                        </label>
+                     </div>
+                  </fieldset>
                </div>
             </div>
          </div>
@@ -454,13 +462,21 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          let oValues = {};
          const iArea = oDocument_g.GetValue("area"); // area are taken from document because this may be passed from url
          if(iArea) { oValues["area"] = iArea; }
-         const sSearch = eSearch.querySelector('[data-id="id-search"]')?.value;
-         if(sSearch) { oValues["search"] = sSearch; }
-
+         const sSearchValue = eSearch.querySelector('[data-id="id-search"]')?.value;
+         //if(sSearchValue) { oValues["search"] = sSearchValue; }
+         const sPeriodValue = eSearch.querySelector('input[name="period"]:checked')?.value; // date period value from radio buttons
+         let oXml;
+         if(sSearchValue || sPeriodValue) {
+            const eRoot = XML.Create("conditions").root;
+            sSearchValue && XML.Add( eRoot, "where", { id: "poll-search", meta_type: "expression", type_part: "where", table: "TPoll", name: "search", value: sSearchValue } );
+            sPeriodValue && XML.Add( eRoot, "where", { id: sPeriodValue, meta_type: "expression", type_part: "where", table: "TPoll" } ); 
+            oXml = eRoot.ownerDocument;                                 // set to xml document
+         }
+         
          // ## Add oValues if not empty .....................................
          if(Object.keys(oValues).length > 0) { oArguments.values = JSON.stringify(oValues); }
 
-         gd.Send("!db/select?", oArguments).then(function(oResult) {
+         gd.Send("!db/select?", oArguments, oXml).then(function(oResult) {
             PAGE_ProcessResponse(oResult, "list-poll");
          });
       }
