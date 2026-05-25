@@ -119,10 +119,27 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
             <div id="idSearchAdvanced" class="advanced-search" data-visible="false">
                <div class="advanced-search-row">
-                  <label class="advanced-search-label" for="idSearchArea">Område:</label>
+                  <span class="group">
+                  <label class="advanced-search-label">Område:</label>
                   <select id="idSearchArea" class="filter advanced-search-select" data-id="id-area">
                      <option value="">Alla</option>
                   </select>
+                  </span>
+                  <span class="group">
+                     <label class="advanced-search-label">Period:</label>
+                     <label class="label-text">
+                        <input type="radio" name="period" value="" checked>
+                        <span>none</span>
+                     </label>
+                     <label class="label-text">
+                        <input type="radio" name="period" value="date-created.last_7_days">
+                        <span>week</span>
+                     </label>
+                     <label class="label-text">
+                        <input type="radio" name="period" value="date-created.last_month">
+                        <span>month</span>
+                     </label>
+                  </span>
                </div>
             </div>
          </div>
@@ -217,7 +234,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          const eRow = eTarget.closest(".poll-row");
          const sPollK = eRow?.dataset?.value;
 
-         const eContainer = eTarget.closest("idContainer") || document;       // get closest container for event delegation, default to document if not found, this allows us to limit the scope of querySelector calls for better performance
+         const eContainer = eTarget.closest("#idContainer") || document;       // get closest container for event delegation, default to document if not found, this allows us to limit the scope of querySelector calls for better performance
 
          if(eRow && sPollK)
          {
