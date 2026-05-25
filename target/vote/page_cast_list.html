@@ -110,11 +110,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   <!-- <option value="votes">Most Votes</option> -->
                   <option value="2" selected>A-Z</option>
                   <option value="-2">Z-A</option>
-                  <option value="-4">Nya</option>
-                  <option value="4">Gamla</option>
+                  <option value="-4">Ny</option>
+                  <option value="4">Äldre</option>
                </select>
                <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
-               <button class="button" data-action="search-advanced" style="margin-left: 10px;">Mer...</button>
+               <button class="button" data-action="view-advanced" style="margin-left: 10px;">Mer...</button>
             </div>
 
             <div id="idSearchAdvanced" class="advanced-search" data-visible="false">
@@ -250,7 +250,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          e_.stopPropagation();
 
          switch(sAction) {
-            case "search-advanced": {
+            case "view-advanced": {
                const eAdvancedSearch = eContainer.querySelector("#idSearchAdvanced");
                if(!eAdvancedSearch) { return; }
 
