@@ -26,14 +26,14 @@ TIP: select name and search in project to find where these statements are used
       <statement name="code-get_list" format="jinja" type="select" description="Get first poll, used for development">SELECT CodeK, FName FROM TCode WHERE CodeGroupK = {CodeGroupK} ORDER BY FName</statement>
 
 
-      <!-- @API [tag: TPoll]
+      <!-- @API [tag: TPoll] [description: statements for polls, these are used in both main vote page and admin interface for votes]
        | Statements for main vote page, Table called TPoll is worked on
        | - vote-get_first: Get first poll, used to determine if there are any polls at all
        | - vote-poll_search: Search for polls by name or header, used for main search field on vote page
        | - vote-poll_table: Get poll data for table, used to fill table on vote page
        |-->
       <statement name="vote-get_first" format="raw" type="select" description="Get first poll, used for development">SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1</statement>
-      <statement name="vote-poll_search" format="jinja" type="select" table="TPoll">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll {++where} {++orderby} {++limit}</statement>
+      <statement name="vote-poll_search" format="jinja" type="select" table="TPoll" description="Search for polls by name or header, used for main search field on vote page">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll {++where} {++orderby} {++limit}</statement>
       <statement name="vote-poll_get" format="jinja" type="select" table="TPoll" description="Get poll details by poll key">SELECT PollK, FName, FHeader, FDescription, AreaC, TypeC, StateC FROM TPoll WHERE PollK = {PollK}</statement>
 
       <!-- @API [tag: voting] [description: questions used to edit polls, these are used in admin interface for votes]
@@ -147,7 +147,9 @@ WHERE TPollAnswer.PollK = {PollK}
 GROUP BY TPollVote.PollAnswerK
 ]]></statement>      
 
-   <!-- Count votes from poll -->
+   <!-- @API [tag: list, poll] [description: statements to list polls, simplify selecting poll to vote for]
+    | Count votes from poll 
+    -->
    <statement name="list-poll" format="jinja" type="select" table="TPoll" description="Count totalvotes of poll"><![CDATA[
    SELECT hex(TPoll.PollK) AS PollK, TPoll.FName, TPoll.FDescription, DATE(TPoll.CreateD) AS CreateD,
       (SELECT COUNT(DISTINCT TPollVote.FTie) FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK 
@@ -159,21 +161,6 @@ GROUP BY TPollVote.PollAnswerK
    {++limit}
    ]]></statement>
 
-   <!--
-   <statement name="list-poll" format="jinja" type="select" table="TPoll" description="Count totalvotes of poll"><![CDATA[
-   SELECT hex(TPoll.PollK) AS PollK, TPoll.FName, TPoll.FDescription, 
-      (SELECT COUNT(DISTINCT TPollVote.FTie) FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK 
-      JOIN TPollQuestion ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK 
-      WHERE TPollQuestion.PollK = TPoll.PollK) 
-      AS TotalVotes FROM TPoll
-   {?? exists( args::exists( args, "search", "area" ), "WHERE " ) ??}       
-   {?? exists( args::exists( args, "search" ), " (FName LIKE ''%{=search}%'' OR FHeader LIKE ''%{=search}%'')" ) ??} 
-   {?? exists( args::all_exists( args, "search", "area" ), " AND " ) ??} 
-   {?? exists( args::exists( args, "area" ), "AreaC = {=area}" ) ??} 
-   {++orderby} 
-   {++limit}
-   
-   -->
    <!--Link-->
    <statement name="vote-link_get" format="jinja" type="select" table="TLink" description="Get link for a poll by foreign key">SELECT hex(LinkK) AS LinkK, FUrl, FDescription FROM TLink WHERE FKey = {FKey} AND table_number = {table_number} LIMIT 1</statement>
 

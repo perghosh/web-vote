@@ -233,6 +233,7 @@ CREATE TABLE TVoter (
 -- POLL TABLES  (Used for storing polls, questions, answers, votes, comments, limits, etc.) 
 -- =====================================================
 
+-- TPoll is the main table for storing poll information, this is the header for a poll and contains general information about the poll. 
 CREATE TABLE TPoll (
    PollK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
    ,PollGroupK BLOB         -- main poll group that poll is connected to if any
@@ -269,6 +270,7 @@ CREATE INDEX "IC_TPoll_ParentK" ON TPoll (ParentK);
 CREATE INDEX "I_TPoll_PollGroupK" ON TPoll (PollGroupK);
 CREATE INDEX "I_TPoll_AreaC" ON TPoll (AreaC);
 
+-- TPollSection is used to group polls in sections
 CREATE TABLE TPollSection (
    PollSectionK BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
    ,PollK BLOB
@@ -277,6 +279,17 @@ CREATE TABLE TPollSection (
    ,FDescription VARCHAR(100)
 );
 CREATE INDEX IC_TPoll_PollK ON TPollSection (PollK);
+
+-- Relation table between poll and sections, this is used to connect polls to sections, this is needed if a poll is connected to multiple sections or if there is a need to connect a section to multiple polls. This can then be used to list polls in different sections and also to connect questions and answers to specific sections.
+CREATE TABLE rPollxSection (
+   PollxSectionK BLOB PRIMARY KEY DEFAULT (randomblob(16))
+   ,PollK BLOB
+   ,PollSectionK BLOB
+   ,PriorityC INTEGER       -- This can be used to set priority for relation to make some sort of ranking
+   ,TypeC INTEGER           -- Type of relation for filter
+   ,FDescription VARCHAR(100) -- Describe relation
+);
+CREATE INDEX IC_rPollxSection_PollK ON rPollxSection (PollK);
 
 /* Used to store comments for polls, this can be used for discussions around the poll and also to get feedback from voters. Comments can be connected to a specific question or answer if needed by using SuperK and maybe some rules for how to use it. */
 CREATE TABLE TPollComment (

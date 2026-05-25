@@ -95,23 +95,23 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             <h2 class="page-title">Sök och filtrera omröstningar</h2>
          </div>
    
-         <div data-section="search" class="group search-group">
+         <div id="idSearch" data-section="search" class="group search-group">
             <div class="row">
                <div style="flex: 1;">
                   <label class="floating">
-                     <input type="text" placeholder=" " id="idSearchInput" data-id="search">
+                     <input type="text" placeholder=" " id="idSearchInput" data-id="id-search">
                      <span>Sök</span>
                   </label>
                </div>
    
                <label class="label-text">Sortera efter:</label>
    
-               <select class="filter" data-action="sort">
+               <select class="filter" data-id="id-sort">
                   <!-- <option value="votes">Most Votes</option> -->
                   <option value="2" selected>A-Z</option>
                   <option value="-2">Z-A</option>
-                  <option value="3">Nya</option>
-                  <option value="-3">Gamla</option>
+                  <option value="-4">Nya</option>
+                  <option value="4">Gamla</option>
                </select>
                <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
                <button class="button" data-action="search-advanced" style="margin-left: 10px;">Mer...</button>
@@ -120,17 +120,18 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             <div id="idSearchAdvanced" class="advanced-search" data-visible="false">
                <div class="advanced-search-row">
                   <label class="advanced-search-label" for="idSearchArea">Område:</label>
-                  <select id="idSearchArea" class="filter advanced-search-select" data-id="area">
+                  <select id="idSearchArea" class="filter advanced-search-select" data-id="id-area">
                      <option value="">Alla</option>
                   </select>
                </div>
             </div>
          </div>
    
-         <div data-section="list-poll" class="container-result"></div>
+         <div id="idListPoll" data-section="list-poll" class="container-result"></div>
       </form>
    </div>
 
+   <!-- ## Row template ................................................... -->
    <template id="idTemplateRow">
       <div>
          <div class="poll-row" data-field="PollK" data-value="">
@@ -198,17 +199,25 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
    /** --------------------------------------------------------------------- @API [tag: event, command]
    * Configure page listeners, handle page specific events
+   * 
+   * ## Main listener containers
+   * - Poll list click listener: Handles clicks on poll rows, redirects to vote page or result page based on click target
+   * - Menu clicks listener: Handles clicks on menu buttons, triggers actions like search or toggling advanced search visibility
+   * - Sort select change listener: Handles sort option change, triggers search with new sorting
+   * - Area select change listener: Handles area filter change, updates document value and triggers search 
    */
    function PAGE_SetListeners() {
-      const eContainer = document.querySelector("#idContainer");
 
-      eContainer.addEventListener("click", (e_) => {
+      const fnOnClick = (e_) => {
          const eTarget = e_.target;
          const sAction = eTarget.dataset.action;
+         if( !sAction && !eTarget.closest(".poll-row") ) { return; }          // disable for all scenarios not related to actions
 
          // redirect user to result
          const eRow = eTarget.closest(".poll-row");
          const sPollK = eRow?.dataset?.value;
+
+         const eContainer = eTarget.closest("idContainer") || document;       // get closest container for event delegation, default to document if not found, this allows us to limit the scope of querySelector calls for better performance
 
          if(eRow && sPollK)
          {
@@ -224,11 +233,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          e_.stopPropagation();
 
          switch(sAction) {
-            case "sort": {
-               const sOrderColumn = eTarget.value;
-               const iOrderColumn = parseInt(sOrderColumn, 10);
-               PollList.GetResult( {"order": [iOrderColumn]} );
-            } break;
             case "search-advanced": {
                const eAdvancedSearch = eContainer.querySelector("#idSearchAdvanced");
                if(!eAdvancedSearch) { return; }
@@ -237,10 +241,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                eAdvancedSearch.dataset.visible = bVisible ? "false" : "true";
             } break;
             case "search": {
-               const sSearchValue = eContainer.querySelector('[data-id="search"]').value;
-               const sArea = eContainer.querySelector('[data-id="area"]').value;
-               oDocument_g.SetValue("search", sSearchValue);
-
+               const sArea = eContainer.querySelector('[data-id="id-area"]').value;
                if(sArea === "") { oDocument_g.SetValue("area", null); localStorage.removeItem("area"); }
                else if(!isNaN(parseInt(sArea, 10))) {
                   oDocument_g.SetValue("area", parseInt(sArea, 10));
@@ -253,10 +254,25 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                console.error("Unknown action:", sAction);
          }
 
-      });
+      };
+
+      const eListPoll = document.querySelector("#idListPoll");
+      eListPoll.addEventListener("click", fnOnClick);
+      const eSearch = document.querySelector("#idSearch");
+      eSearch.addEventListener("click", fnOnClick);
+
+      // ## Sort select change listener - trigger search on sort change ......
+      const eSortSelect = eSearch.querySelector('[data-id="id-sort"]');
+      if(eSortSelect) {
+         eSortSelect.addEventListener("change", (e_) => {
+            const sOrderColumn = e_.target.value;
+            const iOrderColumn = parseInt(sOrderColumn, 10);
+            PollList.GetResult( {"order": [iOrderColumn]} );
+         });
+      }
 
       // ## Area select change listener - trigger search on area change ......
-      const eAreaSelect = eContainer.querySelector('[data-id="area"]');
+      const eAreaSelect = eSearch.querySelector('[data-id="id-area"]');
       if(eAreaSelect) {
          eAreaSelect.addEventListener("change", (e_) => {
             const sArea = e_.target.value;
@@ -270,7 +286,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             PollList.GetResult();
          });
       }
-
    }
 
    /** -----------------------------------------------------------------------
@@ -403,26 +418,29 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
        * Update Poll result based on options, options can include filters, sorting and pagination parameters
        */
       GetResult(options_) {
-         const oModifiers = { table: "TPoll", order: [2], "limit": [0, 20] };
+         const eSearch = document.getElementById("idSearch");
+         let oModifiers = oDocument_g.GetValue("search");
+         if( !oModifiers ) {
+            oModifiers = { table: "TPoll", order: [2], "limit": [0, 20] };
+            oDocument_g.MergeValue( "modifiers", oModifiers );
+         }
+
 
          if( typeof options_ === "object" )
          {
             // merge options_ into oModifiers
             for(const sKey in options_) { oModifiers[sKey] = options_[sKey]; }
+            oDocument_g.MergeValue( "modifiers", oModifiers ); // merge to keep old values, only update changed values
          }
 
-         oDocument_g.MergeValue( "modifiers", oModifiers );                   // merge to keep old values, only update changed values
-
-         let oArguments = { query: "list-poll", modifiers: JSON.stringify(oModifiers) };
+         let oArguments = { query: "list-poll", modifiers: JSON.stringify(oModifiers) }; // arguments passed to server
          let oValues = {};
-         const iArea = oDocument_g.GetValue("area");
+         const iArea = oDocument_g.GetValue("area"); // area are taken from document because this may be passed from url
          if(iArea) { oValues["area"] = iArea; }
-         const sSearch = oDocument_g.GetValue("search");
+         const sSearch = eSearch.querySelector('[data-id="id-search"]')?.value;
          if(sSearch) { oValues["search"] = sSearch; }
 
-         //oValues["__expression"] = "date-created.last_7_days";                 // default filter to only show polls created in the last 7 days, this is done by adding a fixed condition to the query using expressions defined in vote-expressions.xml
-
-         // ## Add oValues if not empty
+         // ## Add oValues if not empty .....................................
          if(Object.keys(oValues).length > 0) { oArguments.values = JSON.stringify(oValues); }
 
          gd.Send("!db/select?", oArguments).then(function(oResult) {
