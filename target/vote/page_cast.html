@@ -36,12 +36,19 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
     <script src="js/gd_db.js"></script>
     <script src="js/gd_server.js"></script>
     <script src="js/document.js"></script>
-    <meta property="og:image" content="https://xn--folketsrst-lcb.se/logo.png" />
+    <meta property="og:image" content="https://xn--folketsrst-lcb.se/logow.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://xn--folketsrst-lcb.se/logow.png">
 [[lua 
 if request:HasClientValue("PollK") == false then return end
 local sPollK = request:GetClientValue("PollK")
 if #sPollK ~= 32 then -- check length
    view:Echo("Invalid PollK provided in URL parameters, expected 32 character key");
+   return;
+end
+
+if not sPollK:match("^[0-9a-fA-F]+$") then
+   view:Echo("Invalid characters in PollK, expected hex string");
    return;
 end
 
@@ -56,8 +63,8 @@ local sDescription = tPoll.FDescription
 local sPreview = tPoll.FPreview
 if sPreview and #sPreview > 0 then sDescription = sPreview end
 
-if sHeader and #sHeader > 0 then view:EchoHtml( "meta", { property = "og:title", content = sHeader } ) end
-if sDescription and #sDescription > 0 then view:EchoHtml( "meta", { property = "og:description", content = sDescription } ) end
+if sHeader and #sHeader > 0 then view:EchoHtml( "meta", { property = "og:title", content = sHeader } ); view:EchoHtml( "meta", { name = "twitter:title", content = sHeader } ) end
+if sDescription and #sDescription > 0 then view:EchoHtml( "meta", { property = "og:description", content = sDescription } ); view:EchoHtml( "meta", { name = "twitter:description", content = sDescription } ) end
 
 if sName and #sName > 0 then view:EchoHtml( "title", {}, sName )
 else view:EchoHtml( "title", {}, sHeader ) end
