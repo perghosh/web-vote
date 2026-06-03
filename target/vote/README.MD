@@ -35,3 +35,15 @@ HTML elements use `data-*` attributes to encode behaviour and state. Prefer thes
 | `data-value` | Stores a value directly on the element. |
 
 The most commonly used attributes are `data-field`, `data-action`, and `data-section`. The others are less frequent but should be applied wherever they fit — they make the intent of HTML structure easier to follow at a glance.
+
+## Search optimize
+
+<title>Sökordsoptimerad Titel – Max 60 Tecken</title>
+<meta name="description" content="Här skriver du en lockande sammanfattning av sidans innehåll för att få sökare att klicka.">
+<link rel="canonical" href="https://dinwebbplats.se">
+
+för delade länkar
+<meta property="og:title" content="Sökbar HTML-sida för Google">
+<meta property="og:description" content="En guide till de bästa SEO-taggarna.">
+<meta property="og:image" content="https://dinsajt.se">
+

@@ -98,6 +98,13 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             <span>Beskrivning</span>
          </label>
       </div>
+
+      <div class="group" style="margin-top: 20px;">
+         <label class="floating" style="width: 100%;">
+            <input type="text" placeholder=" " data-field="FPreview">
+            <span>Förhandsvisning</span>
+         </label>
+      </div>
    
       <div class="grid-row cols-3" style="margin-top: 20px;">
          <label class="floating">
@@ -599,21 +606,21 @@ gd.SetBaseUrl(sBaseUrl_g);
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
                const sPollKey = oDBPollRecord.GetKeyValue();                   console.assert(sPollKey, "sPollKey is null or empty");
 
-                  window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
+                  window.location.href = `page_poll_question_edit.html?PollK=${encodeURIComponent(sPollKey)}`;
             } break;
             case "poll-cast": {
                // Open poll casting page, pass selected poll key as parameter
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
                   const sPollKey = oDBPollRecord.GetKeyValue();                console.assert(sPollKey, "sPollKey is null or empty");
 
-                  window.location.href = `page_cast.html?key=${encodeURIComponent(sPollKey)}`;
+                  window.location.href = `page_cast.html?PollK=${encodeURIComponent(sPollKey)}`;
             } break;
             case "poll-result": {
                // Open poll result page, pass selected poll key as parameter
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
                   const sPollKey = oDBPollRecord.GetKeyValue();                console.assert(sPollKey, "sPollKey is null or empty");
 
-                  window.location.href = `page_cast_result.html?key=${encodeURIComponent(sPollKey)}`;
+                  window.location.href = `page_cast_result.html?PollK=${encodeURIComponent(sPollKey)}`;
             } break;
             case "link-add": {
                const sPollK = oDocument_g.GetValue("PollK");

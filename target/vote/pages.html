@@ -1,3 +1,5 @@
+<!-- ssr -->
+
 <!--
 ## Pages Navigation
 
@@ -9,7 +11,7 @@ PAGE_ Method documentation:
 PAGE_Initialize - Main initialization function that sets up the navigation page
 PAGE_OnIdle - Handles idle state (no changes needed for this static page)
 SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not exist
-
+http://localhost:8001/pages.html?PollK=4a9b3c2e1fbd4c83a72e9f0d1b3a5c6e
 -->
 
 <!DOCTYPE html>
@@ -24,7 +26,13 @@ SERVER_AddSqlQuery - Adds predefined SQL queries to the server if they do not ex
     <script src="js/gd_server.js"></script>
     <script src="js/document.js"></script>
     <script src="js/gd_ui_toast.js"></script>
-    <title>Pages Navigation - Web Vote</title>
+    <title>[[lua 
+view:Echo("Pages Navigation") 
+if request:HasClientValue("PollK")  then 
+   local sPollK = request:GetClientValue("PollK")
+   if sPollK then view:Echo(" - PollK: " .. sPollK) end
+end
+   ]]</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .page-container { border-radius: 12px; max-width: 600px; padding: 40px; width: 100%; }

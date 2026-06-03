@@ -1,3 +1,4 @@
+<!-- ssr -->
 <!--
 ## Edit poll questions and answers for each question.
 
@@ -19,7 +20,6 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
 #cast-poll_questions - Fetches questions for the poll based on poll key
 #cast-poll_answers - Fetches answers for the questions in the poll based on poll key
 #cast-check_if_voted - Checks if the user has already voted in the poll based on poll key and client IP
-
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -36,7 +36,32 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
     <script src="js/gd_db.js"></script>
     <script src="js/gd_server.js"></script>
     <script src="js/document.js"></script>
-    <title>Add Vote</title>
+    <meta property="og:image" content="https://xn--folketsrst-lcb.se/logo.png" />
+[[lua 
+if request:HasClientValue("PollK") == false then return end
+local sPollK = request:GetClientValue("PollK")
+if #sPollK ~= 32 then -- check length
+   view:Echo("Invalid PollK provided in URL parameters, expected 32 character key");
+   return;
+end
+
+-- read values
+local sSql = "SELECT FName, FHeader, FPreview, FDescription FROM TPoll WHERE PollK = x'" .. sPollK .. "'"
+local database = request:GetDatabase()
+local tPoll = database:AskRow( sSql )
+
+local sHeader = tPoll.FName
+local sName = tPoll.FName
+local sDescription = tPoll.FDescription
+local sPreview = tPoll.FPreview
+if sPreview and #sPreview > 0 then sDescription = sPreview end
+
+if sHeader and #sHeader > 0 then view:EchoHtml( "meta", { property = "og:title", content = sHeader } ) end
+if sDescription and #sDescription > 0 then view:EchoHtml( "meta", { property = "og:description", content = sDescription } ) end
+
+if sName and #sName > 0 then view:EchoHtml( "title", {}, sName )
+else view:EchoHtml( "title", {}, sHeader ) end
+]]
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       .vote-answer { border: 1px solid var(--color-border); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }

@@ -165,7 +165,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                <div> <span data-field="CreateD"></span> <span data-field="FName"></span></div>
                <div data-field="FDescription"></div>
             </div>
-            <a href="#" data-action="vote" style="margin-left: auto; padding: 8px 12px; border-radius: 50px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;">Rösta</a>
+            <a href="#" data-action="add-vote" style="margin-left: auto; padding: 8px 12px; border-radius: 50px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;">Rösta här</a>
          </div>
       </div>
    </template>
@@ -247,10 +247,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          if(eRow && sPollK)
          {
             e_.stopPropagation();
-            if( sAction === "vote" ) { window.location.href = `page_cast.html?key=${encodeURIComponent(sPollK)}`;  return;}
-
-            window.location.href = `page_cast_result.html?key=${encodeURIComponent(sPollK)}`;
-            return;
+            if( sAction === "add-vote" ) { window.location.href = `page_cast.html?PollK=${encodeURIComponent(sPollK)}`; return; }
+            else { window.location.href = `page_cast_result.html?PollK=${encodeURIComponent(sPollK)}`;  return;}
          }
 
 
@@ -475,6 +473,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          
          // ## Add oValues if not empty .....................................
          if(Object.keys(oValues).length > 0) { oArguments.values = JSON.stringify(oValues); }
+
+         oArguments.debug = true; // debug flag to include debug information in response
 
          gd.Send("!db/select?", oArguments, oXml).then(function(oResult) {
             PAGE_ProcessResponse(oResult, "list-poll");

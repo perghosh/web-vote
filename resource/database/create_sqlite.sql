@@ -252,6 +252,7 @@ CREATE TABLE TPoll (
    ,FName VARCHAR(500)      -- poll name
    ,FHeader VARCHAR(200)    -- poll header
    ,FDescription TEXT       -- describe poll
+   ,FPreview TEXT           -- description used when poll is shared on social media, this can be used to get better presentation on social media and also to inform voters about what the poll is about.
    ,FBegin DATETIME         -- begin date, when poll starts
    ,FEnd DATETIME           -- end date, when poll ends
    ,FRate REAL              -- If poll is weighted, then this can be used to calculate outcome FRate * TAnswer FWeight * TAnswer vote count
