@@ -151,7 +151,7 @@ GROUP BY TPollVote.PollAnswerK
     | Count votes from poll 
     -->
    <statement name="list-poll" format="jinja" type="select" table="TPoll" description="Count totalvotes of poll"><![CDATA[
-   SELECT hex(TPoll.PollK) AS PollK, TPoll.FName, TPoll.FDescription, DATE(TPoll.CreateD) AS CreateD,
+   SELECT hex(TPoll.PollK) AS PollK, TPoll.FHeader, TPoll.FName, TPoll.FDescription, DATE(TPoll.CreateD) AS CreateD,
       (SELECT COUNT(DISTINCT TPollVote.FTie) FROM TPollVote JOIN TPollAnswer ON TPollAnswer.PollAnswerK = TPollVote.PollAnswerK 
       JOIN TPollQuestion ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK 
       WHERE TPollQuestion.PollK = TPoll.PollK) 

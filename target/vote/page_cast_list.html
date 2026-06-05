@@ -61,6 +61,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .filter { padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 5px; background: var(--background-light); color: var(--color-body); transition: all 0.2s ease;}
       .filter:hover { background: var(--background-light-hover); }
 
+      /* advanced search section */
       .advanced-search { border-top: 1px solid var(--color-border); display: none; margin-top: 10px; padding-top: 10px; width: 100%; }
       .advanced-search[data-visible="true"] { display: block; }
       .advanced-search-row { align-items: center; display: flex; flex-wrap: wrap; gap: 12px 20px; }
@@ -73,11 +74,13 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .advanced-search-period-option input { margin: 0; }
 
 
-      /* poll row */
+      /* poll row, content inside each row */
       .poll-row { align-items: center; border: 1px solid var(--color-border); border-radius: 10px; background: var(--background-light); cursor: pointer; display: flex; gap: 12px; margin-bottom: 10px; padding: 8px 18px; transition: all 0.2s ease; }
       .poll-row:hover { background: var(--background-light-hover); transform: translateY(-1px); }
       .poll-content { flex: 1; min-width: 0; }
-      .poll-row [data-field='CreateD'] { border-bottom: 1px solid var(--color-border); color: var(--color-muted); display: inline-block; font-size: 70%; margin-right: 5px; }
+
+      .poll-row .badge { align-self: flex-start; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-muted); display: inline-block; font-size: 10px; letter-spacing: 0.08em; margin-top: 2px; max-width: 100%; padding: 2px 8px; }
+      .poll-row .badge:empty { display: none; }
       .poll-row [data-field='FName'] { color: var(--color-body); font-weight: 600; }
       .poll-row [data-field='FDescription'] { color: var(--color-muted); font-size: 90%; overflow: hidden; padding-top: 2pt; text-overflow: ellipsis; white-space: nowrap; }
       .poll-row [data-field='TotalVotes'] { color: var(--background-success); font-size: 30px; font-weight: 600; max-width: 200px; text-align: center; }
@@ -86,6 +89,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          .label-text { display: none; } 
          .filter { width: 70px; } 
          .poll-row [data-field='CreateD'] { display: none; } 
+         .poll-row [data-field='FHeader'] { display: none; }
          .poll-row [data-field='FDescription'] { display: none; }
       }
 
@@ -113,10 +117,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    
                <select class="filter" data-id="id-sort">
                   <!-- <option value="votes">Most Votes</option> -->
-                  <option value="2" selected>A-Z</option>
-                  <option value="-2">Z-A</option>
-                  <option value="-4">Ny</option>
-                  <option value="4">Äldre</option>
+                  <option value="3">A-Z</option>
+                  <option value="-3">Z-A</option>
+                  <option value="-5" selected>Ny</option>
+                  <option value="5">Äldre</option>
                </select>
                <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
                <button class="button" data-action="view-advanced" style="margin-left: 10px;">Mer...</button>
@@ -162,7 +166,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          <div class="poll-row" data-field="PollK" data-value="">
             <div data-field="TotalVotes">0</div>
             <div class="poll-content">
-               <div> <span data-field="CreateD"></span> <span data-field="FName"></span></div>
+               <div> <span class="badge" data-field="CreateD"></span> <span class="badge" data-field="FHeader"></span> <span  data-field="FName"></span></div>
                <div data-field="FDescription"></div>
             </div>
             <a href="#" data-action="add-vote" style="margin-left: auto; padding: 8px 12px; border-radius: 50px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;">Rösta här</a>
@@ -191,7 +195,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    function PAGE_Initialize() {
       oDocument_g = new CDocument({});
       
-      let oTable = new Table(["PollK", "FName", "FDescription", "CreateD", "TotalVotes"], {sName: "search"} );
+      let oTable = new Table(["PollK", "FHeader", "FName", "FDescription", "CreateD", "TotalVotes"], {sName: "search"} );
       oDocument_g.AddTable(oTable);
 
       // ## Read arguments from url and set to document
@@ -360,7 +364,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             let oTable = oDocument_g.GetTable("search");
             if(!oTable)
             {
-               oTable = new Table(["id", "Name", "Description", "CreateD", "Votes"], {sName: "search"} );
+               oTable = new Table(["id", "Header", "Name", "Description", "CreateD", "Votes"], {sName: "search"} );
                oDocument_g.AddTable(oTable);
             }
             else { oTable.Clear(); }
@@ -444,7 +448,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          const eSearch = document.getElementById("idSearch");
          let oModifiers = oDocument_g.GetValue("search");
          if( !oModifiers ) {
-            oModifiers = { table: "TPoll", order: [2], "limit": [0, 20] };
+            oModifiers = { table: "TPoll", order: [-5], "limit": [0, 20] };
             oDocument_g.MergeValue( "modifiers", oModifiers );
          }
 
