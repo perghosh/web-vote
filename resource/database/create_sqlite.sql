@@ -529,6 +529,65 @@ CREATE TABLE TThread (
 CREATE INDEX I_TThread_ThreadHeaderK ON TThread (ThreadHeaderK);
 CREATE INDEX I_TThread_FPath ON TThread (FPath);
 
+-- =====================================================
+-- TAGS / HASHTAGS
+-- =====================================================
+
+CREATE TABLE TTag (
+    TagK            INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    FName           VARCHAR(100) NOT NULL UNIQUE,     -- Original casing, e.g. "Election2026"
+    FNormalized     VARCHAR(100) NOT NULL UNIQUE,     -- lowercase + trimmed for fast search
+    FDescription    VARCHAR(500),
+    CreatedD        DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdateD         DATETIME,
+    FUsageCount     INTEGER DEFAULT 0,                -- Cached total usage across all records
+    FIdle           INTEGER DEFAULT 0,
+    FDeleted        INTEGER DEFAULT 0
+);
+
+CREATE INDEX I_TTag_FNormalized ON TTag(FNormalized);
+CREATE INDEX I_TTag_FName ON TTag(FName);
+
+
+-- Relation table (follows your polymorphic pattern)
+CREATE TABLE rRecordxTag (
+    RecordxTagK     BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
+    
+    table_number    INTEGER NOT NULL,
+    FKey            BLOB NOT NULL,                    -- e.g. PollK, OrganizationK, etc.
+    
+    TagK            INTEGER NOT NULL,                 -- Integer FK to TTag
+    
+    CreatedD        DATETIME DEFAULT CURRENT_TIMESTAMP,
+    TypeC           INTEGER,                          -- Optional context
+    FOrder          INTEGER DEFAULT 0,
+    
+    CONSTRAINT FK_rRecordxTag_TagK FOREIGN KEY (TagK) REFERENCES TTag(TagK) ON DELETE CASCADE,
+    CONSTRAINT UQ_rRecordxTag UNIQUE(table_number, FKey, TagK)   -- Prevent duplicate tags on same record
+);
+
+-- Important indexes
+CREATE INDEX I_rRecordxTag_Record ON rRecordxTag(FKey);
+CREATE INDEX I_rRecordxTag_TagK   ON rRecordxTag(TagK);
+
+CREATE TABLE TCounter (
+    CounterK        BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
+    
+    table_number    INTEGER NOT NULL,
+    FKey            BLOB NOT NULL,
+    
+    TypeC           INTEGER NOT NULL,           -- Link to your TCode system
+    UpdatedD        DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FValue          BIGINT DEFAULT 0,           -- Safe for large counts
+    
+    CONSTRAINT FK_TCounter_TypeC FOREIGN KEY (TypeC) REFERENCES TCode(CodeK),
+);
+
+CREATE INDEX I_TCounter_Record ON TCounter(table_number, FKey);
+CREATE INDEX I_TCounter_Type   ON TCounter(TypeC);
+
+
 CREATE TABLE TFeedback (
     FeedbackK       BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
     
