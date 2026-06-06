@@ -99,12 +99,29 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          </label>
       </div>
 
+      <div class="group" style="gap: 20px; margin-top: 20px;">
+         <div style="flex: 2">
+            <label class="floating">
+               <input type="text" placeholder=" " data-field="FPreview">
+               <span>Förhandsvisning</span>
+            </label>
+         </div>
+   
+         <div style="flex: 1">
+            <label class="floating">
+               <input type="text" placeholder=" " data-id="tags">
+               <span>Tags</span>
+            </label>
+         </div>
+      </div>
+      <!--
       <div class="group" style="margin-top: 20px;">
          <label class="floating" style="width: 100%;">
             <input type="text" placeholder=" " data-field="FPreview">
             <span>Förhandsvisning</span>
          </label>
       </div>
+      -->
    
       <div class="grid-row cols-3" style="margin-top: 20px;">
          <label class="floating">
@@ -781,6 +798,25 @@ gd.SetBaseUrl(sBaseUrl_g);
       }
    }
 
+   const Poll = {
+      /**
+       * Read values from the poll form and return them as an object
+       * This function can be used to get the current values of the poll form for actions like add or update
+       */
+      ReadFormValues() {
+         const eForm = document.querySelector("#idForm");
+         const oRecord = oDocument_g.GetRecord("TPoll");
+         oRecord.ReadValues(eForm);
+         return oRecord.GetFilledValues();
+      },
+
+      UpdateTags() {
+         const eForm = document.querySelector("#idForm");
+         const eTagsInput = eForm.querySelector('[data-id="tags"]');
+         const sTags = eTagsInput.value;
+      }
+   }
+
    const PollList= {
       /**
        * Read search arguments from the search form and construct XML conditions for the search query
@@ -816,7 +852,7 @@ gd.SetBaseUrl(sBaseUrl_g);
          gd.Send("!db/select?", oArguments, oXml).then(function(oResult) {
             PAGE_ProcessResponse(oResult, "select-polls");
          });
-      }
+      }      
    }
    </script>
 </body>
