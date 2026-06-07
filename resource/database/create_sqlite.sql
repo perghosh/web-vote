@@ -562,29 +562,27 @@ CREATE TABLE rRecordxTag (
     TypeC           INTEGER,                          -- Optional context
     FOrder          INTEGER DEFAULT 0,
     
-    CONSTRAINT FK_rRecordxTag_TagK FOREIGN KEY (TagK) REFERENCES TTag(TagK) ON DELETE CASCADE,
-    CONSTRAINT UQ_rRecordxTag UNIQUE(table_number, FKey, TagK)   -- Prevent duplicate tags on same record
+    CONSTRAINT FK_rRecordxTag_TagK FOREIGN KEY (TagK) REFERENCES TTag(TagK) ON DELETE CASCADE
 );
 
--- Important indexes
-CREATE INDEX I_rRecordxTag_Record ON rRecordxTag(FKey);
-CREATE INDEX I_rRecordxTag_TagK   ON rRecordxTag(TagK);
+CREATE INDEX I_rRecordxTag_Record ON rRecordxTag(FKey); -- For fast lookup of tags for a record
+CREATE INDEX I_rRecordxTag_TagK   ON rRecordxTag(TagK); -- For fast lookup of records for a tag
 
 CREATE TABLE TCounter (
     CounterK        BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
     
     table_number    INTEGER NOT NULL,
-    FKey            BLOB NOT NULL,
+    RecordK         BLOB NOT NULL,
     
     TypeC           INTEGER NOT NULL,           -- Link to your TCode system
     UpdatedD        DATETIME DEFAULT CURRENT_TIMESTAMP,
 
     FValue          BIGINT DEFAULT 0,           -- Safe for large counts
     
-    CONSTRAINT FK_TCounter_TypeC FOREIGN KEY (TypeC) REFERENCES TCode(CodeK),
+    CONSTRAINT FK_TCounter_TypeC FOREIGN KEY (TypeC) REFERENCES TCode(CodeK)
 );
 
-CREATE INDEX I_TCounter_Record ON TCounter(table_number, FKey);
+CREATE INDEX I_TCounter_Record ON TCounter(table_number, RecordK);
 CREATE INDEX I_TCounter_Type   ON TCounter(TypeC);
 
 
