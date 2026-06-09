@@ -1,0 +1,117 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+
+PAGE_Initialize - Initialize the page
+<method name> - <description>
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/variables/variables-color-default.css">
+    <link rel="stylesheet" href="css/variables/variables-icon.css">
+    <link rel="stylesheet" href="css/poll.css">
+    <link rel="stylesheet" href="css/elements.css">
+    <link rel="stylesheet" href="css/input-effects.css">
+    <script src="js/gd_ui_toast.js"></script>
+    <script src="js/gd_ui_tablelite.js"></script>
+    <script src="js/gd_data_table.js"></script>
+    <script src="js/gd_db.js"></script>
+    <script src="js/gd_browser.js"></script>
+    <script src="js/document.js"></script>
+    <script src="js/gd_server.js"></script>
+    <title>Logga in</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        .page-container { align-items: center; display: flex; justify-content: center; min-height: 100vh; }
+        
+        .container-form { max-width: 400px; width: 50% !important;  }
+        
+        button.button { border: none; }
+
+        .group { display: flex; flex-direction: column; gap: 20px; }
+
+        .center { display: flex; align-items: center; flex: 1; justify-content: center; gap: 5px; }
+        .center span { color: var(--color-muted); }
+        .center a { color: var(--color-link); }
+        .center a:hover { color: var(--color-link-hover); }
+
+    </style>
+</head>
+<body>
+   <div id="idContainer" class="page-container container page" data-section="page">
+
+
+
+        <form id="idForm" class="container-form">
+
+            <div class=" title" style="margin-bottom: 20px;">
+                <h2 class="page-title">Logga in</h2>
+            </div>
+
+            <div data-section="poll-form">
+
+                <div class="group" style="gap: 20px;">
+                    <div style="flex: 1">
+                        <label class="floating">
+                        <input type="text" placeholder=" " data-field="FName">
+                        <span>Namn</span>
+                        </label>
+                    </div>
+
+                    <div style="flex: 1">
+                        <label class="floating">
+                        <input type="password" placeholder=" " data-field="FName">
+                        <span>Lösenord</span>
+                        </label>
+                    </div>
+
+                    <div class="center">
+                        <button class="button" style="width: 100%; height: 40px;" data-action="user-submit">Logga in</button>
+                    </div>
+
+                    <div class="center">
+                        <span>Har inte ett konto?</span> <a href="page_cast_list.html">Registrera dig</a>
+                    </div>
+
+                </div>
+
+            </div>
+        </form>
+
+   </div>
+
+   
+   <script>
+   'use strict';
+
+let oDocument_g; // Global document object
+let oToast_g;
+
+// ## Prepare base url .....................................................
+const sBaseUrl_g = gd.GetBaseUrl();
+gd.SetBaseUrl(sBaseUrl_g);
+
+// ## Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+   PAGE_Initialize();
+   PAGE_SetListeners();
+});
+
+function PAGE_Initialize() {
+    THEME_Select("color", {});
+   oDocument_g = new CDocument({});                                           // Create new document
+   oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
+}
+
+function PAGE_SetListeners() {
+   // ## Set listeners for page elements here
+}
+
+   </script>
+</body>
+</html>
