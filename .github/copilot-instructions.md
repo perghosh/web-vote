@@ -446,24 +446,6 @@ When searching for specific concepts in the codebase:
 
 ---
 
-## Migration from C++ Style
-
-This codebase uses JavaScript-specific conventions adapted from C++ style:
-
-| C++ Style | JavaScript Style |
-|-----------|------------------|
-| `std::string` | `string` |
-| `std::vector` | `array` |
-| `std::map` | `object` |
-| `int`, `uint32_t` | `number`, `integer` |
-| `bool` | `boolean` |
-| `nullptr` | `null`, `undefined` |
-| `std::unique_ptr` | N/A (garbage collected) |
-| `const auto&` | `const` |
-| `std::function` | arrow functions, function expressions |
-
----
-
 ## Quick Reference
 
 ### Prefixes

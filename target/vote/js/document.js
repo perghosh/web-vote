@@ -346,7 +346,7 @@ function XML_AppendElement(eParent, oValues, value_, sNode = "value") {
    }
 
    // ## Set value_ as text content if provided ..............................
-   if(value_ !== undefined) { eValue.textContent = String(value_);}
+   if(value_ !== null && value_ !== undefined) { eValue.textContent = String(value_);}
 
    return { parent: eParent, element: eValue };
 }
@@ -515,6 +515,13 @@ const XML = {
    ToString(document_) {
       const serializer = new XMLSerializer();
       return serializer.serializeToString(document_);
+   },
+
+   // Build a query string from a base URL and an object of parameters
+   // Example: XML.ToQueryString("api/data", { id: 123, filter: "active" }) → "api/data?id=123&filter=active"
+   ToQueryString( sBase, oParams) {
+      const sQuery = new URLSearchParams(oParams).toString();
+      return `${sBase}?${sQuery}`;
    }
 };
 
