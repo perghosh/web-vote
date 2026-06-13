@@ -42,6 +42,8 @@ INSERT INTO TTag (FName, FNormalized) SELECT {FName}, LOWER(TRIM({FName})) WHERE
          | - vote-poll_table: Get poll data for table, used to fill table on vote page
          | - vote-poll_get: Get poll details by poll key, used for editing poll in admin interface
          | - vote-poll_add_tag: Adds a tag to a poll, used for editing poll in admin interface
+         | - vote-poll_delete_tags: Deletes all tags for a poll, used for editing poll in admin interface
+         | - vote-poll_get_tags: Get all tags for a poll, used for editing poll in admin interface
          |-->
          <statement name="get_first" format="raw" type="select" description="Get first poll, used for development">SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1</statement>
          <statement name="poll_search" format="jinja" type="select" table="TPoll" description="Search for polls by name or header, used for main search field on vote page">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll {++where} {++orderby} {++limit}</statement>
@@ -50,6 +52,8 @@ INSERT INTO TTag (FName, FNormalized) SELECT {FName}, LOWER(TRIM({FName})) WHERE
 INSERT INTO rRecordxTag (table_number, FKey, TagK) VALUES (1060, {PollK}, (SELECT TagK FROM TTag WHERE FName = {FName} LIMIT 1))]]></statement>         
          <statement name="poll_delete_tags" format="jinja" type="delete" description="Deletes all tags for a poll"><![CDATA[
 DELETE FROM rRecordxTag WHERE table_number = 1060 and FKey = {PollK}]]></statement>
+         <statement name="poll_get_tags" format="jinja" type="select" description="Get all tags for a poll"><![CDATA[
+SELECT TTag.FName FROM TTag JOIN rRecordxTag ON rRecordxTag.TagK = TTag.TagK WHERE rRecordxTag.table_number = 1060 AND rRecordxTag.FKey = {PollK}]]></statement>
       </statements-group>
 
       <!-- @API [tag: voting] [description: questions used to edit polls, these are used in admin interface for votes]

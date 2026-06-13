@@ -114,15 +114,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             </label>
          </div>
       </div>
-      <!--
-      <div class="group" style="margin-top: 20px;">
-         <label class="floating" style="width: 100%;">
-            <input type="text" placeholder=" " data-field="FPreview">
-            <span>Förhandsvisning</span>
-         </label>
-      </div>
-      -->
-   
       <div class="grid-row cols-3" style="margin-top: 20px;">
          <label class="floating">
             <select data-field="AreaC">
@@ -468,9 +459,6 @@ gd.SetBaseUrl(sBaseUrl_g);
 
       const sVisibility = bPollHasKey === true ? "visible" : "hidden";
       aPollButtons.forEach( eButton => { eButton.style.visibility = sVisibility; });
-
-      /*const eFormLink = document.querySelector("#idFormLink");
-      eFormLink.style.display = bPollHasKey === true ? "block" : "none";*/
    }
 
     /** --------------------------------------------------------------------- @API [tag: onidle]
@@ -493,8 +481,8 @@ gd.SetBaseUrl(sBaseUrl_g);
    })();
 
    /** --------------------------------------------------------------------- @API [tag: event, command]
-   * Configure page listeners, handle page specific events
-   */
+    * Configure page listeners, handle page specific events
+    */
    function PAGE_SetListeners() {
       const eContainer = document.querySelector("#idContainer");
 
@@ -505,9 +493,39 @@ gd.SetBaseUrl(sBaseUrl_g);
          if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key)
          {
             e_.stopPropagation();
-            const sKey = eTarget.parentNode.dataset.key;
+            const sPollK = eTarget.parentNode.dataset.key;                                         console.assert(sPollK, "sPollK is null or empty");
+
+            let {document: oDocument, root} = XML.Create("commands");
+            let sQS;
+
+            sQS = XML.ToQueryString("db/select", { query: "vote-poll_get", values: JSON.stringify({ PollK: sPollK }) } );
+            XML.Add(root, "command", { qs: sQS } );
+
+            gd.Send( "!xml", {}, oDocument).then(function(oResult) {
+               const oData = oResult.data;
+               const aPollResult = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
+               const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
+               oDBRecord.ClearValues();
+
+               if( aPollResult.length > 1)
+               {
+                  oDBRecord.SetValue( aPollResult );
+                  oDBRecord.SetKeyValue( sPollK );
+                  oDocument_g.SetValue("PollK", sPollK);
+
+                  const eForm = document.querySelector("#idForm");
+                  oDBRecord.WriteValues( eForm ); // write values to form
+
+                  PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
+                  LoadLink(sPollK);
+               }
+
+               PAGE_Update();
+            });
+
+            /*
             const sQueryName = "vote-poll_get";
-            const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sKey })}`;
+            const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sPollK })}`;
 
             gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
             {
@@ -519,17 +537,18 @@ gd.SetBaseUrl(sBaseUrl_g);
                if( aPollResult.length > 1)
                {
                   oDBRecord.SetValue( aPollResult );
-                  oDBRecord.SetKeyValue( sKey );
-                  oDocument_g.SetValue("PollK", sKey);
+                  oDBRecord.SetKeyValue( sPollK );
+                  oDocument_g.SetValue("PollK", sPollK);
 
                   oDBRecord.WriteValues( document.querySelector("#idForm") ); // write values to form
 
                   PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
-                  LoadLink(sKey);
+                  LoadLink(sPollK);
                }
 
                PAGE_Update();
             });
+            */
             return;
          }
 
@@ -644,7 +663,6 @@ gd.SetBaseUrl(sBaseUrl_g);
                oDocument_g.SetValue("PollK", null);
                oDBRecord.WriteValues(  document.querySelector("#idForm") );
                oDocument_g.SetModified(true);                                  // trigger update in idle
-               //PAGE_Update();
             } break;
             case "poll-open": {
                // Open poll questions page, pass selected poll key as parameter
@@ -652,13 +670,6 @@ gd.SetBaseUrl(sBaseUrl_g);
                const sPollK = oDBPollRecord.GetKeyValue();                   console.assert(sPollK, "sPollK is null or empty");
 
                window.location.href = `page_poll_question_edit.html?PollK=${encodeURIComponent(sPollK)}`;
-            } break;
-            case "poll-open": {
-               // Open poll questions page, pass selected poll key as parameter
-               const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-               const sPollK = oDBPollRecord.GetKeyValue();                   console.assert(sPollK, "sPollK is null or empty");
-
-                  window.location.href = `page_poll_question_edit.html?PollK=${encodeURIComponent(sPollK)}`;
             } break;
             case "poll-cast": {
                // Open poll casting page, pass selected poll key as parameter
