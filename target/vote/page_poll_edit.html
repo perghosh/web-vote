@@ -568,16 +568,36 @@ gd.SetBaseUrl(sBaseUrl_g);
                const sValues = JSON.stringify(oDBRecord.GetFilledValues());
                const oArguments = `{ "table": "TPoll", "values": ${sValues}, "returning": "PollK" }`;
                const sArguments = `record=${oArguments}`;
+
+               // const oXml = Poll.ReadTags();
+               const aTag = Poll.ReadTags();
                gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
+                  const sPollK = XML_GetFirstValue(oResult);                                      console.assert(sPollK, "sPollK is null or empty");
                   PAGE_ProcessResponse(oResult, "poll-add");
                   oToast_g.Show("Skapad!");
                   PollList.UpdateSearchResult();
+                  if( aTag.length > 0) {
+                     let {document, root} = XML.Create("commands");
+                     let sQS;
+                     aTag.forEach( sTag => { 
+                        sQS = XML.ToQueryString("db/insert", { query: "tag-add", values: JSON.stringify({ "TTag.FName": sTag }) } );
+                        XML.Add(root, "command", { qs: sQS } );
+                        sQS = XML.ToQueryString("db/insert", { query: "vote-poll_add_tag", values: JSON.stringify({ "TPoll.PollK": sPollK, "TTag.FName": sTag }) } );
+                        XML.Add(root, "command", { qs: sQS } );
+                     });
+
+                     gd.Send( "!xml", {}, document).then(function(oResult) {
+                        let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+                        if( iCount !== 0) { oToast_g.Show("Taggar kopplade!"); }
+                     });
+                  }
+                  
                });
             } break;
             case "poll-update": {
-               const sKey = oDBRecord.GetKeyValue();
+               const sPollK = oDBRecord.GetKeyValue();
                const sValues = JSON.stringify(oDBRecord.GetFilledValues());
-               const sWhere = `{"PollK": "${sKey}"}`;
+               const sWhere = `{"PollK": "${sPollK}"}`;
                let sArguments = `{ "table": "TPoll", "values": ${sValues}, "where": ${sWhere} }`;
                sArguments = `record=${sArguments}`;
                gd.SendToServer("", "!db/update?", sArguments).then(function(oResult) {
@@ -593,7 +613,23 @@ gd.SetBaseUrl(sBaseUrl_g);
                let sArguments = `{ "table": "TPoll", "where": ${sWhere} }`;
                sArguments = `record=${sArguments}`;
 
-               gd.SendToServer("", "!db/delete?", sArguments).then(function(oResult) {
+               let {document, root} = XML.Create("commands");
+
+               let sQS;
+
+               // ## Delete poll and related data .............................
+
+               // ### run the query "vote-poll_delete_tags" to delete connected tags to poll
+               //     not encoded sample: db/delete?query=vote-poll_delete_tags&values={"PollK": "106000000000000001"}
+               sQS = XML.ToQueryString("db/delete", { query: "vote-poll_delete_tags", table: "TPoll", values: JSON.stringify({ "PollK": sKey }) });
+               XML.Add(root, "command", { qs: sQS } );
+
+               // ### run the query "db/delete" on table TPoll
+               const oRecord = { table: "TPoll", where: { PollK: sKey } };
+               sQS = XML.ToQueryString("db/delete", { record: JSON.stringify(oRecord) });
+               XML.Add(root, "command", { qs: sQS } );
+
+               gd.Send( "!xml?", {}, document).then(function(oResult) {
                   let iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
 
                   if( iCount !== 0) { 
@@ -602,7 +638,6 @@ gd.SetBaseUrl(sBaseUrl_g);
                   }
                   else {oToast_g.Show("Kunde inte ta bort")}
                });
-
             } break;
             case "poll-clear": {
                oDBRecord.ClearValues();
@@ -614,16 +649,16 @@ gd.SetBaseUrl(sBaseUrl_g);
             case "poll-open": {
                // Open poll questions page, pass selected poll key as parameter
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-               const sPollKey = oDBPollRecord.GetKeyValue();                   console.assert(sPollKey, "sPollKey is null or empty");
+               const sPollK = oDBPollRecord.GetKeyValue();                   console.assert(sPollK, "sPollK is null or empty");
 
-               window.location.href = `page_poll_question_edit.html?key=${encodeURIComponent(sPollKey)}`;
+               window.location.href = `page_poll_question_edit.html?PollK=${encodeURIComponent(sPollK)}`;
             } break;
             case "poll-open": {
                // Open poll questions page, pass selected poll key as parameter
                const oDBPollRecord = oDocument_g.GetRecord("TPoll");
-               const sPollKey = oDBPollRecord.GetKeyValue();                   console.assert(sPollKey, "sPollKey is null or empty");
+               const sPollK = oDBPollRecord.GetKeyValue();                   console.assert(sPollK, "sPollK is null or empty");
 
-                  window.location.href = `page_poll_question_edit.html?PollK=${encodeURIComponent(sPollKey)}`;
+                  window.location.href = `page_poll_question_edit.html?PollK=${encodeURIComponent(sPollK)}`;
             } break;
             case "poll-cast": {
                // Open poll casting page, pass selected poll key as parameter
@@ -799,7 +834,7 @@ gd.SetBaseUrl(sBaseUrl_g);
    }
 
    const Poll = {
-      /**
+      /** ---------------------------------------------------------------------
        * Read values from the poll form and return them as an object
        * This function can be used to get the current values of the poll form for actions like add or update
        */
@@ -810,10 +845,58 @@ gd.SetBaseUrl(sBaseUrl_g);
          return oRecord.GetFilledValues();
       },
 
-      UpdateTags() {
+      /** ---------------------------------------------------------------------
+       * Read tags from the tags input field, split them into an array, remove duplicates and empty tags, and return the array of tags
+       * Tags can be entered as space-separated values or as quoted strings for multi-word tags
+       * 
+       * Example input: tag1 tag2 "multi word tag" tag3
+       * Output: ["tag1", "tag2", "multi word tag", "tag3"]
+       * 
+       * @returns {string[]} Array of tags entered in the input field, or empty array if no tags
+       */
+      ReadTags() {
          const eForm = document.querySelector("#idForm");
          const eTagsInput = eForm.querySelector('[data-id="tags"]');
          const sTags = eTagsInput.value;
+         if( !sTags ) return [];                                              // if input is empty, return empty array
+ 
+         // split tags by space or if multiple words are enclosed in quotes, split by quotes
+         let aTag = sTags.match(/"([^"]+)"|\S+/g)?.map(s => s.replace(/"/g, "")) || [];
+
+         if( aTag.length > 0) {
+            let aUniqueTags = [...new Set(aTag)].filter(s => s.trim() !== "");// remove duplicates and empty tags
+            aTag = aUniqueTags;                                               // convert to array from set
+         }
+         
+         return aTag;                                                         // return array of tags or empty array if no tags
+      },
+
+      WriteTags(oXml) {
+         const sXml = (new XMLSerializer()).serializeToString(oXml);
+         const sPollK = oDocument_g.GetValue("PollK");
+         let sQS;
+
+         let {document, root} = XML.Create("commands");
+         const oDocument = document;
+         sQS = XML.ToQueryString("db/delete", { query: "vote-poll_delete_tags", table: "TPoll", values: JSON.stringify({ "PollK": sKey }) });
+         XML.Add(root, "command", { qs: sQS } );
+
+
+         XML.Add(root, "command", { qs: "db/delete?values=" + JSON.stringify({ "rRecordxTag.FKey": sPollK, "rRecordxTag.table_number": 1060 }) } );
+         gd.Send( "!xml", { PollK: sPollK }, oDocument).then(function(oResult) {
+            // convert object to string for display
+            //const sResult = (new XMLSerializer()).serializeToString(oResult.data);
+            //alert(sResult);
+         });
+
+
+         /*
+         gd.Send( "!db/insert?", { query: "vote-poll_set_tags" }, oXml).then(function(oResult) {
+            // convert object to string for display
+            const sResult = (new XMLSerializer()).serializeToString(oResult.data);
+            alert(sResult);
+         });
+         */
       }
    }
 

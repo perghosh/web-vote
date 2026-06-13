@@ -25,25 +25,30 @@ TIP: select name and search in project to find where these statements are used
        |-->
       <statement name="code-get_list" format="jinja" type="select" description="Get first poll, used for development">SELECT CodeK, FName FROM TCode WHERE CodeGroupK = {CodeGroupK} ORDER BY FName</statement>
 
+      <statements-group prefix="tag-" name="TTag.edit">
+         <!-- @API [tag: TTag] [description: statements for tags, queries to edit tags]
+         | - tag-add: Add tag if it does not exist
+         |-->
+         <statement name="add" format="jinja" type="insert" description="add tag if it does not exist"><![CDATA[
+INSERT INTO TTag (FName, FNormalized) SELECT {FName}, LOWER(TRIM({FName})) WHERE NOT EXISTS ( SELECT 1 FROM TTag WHERE FName = {FName} )]]></statement>
+
+      </statements-group>
+
       <statements-group prefix="vote-" name="TPoll.edit">
          <!-- @API [tag: TPoll] [description: statements for polls, these are used in both main vote page and admin interface for votes]
          | Statements for main vote page, Table called TPoll is worked on
          | - vote-get_first: Get first poll, used to determine if there are any polls at all
          | - vote-poll_search: Search for polls by name or header, used for main search field on vote page
          | - vote-poll_table: Get poll data for table, used to fill table on vote page
+         | - vote-poll_get: Get poll details by poll key, used for editing poll in admin interface
+         | - vote-poll_add_tag: Adds a tag to a poll, used for editing poll in admin interface
          |-->
          <statement name="get_first" format="raw" type="select" description="Get first poll, used for development">SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1</statement>
          <statement name="poll_search" format="jinja" type="select" table="TPoll" description="Search for polls by name or header, used for main search field on vote page">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll {++where} {++orderby} {++limit}</statement>
          <statement name="poll_get" format="jinja" type="select" table="TPoll" description="Get poll details by poll key">SELECT PollK, FName, FHeader, FDescription, FPreview, AreaC, TypeC, StateC FROM TPoll WHERE PollK = {PollK}</statement>
-         <statement name="poll_set_tags" type="insert" table="TPoll" description="Prepare and set tags for poll">
-            <code><![CDATA[-- #lua v1;
--- ## Read values passed from client
-local iCount = request:GetClientValueCount() -- Get number of values passed from client
-print("Lua code for vote-poll_set_tags and number of values: " .. iCount)
-]]></code>
-            <statement>INSERT INTO rRecordxTag (table_number, FKey, TagK) VALUES (1060, {FKey}, {TagK})</statement>
-         </statement>
-         <statement name="poll_delete_tags" format="jinja" type="delete" description="Get first poll, used for development"><![CDATA[
+         <statement name="poll_add_tag" format="jinja" type="insert" description="Adds a tag to a poll"><![CDATA[
+INSERT INTO rRecordxTag (table_number, FKey, TagK) VALUES (1060, {PollK}, (SELECT TagK FROM TTag WHERE FName = {FName} LIMIT 1))]]></statement>         
+         <statement name="poll_delete_tags" format="jinja" type="delete" description="Deletes all tags for a poll"><![CDATA[
 DELETE FROM rRecordxTag WHERE table_number = 1060 and FKey = {PollK}]]></statement>
       </statements-group>
 
