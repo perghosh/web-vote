@@ -493,6 +493,16 @@ const XML = {
       return eElement;
    },   
 
+   /** -------------------------------------------------------------------------  XML.Find / FindAll
+    * CSS-selector based lookup within an XML tree (e.g. "option", "config > server").
+    * @param {Element|Document} eRoot
+    * @param {string} sSelector
+    * @returns {Element|null}
+    */
+   Find(eRoot, sSelector) { return eRoot.querySelector(sSelector); },
+
+   FindAll(eRoot, sSelector) { return Array.from(eRoot.querySelectorAll(sSelector)); },   
+
    /** -------------------------------------------------------------------------  XML.FromString
     * Parse an XML string into a Document. Throws if the string is malformed.
     *
@@ -522,7 +532,54 @@ const XML = {
    ToQueryString( sBase, oParams) {
       const sQuery = new URLSearchParams(oParams).toString();
       return `${sBase}?${sQuery}`;
-   }
+   },
+
+   // ==================== NEW FLUENT BUILDER ====================
+   CreateXML(sRootName = "root") {
+      const oDocument = document.implementation.createDocument("", "", null);
+      const eRoot = oDocument.createElement(sRootName);
+      oDocument.appendChild(eRoot);
+
+      const xml_ = {
+         document: oDocument,
+         root: eRoot,
+         element: eRoot, // current element for building
+
+         Add(sName, oAttributes = {}, sText = null) {
+            const newEl = XML_AppendElement(this.element, oAttributes, sText, sName).element;
+            this.element = newEl;
+            return this;
+         },
+
+         Attr(sName, value_) {
+            if (value_ === undefined) {
+               return this.element.getAttribute(sName);
+            }
+            this.element.setAttribute(sName, String(value_));
+            return this;
+         },
+
+         Text(sText) { this.element.textContent = sText; return this; },
+
+         Parent(iLevels = 1) {
+            let e_ = this.element;
+            for (let i = 0; i < iLevels; i++) { if (e_.parentElement) e_ = e_.parentElement; }
+            this.element = e_;
+            return this;
+         },
+
+         Done() { return this.document; },
+
+         ToString() { return XML.ToString(this.document); }
+      };
+
+      return xml_;
+   },
+
+   // ==================== Convenience shortcuts ====================
+   Commands() {
+      return this.CreateXML("commands");
+   },
 };
 
 /** --------------------------------------------------------------------------- FIELD_CopyValues

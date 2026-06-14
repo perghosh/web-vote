@@ -498,7 +498,7 @@ gd.SetBaseUrl(sBaseUrl_g);
             let {document: oDocument, root} = XML.Create("commands");
             let sQS;
 
-            sQS = XML.ToQueryString("db/select", { query: "vote-poll_get", values: JSON.stringify({ PollK: sPollK }) } );
+            sQS = XML.ToQueryString("db/select", { echo: "poll", query: "vote-poll_get", values: JSON.stringify({ PollK: sPollK }) } );
             XML.Add(root, "command", { qs: sQS } );
 
             gd.Send( "!xml", {}, oDocument).then(function(oResult) {
