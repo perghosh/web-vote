@@ -330,7 +330,7 @@ gd.SetBaseUrl(sBaseUrl_g);
       };
 
 
-      const oXmlDocument = XML.CreateXML( "commands" )
+      const oXmlDocument = XML.CreateXML( "root" )
          .Add( "command", { qs: XML.ToQueryString("db/select", { echo: "10601", query: "code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) } ) } )
          .Parent()
          .Add( "command", { qs: XML.ToQueryString("db/select", { echo: "10602", query: "code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10602 }) } ) } )
