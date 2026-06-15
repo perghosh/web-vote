@@ -552,7 +552,20 @@ const XML = {
       return `${sBase}?${sQuery}`;
    },
 
+   Serialize(document_) {
+      const serializer = new XMLSerializer();
+      return serializer.serializeToString(document_);
+   },
+
    // ==================== NEW FLUENT BUILDER ====================
+   /*
+    * Example usage:
+    * const xml_ = XML.CreateXML("poll")
+    *    .Add("option", { name: "Pizza", votes: 10 })
+    *    .Parent()
+    *    .Add("option", { name: "Burger", votes: 5 })
+    *    .Done();
+    */
    CreateXML(sRootName = "root") {
       const oDocument = document.implementation.createDocument("", "", null);
       const eRoot = oDocument.createElement(sRootName);
@@ -564,8 +577,8 @@ const XML = {
          element: eRoot, // current element for building
 
          Add(sName, oAttributes = {}, sText = null) {
-            const newEl = XML_AppendElement(this.element, oAttributes, sText, sName).element;
-            this.element = newEl;
+            const eNew = XML_AppendElement(this.element, oAttributes, sText, sName).element;
+            this.element = eNew;
             return this;
          },
 

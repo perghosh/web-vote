@@ -329,6 +329,38 @@ gd.SetBaseUrl(sBaseUrl_g);
          }
       };
 
+
+      const oXmlDocument = XML.CreateXML( "commands" )
+         .Add( "command", { qs: XML.ToQueryString("db/select", { echo: "10601", query: "code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) } ) } )
+         .Parent()
+         .Add( "command", { qs: XML.ToQueryString("db/select", { echo: "10602", query: "code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10602 }) } ) } )
+         .Parent()
+         .Add( "command", { qs: XML.ToQueryString("db/select", { echo: "10603", query: "code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10603 }) } ) } );
+
+      const sXML = XML.Serialize(oXmlDocument.Done());
+      gd.Send( "!xml", {}, oXmlDocument.Done()).then(function(oResult) {
+         const oData = oResult.data;
+
+         const eArea10601 = oData.querySelector('result[echo="10601"]');
+         const aArea10601 = JSON.parse(eArea10601.textContent);
+         const oTable1 = new Table(aArea10601, { sName: "area" });
+         oDocument_g.AddTable(oTable1);
+         fnFillDropdown(oTable1, "AreaC");
+
+         const eType10602 = oData.querySelector('result[echo="10602"]');
+         const aType10602 = JSON.parse(eType10602.textContent);
+         const oTable2 = new Table(aType10602, { sName: "type" });
+         oDocument_g.AddTable(oTable2);
+         fnFillDropdown(oTable2, "TypeC");
+
+         const eState10603 = oData.querySelector('result[echo="10603"]');
+         const aState10603 = JSON.parse(eState10603.textContent);
+         const oTable3 = new Table(aState10603, { sName: "state" });
+         oDocument_g.AddTable(oTable3);
+         fnFillDropdown(oTable3, "StateC");
+      });
+
+      /*
       gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) }).then(function(oResult) {
          const eResult = oResult?.data?.querySelector("result");
          const aResult = JSON.parse(eResult.textContent);
@@ -352,6 +384,7 @@ gd.SetBaseUrl(sBaseUrl_g);
          oDocument_g.AddTable(oTable);
          fnFillDropdown(oTable, "StateC");   
       });
+      */
    }
 
    /** ---------------------------------------------------------------------------
