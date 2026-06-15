@@ -327,7 +327,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       let sResult = '';
       let eResults = null;
 
-      switch(oData.type) {
+      switch(oData.format) {
          case 'json':
             sResult = JSON.stringify(oData.data, null, 2);
             break;

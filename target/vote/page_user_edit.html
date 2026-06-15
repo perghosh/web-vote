@@ -352,7 +352,7 @@ function PAGE_ProcessResponse(oData, sOperation) {
    let sResult = '';
    let eResults = null; // results element from xml responses with results/result format
 
-   switch(oData.type) {
+   switch(oData.format) {
       case 'json':
          sResult = JSON.stringify(oData.data, null, 2);
          break;

@@ -201,9 +201,12 @@ class CDocument {
  * command="select". Throws if no matching node or invalid CDATA structure.
  *
  * @param {string} xml_ - XML string with result nodes containing CDATA JSON
+ * @param {string} sNode - The name of the result node to select
+ * @param {string} sType - Optional type for custom retrieval logic
+ * @param {string} sEcho - Optional echo string for custom retrieval logic
  * @returns {any|null} First value from second row, or null if fewer than two rows
  */
-function XML_GetFirstValue(xml_ , sNode = "result", sType = "") {
+function XML_GetFirstValue(xml_ , sNode = "result", sType = "", sEcho = "") {
    let oDocument;
 
    if( typeof xml_ === "object" ) { xml_ = xml_.data; }                       // If input is an object (e.g. server response), extract the XML string from the 'data' property
@@ -220,7 +223,13 @@ function XML_GetFirstValue(xml_ , sNode = "result", sType = "") {
    }
    else if( xml_ instanceof Document ) {                                      // If xml_ is document then no need to parse
       oDocument = xml_; // Use the provided XML Document
-      aResultNodes = oDocument.querySelectorAll(sNode); // Select all nodes matching the specified name (default "result")
+      if(sEcho) {
+         // Custom logic to select nodes based on sEcho value, for example:
+         aResultNodes = oDocument.querySelectorAll(`${sNode}[echo="${sEcho}"]`);
+      }
+      else {
+         aResultNodes = oDocument.querySelectorAll(sNode); // Select all nodes matching the specified name (default "result")
+      }
    }
    else { throw new Error("Invalid XML input"); }
 
@@ -270,10 +279,12 @@ function XML_GetFirstValue(xml_ , sNode = "result", sType = "") {
  * Extract array of values from first result node. Throws if no matching node or invalid CDATA structure.
  *
  * @param {string|Document} xml_ - XML string or Document with result nodes containing CDATA JSON
+ * @param {string} sNode - The name of the result node to select
+ * @param {string} sEcho - Optional echo string for custom retrieval logic 
  * @returns {Array} Array of values from first result node, or empty array if no valid data found
  */
-function XML_GetFirstArray(xml_ , sNode = "result") {
-   if( typeof xml_ === "object" ) { xml_ = xml_.data; }
+function XML_GetFirstArray(xml_ , sNode = "result", sEcho = "") {
+   if( typeof xml_ === "object" && !(xml_ instanceof Document) && !(xml_ instanceof Element) ) { xml_ = xml_.data; }
    let aResultNodes;
    let oDocument;
    if( typeof xml_ === "string" ) {
@@ -283,9 +294,15 @@ function XML_GetFirstArray(xml_ , sNode = "result") {
       oDocument = oParser.parseFromString(sXmlString, "application/xml");
       aResultNodes = oDocument.querySelectorAll(sNode);
    }
-   else if( xml_ instanceof Document ) {
+   else if( xml_ instanceof Document || xml_ instanceof Element ) {
       oDocument = xml_;
-      aResultNodes = oDocument.querySelectorAll(sNode);
+      if(sEcho) {
+         // Custom logic to select nodes based on sEcho value, for example:
+         aResultNodes = oDocument.querySelectorAll(`${sNode}[echo="${sEcho}"]`);
+      }
+      else {
+         aResultNodes = oDocument.querySelectorAll(sNode);
+      }
    }
    else { throw new Error("Invalid XML input"); }
 
@@ -294,6 +311,7 @@ function XML_GetFirstArray(xml_ , sNode = "result") {
    // ## Select the first node
 
    let oNode = null;
+
    if( aResultNodes.length === 1 ) { oNode = aResultNodes[0]; }
    else if( aResultNodes.length > 1 ) { oNode = oDocument.querySelector(sNode + "[command='select']"); }
 

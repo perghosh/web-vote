@@ -37,7 +37,7 @@ oNS.GetBaseUrl = function() {
  * @param {string} sUrl - The URL string to encode.
  * @returns {string} The fully encoded URL string.
  */
-oNS.EncodeUrlParams = function(sUrl) {
+oNS.NormalizeUrl = function(sUrl) {
    try {
       // ## 1. Parse the string into a URL object
       // Note: If your input doesn't have a protocol (e.g. starts with "localhost"),
@@ -96,7 +96,7 @@ oNS.EncodeToBase64 = function(sText) {
  * @param {string|object|Document} [arguments_] - If object → treated as QUERY PARAMETERS
  *                                                If string  → old newline format
  * @param {string|object|Document} [body_]      - Optional body (JSON, XML or string)
- * @returns {Promise<{type: "json"|"xml"|"text", data: any}>}
+ * @returns {Promise<{format: "json"|"xml"|"text", data: any, status: number}>}
  */
 oNS.Send = function(sEndpoint, arguments_, body_) {
    if(typeof arguments_ === "string") { return oNS.SendToServer("", sEndpoint, arguments_, body_); }
@@ -130,81 +130,65 @@ oNS.Send = function(sEndpoint, arguments_, body_) {
  *                                                pairs added as query params. Object: serialised to JSON body.
  *                                                Document: serialised to XML body.
  * @param {string|object|Document} [body_]      - Optional explicit body, takes precedence over arguments_ body
- * @returns {Promise<{type: "json"|"xml"|"text", data: any}>}
+ * @returns {Promise<{format: "json"|"xml"|"text", data: any, status: number}>} Response object containing format, data, and status
  */
 oNS.SendToServer = function(sBaseUrl, sEndpoint, arguments_, body_) {
    
    let sBody;
    let sContentType = 'application/xml; charset=utf-8'; // Default content type
-   
-   if( typeof arguments_ === "object" ) { body_ = arguments_; arguments_ = ""; } // no string that this should be some sort of body
-   
-   const sArguments = typeof arguments_ === "string" ? arguments_ : ""; // Ensure arguments is a string, default to empty if undefined
 
-   // ## Set body as text, if body_ is xml document or json then convert to string based on these types
-   if( body_ !== undefined ) {
-      if(typeof body_ === "object" && !(body_ instanceof Document)) {
-         // Convert object to json as sBody
-         sBody = JSON.stringify(body_);
-         sContentType = 'application/json; charset=utf-8';                     // Set content type to JSON when sending an object
+   // ## If arguments_ is XML Document → treat as body. Otherwise respect original intent.
+   if(arguments_ instanceof Document) {
+      body_ = arguments_;
+      arguments_ = "";
+   }
+   else if(typeof arguments_ === "object" && arguments_ !== null && body_ === undefined) {
+      body_ = arguments_;                                                     // object becomes body (JSON) when no explicit body_ is passed
+      arguments_ = "";
+   }
+
+   const sArguments = typeof arguments_ === "string" ? arguments_ : "";       // Ensure arguments is a string, default to empty if undefined
+
+   // ## Build body content ..................................................
+   if(body_ !== undefined) {
+      if(body_ instanceof Document) {
+         sBody = new XMLSerializer().serializeToString(body_);
+         sContentType = 'application/xml; charset=utf-8';
       }
-      else if(body_ instanceof Document) { sBody = new XMLSerializer().serializeToString(body_);}
-      else if(typeof body_ === "string") { sBody = body_;}
+      else if(typeof body_ === "object") {
+         sBody = JSON.stringify(body_);
+         sContentType = 'application/json; charset=utf-8';
+      }
+      else if(typeof body_ === "string") { sBody = body_; }
    }
 
    // Use static base URL if sBaseUrl is empty or undefined
    if(!sBaseUrl) { sBaseUrl = gd.sDefaultBaseUrl_s; }
 
+   if(!sBaseUrl.endsWith('/') && !sBaseUrl.endsWith("?") ) { sBaseUrl += '/'; }
+   let sFullUrl = sBaseUrl;
 
-   if(!sBaseUrl.endsWith('/') && !sBaseUrl.endsWith("?") ) { sBaseUrl += '/'; } // Ensure base URL ends with slash for proper endpoint concatenation
-   let sFullUrl = sBaseUrl; // start building full URL with base URL
+   if(sEndpoint) {
+      const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint;
+      sFullUrl += sCleanEndpoint;
+   }   
 
-   if( sEndpoint ) {
-      const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint; // Remove leading slash from endpoint if present (to avoid double slashes)
-      sFullUrl += sCleanEndpoint;                                             // Build the complete URL
-   }
+   let sEncodedArguments = ""; // Initialize encoded arguments string
+   if(sArguments) { sEncodedArguments = oNS._BuildQueryFromLegacyString(sArguments);}
 
-   let sEncodedArguments = "";
-   if(sArguments) {
-         // ## Split arguments by newline character and then find first '=' to split there
-         const aArguments = sArguments.split('\n');
-
-      for(let sArgument of aArguments) {                                      // Iterate aArguments
-         const iEqualPosition = sArgument.indexOf('=');
-         if(iEqualPosition !== -1) {
-            if( sEncodedArguments ) sEncodedArguments += '&';
-            const sKey = sArgument.substring(0, iEqualPosition).trim();
-            const sValue = sArgument.substring(iEqualPosition + 1).trim();
-            sEncodedArguments += sKey + '=' + encodeURIComponent(sValue);
-         }
-         else {
-            const sError = 'Invalid argument format: ' + sArgument;                                console.log(sError);
-            throw new Error(sError);
-         }
+   // ## Append query string to URL if arguments exist .......................
+   if(sEncodedArguments.length > 0) {
+      if(sFullUrl.indexOf('=') !== -1) {
+         if(sFullUrl.charAt(sFullUrl.length - 1) !== "&") { sFullUrl += "&"; }
       }
-   }
-   else if(typeof arguments_ === "object" && !(arguments_ instanceof Document)) {
-      // Convert object to json as sBody
-      sBody = JSON.stringify(arguments_);
-      sContentType = 'application/json; charset=utf-8';                                      // Set content type to JSON when sending an object
-   }
-   else if(arguments_ instanceof Document) {
-      // Handle XML document arguments
-      sBody = new XMLSerializer().serializeToString(arguments_);
-   }
-
-   // ## If encoded arguments exist and URL contains '='
-   if( sEncodedArguments.length > 0 && sFullUrl.indexOf('=') !== -1 ) {
-      if(sFullUrl.charAt(sFullUrl.length - 1) !== "&") { sFullUrl += "&"; }    // If sFullUrl does not have a trailing '&' then add it
-      sFullUrl += sEncodedArguments;
-   }
-   else if( sEncodedArguments.length > 0 ) {
-      if(sFullUrl.charAt(sFullUrl.length - 1) !== "?") { sFullUrl += "?"; }    // If sFullUrl does not have a trailing '?' then add it
+      else {
+         if(sFullUrl.charAt(sFullUrl.length - 1) !== "?") { sFullUrl += "?"; }
+      }
       sFullUrl += sEncodedArguments;
    }
 
 
-      // ## Build fetch options ...........................................
+   // ## Build fetch options ...........................................
 
    const oOptions = {
       method:  sBody ? 'POST' : 'GET',
@@ -212,40 +196,65 @@ oNS.SendToServer = function(sBaseUrl, sEndpoint, arguments_, body_) {
    };
    if( sBody ) { oOptions.body = sBody; }
 
-   // ## Send the request and pick up the response as { type: <format>, data: <data> }
+   // ## Send the request and pick up the response as { format: <format>, data: <data>, status: <status> }
 
    return fetch(sFullUrl, oOptions)
    .then(async response => {
-      // ### Handle response data .......................................
-
-      if( !response.ok ) {
+      if(!response.ok) {
          const sErrorMessage = await response.clone().text();
          throw new Error(`HTTP error! status: ${response.status}, message: ${sErrorMessage}`);
       }
 
-      // Check the content type to determine how to parse the response
       const sContentType = response.headers.get('content-type');
 
       if(sContentType && sContentType.includes('application/json')) {
-          return response.json().then(data => ({ type: 'json', data }));
+          return response.json().then(data => ({ format: 'json', data, status: response.status }));
       }
       else if(sContentType && (sContentType.includes('application/xml') || sContentType.includes('text/xml'))) {
          return response.text().then(text => {
             const oDOMParser = new DOMParser();
             const xml_ = oDOMParser.parseFromString(text, "text/xml");
-            return { type: 'xml', data: xml_ };
+            return { format: 'xml', data: xml_, status: response.status };
          });
       }
       else {
-         return response.text().then(data => ({ type: 'text', data }));
+         return response.text().then(data => ({ format: 'text', data, status: response.status }));
       }
    })
    .catch(error => {
       const sError = "Error sending request:" + error.message;
       console.error(sError);
-      // You could add error handling UI here
       throw error;
-   });
+   });   
 }
+
+/* =====================================================================
+   Helper Functions
+===================================================================== */
+
+// Modern method to build query string from an object, with proper encoding and filtering of undefined/null values
+oNS._BuildQueryString = function(o_) {
+   if (!o_ || typeof o_ !== "object") return "";
+   return Object.keys(o_)
+      .filter(sKey => o_[sKey] !== undefined && o_[sKey] !== null)
+      .map(sKey => `${encodeURIComponent(sKey)}=${encodeURIComponent(o_[sKey])}`)
+      .join('&');
+};
+
+// Legacy method to build query string from newline-separated key=value pairs
+oNS._BuildQueryFromLegacyString = function(s_) {
+   if (!s_ || typeof s_ !== "string") return "";
+
+   return s_.split('\n')
+         .map(sLine => sLine.trim())
+         .filter(sLine => sLine && sLine.includes('='))
+         .map(sLine => {
+            const iIndex = sLine.indexOf('=');
+            const sKey = sLine.substring(0, iIndex).trim();
+            const sValue = sLine.substring(iIndex + 1).trim();
+            return `${encodeURIComponent(sKey)}=${encodeURIComponent(sValue)}`;
+         })
+         .join('&');
+};
 
 })(gd);

@@ -405,7 +405,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
         let sResult = '';
         let eResults = null;
 
-        switch(oData.type) {
+        switch(oData.format) {
             case 'json':
                 sResult = JSON.stringify(oData.data, null, 2);
                 break;

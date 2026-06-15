@@ -441,10 +441,8 @@ gd.SetBaseUrl(sBaseUrl_g);
                   eTh.dataset.index = (iIndex + 2);
                   eTh.dataset.action = "sort";
                   eTh.addEventListener("click", (e_) => {
-                     // Remove active class from all headers
-                     aTh.forEach(eTh_ => eTh_.classList.remove("active"));
-                     // Add active class to clicked header
-                     eTh.classList.add("active");
+                     aTh.forEach(eTh_ => eTh_.classList.remove("active"));    // Remove active class from all headers
+                     eTh.classList.add("active");                             // Add active class to clicked header
                   });
                });
             }
@@ -500,10 +498,13 @@ gd.SetBaseUrl(sBaseUrl_g);
 
             sQS = XML.ToQueryString("db/select", { echo: "poll", query: "vote-poll_get", values: JSON.stringify({ PollK: sPollK }) } );
             XML.Add(root, "command", { qs: sQS } );
+            sQS = XML.ToQueryString("db/select", { echo: "tag", query: "vote-poll_get_tags", values: JSON.stringify({ "TPoll.PollK": sPollK }) } );
+            XML.Add(root, "command", { qs: sQS } );
 
             gd.Send( "!xml", {}, oDocument).then(function(oResult) {
                const oData = oResult.data;
-               const aPollResult = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
+               //const aPollResult = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
+               const aPollResult = XML_GetFirstArray( oData, "result", "poll" );                   console.assert(Array.isArray(aPollResult), "aPollResult is not an array");
                const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
                oDBRecord.ClearValues();
 
@@ -762,7 +763,7 @@ gd.SetBaseUrl(sBaseUrl_g);
       let sResult = '';
       let eResults = null;
 
-      switch(oData.type) {
+      switch(oData.format) {
          case 'json':
             sResult = JSON.stringify(oData.data, null, 2);
             break;

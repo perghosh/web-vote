@@ -61,7 +61,7 @@ Browser-level utilities exposed on the global `gd` namespace. Handles base URL m
 |----------|-------------|
 | `SetBaseUrl(sBaseUrl)` | Set the default base URL used by `SendToServer` |
 | `GetBaseUrl()` | Build base URL from `window.location` (protocol + host + port) |
-| `EncodeUrlParams(sUrl)` | Parse and re-encode all query parameters in a URL string |
+| `NormalizeUrl(sUrl)` | Parse and re-encode all query parameters in a URL string |
 | `EncodeToBase64(sText)` | Convert a string to base64, handles Unicode via UTF-8 encoding |
 | `SendToServer(sBaseUrl, sEndpoint, sArguments, sBody)` | Send a GET/POST request; auto-parses JSON, XML, or text responses |
 
