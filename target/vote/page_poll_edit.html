@@ -313,18 +313,18 @@ gd.SetBaseUrl(sBaseUrl_g);
    function LoadLists()
    {
       // ## Build xml to load dropdown options for area, type, and state from server
-      const oXml = XML.CreateXML( "root" );
-      const ListArea  = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10601 } });
-      const ListType  = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10602 } });
-      const ListState = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10603 } });
+      const oXml = XML.CreateXML( "commands" );
+      const get_list_area_  = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10601 } });
+      const get_list_type_  = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10602 } });
+      const get_list_state_ = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10603 } });
 
       gd.Send( "!xml", {}, oXml.Done()).then(function(oResult) {
          const eForm = document.querySelector("#idForm"); // form element for poll
 
          // ## For each list for all codes in poll table .....................
-         [ [ListArea, "area", "AreaC"], 
-           [ListType, "type", "TypeC"], 
-           [ListState, "state", "StateC"] 
+         [ [get_list_area_, "area", "AreaC"], 
+           [get_list_type_, "type", "TypeC"], 
+           [get_list_state_, "state", "StateC"] 
          ].forEach(function([fnRead, sName, sField]) {
             const content_ = fnRead( oResult.data );
             const oTable = new Table(JSON.parse(content_), { sName });
@@ -344,6 +344,7 @@ gd.SetBaseUrl(sBaseUrl_g);
    /** ---------------------------------------------------------------------------
     * Load link details for the current poll and display them in the link form
    */
+  /*
    function LoadLink(sPollK)
    {
       const sQueryName = "vote-link_get";
@@ -375,6 +376,7 @@ gd.SetBaseUrl(sBaseUrl_g);
          }
       });
    }
+      */
 
    function PAGE_UpdateFieldLabels(eParent)
    {
@@ -480,14 +482,17 @@ gd.SetBaseUrl(sBaseUrl_g);
             e_.stopPropagation();
             const sPollK = eTarget.parentNode.dataset.key;                                         console.assert(sPollK, "sPollK is null or empty");
 
+            // ## Build xml to load poll details and tags ....................
             const oXml = XML.CreateXML( "commands" );
-            const PollRecord = oXml.Command("db/select", { query: "vote-poll_get", values: { PollK: sPollK } });
-            const PollTags = oXml.Command("db/select", { query: "vote-poll_get_tags", values: { "TPoll.PollK": sPollK } });
+            const poll_get_ = oXml.Command("db/select", { query: "vote-poll_get", values: { PollK: sPollK } });
+            const poll_get_tags_ = oXml.Command("db/select", { query: "vote-poll_get_tags", values: { "TPoll.PollK": sPollK } });
+            const link_get_ = oXml.Command("db/select", { query: "vote-link_get", values: { FKey: sPollK, table_number: 1060 } });
 
             gd.Send( "!xml", {}, oXml.Done()).then(function(oResult) {
-               const oData = oResult.data;
-               const aPollResult = JSON.parse(PollRecord( oData ));
-               const aPollTags = JSON.parse(PollTags( oData ));
+
+               const oXmlData = oResult.data;
+               const aPollResult = JSON.parse(poll_get_( oXmlData ));
+               const aPollTags = JSON.parse(poll_get_tags_( oXmlData ));
 
                const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
                oDBRecord.ClearValues();
@@ -505,8 +510,10 @@ gd.SetBaseUrl(sBaseUrl_g);
 
                   // ## Write tags to form ...................................
                   //    If tag contains space then enclose in quotes
-                  const eTags = document.querySelector('[data-id="tags"]');
-                  const aTags = aPollTags.length > 1 ? aPollTags.slice(1) : [];
+                  const eTags = eForm.querySelector('[data-id="tags"]');
+                  const aTags = aPollTags.length > 1 ? aPollTags.slice(1) : [];// skip header row if exists
+
+                  // ### Convert tags to string (only one column)
                   const sTags = aTags.map( aTagRow => {
                      const sTagName = String( aTagRow[0] || "" ).trim();
                      if( !sTagName ) { return ""; }
@@ -514,11 +521,24 @@ gd.SetBaseUrl(sBaseUrl_g);
                      else { return sTagName; }
                   }).filter( sTag => sTag !== "" ).join(" ");
                   eTags.value = sTags;
+                  eTags.dataset.tags = sTags;                                 // to know if tags have changed store orginal
 
-                  LoadLink(sPollK);
-                  PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
+                  // ## Load link details and write to form ..................
+                  const eFormLink = document.querySelector("#idFormLink");
+                  const oDBRecordLink = oDocument_g.GetRecord("TLink");
+                  oDBRecordLink.ClearValues();
+                  const aLinkData = JSON.parse(link_get_( oXmlData ));
+                  if( aLinkData.length > 1 ) {
+                     oDBRecordLink.SetValue( aLinkData );
+                     oDBRecordLink.SetKeyValue( aLinkData[1][0] );
+                     oDBRecordLink.WriteValues( eFormLink );
+                  }
+                  else { oDBRecordLink.WriteValues(eFormLink); eFormLink.style.display = "none"; }
+
+                  // LoadLink(sPollK);
                }
-
+               PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
+               oDocument_g.SetModified(true);
                PAGE_Update();
             });
          }
