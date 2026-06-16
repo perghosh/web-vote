@@ -341,43 +341,9 @@ gd.SetBaseUrl(sBaseUrl_g);
       });
    }
 
-   /** ---------------------------------------------------------------------------
-    * Load link details for the current poll and display them in the link form
-   */
-  /*
-   function LoadLink(sPollK)
-   {
-      const sQueryName = "vote-link_get";
-      const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ FKey: sPollK, table_number: 1060 })}`;
-
-      gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
-      {
-         const eFormLink = document.querySelector("#idFormLink");
-
-         const oData = oResult.data;
-         const eResults = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
-         const oDBRecordLink = oDocument_g.GetRecord("TLink");
-         oDBRecordLink.ClearValues();
-
-         if(eResults.length > 1)
-         {
-            oDBRecordLink.SetValue( eResults );
-            oDBRecordLink.SetKeyValue( eResults[1][0] );
-            oDBRecordLink.WriteValues( document.querySelector("#idFormLink") );
-
-            eFormLink.style.display = "block";
-         }
-         else
-         {
-            oDBRecordLink.ClearValues();
-            oDBRecordLink.WriteValues(document.querySelector("#idFormLink"));
-            
-            eFormLink.style.display = "none";
-         }
-      });
-   }
-      */
-
+   /** ----------------------------------------------------------------------- @API [summary: update field labels]
+    * Update field labels based on current poll data, such as question count
+    */
    function PAGE_UpdateFieldLabels(eParent)
    {
       const aFields = eParent.querySelectorAll("[data-field]"); 
@@ -532,6 +498,7 @@ gd.SetBaseUrl(sBaseUrl_g);
                      oDBRecordLink.SetValue( aLinkData );
                      oDBRecordLink.SetKeyValue( aLinkData[1][0] );
                      oDBRecordLink.WriteValues( eFormLink );
+                     eFormLink.style.display = "block";
                   }
                   else { oDBRecordLink.WriteValues(eFormLink); eFormLink.style.display = "none"; }
 
