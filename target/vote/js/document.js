@@ -477,6 +477,9 @@ function XML_AppendObject(document_, oValues, sNode = "values", sField = "value"
 }
 
 
+let iCommandEcho_s = 0; // Module-level counter for echo ids                  @NOTE: This is used in XML.Command to generate unique echo values for matching responses.
+
+
 const XML = {
    // Create a new XML document with a specified root element name (default "root")
    Create(sRootName = "root") {
@@ -576,17 +579,50 @@ const XML = {
          root: eRoot,
          element: eRoot, // current element for building
 
+         /** -----------------------------------------------------------------  Add
+          * Append a child element to the current element, then move to it.
+          * @param {string} sName - Name of the element to add
+          * @param {Object} oAttributes - Attributes to set on the new element
+          * @param {string|null} sText - Optional text content for the new element
+          * @returns {object} The builder object for chaining
+          */
          Add(sName, oAttributes = {}, sText = null) {
             const eNew = XML_AppendElement(this.element, oAttributes, sText, sName).element;
             this.element = eNew;
             return this;
          },
 
-         Attr(sName, value_) {
-            if (value_ === undefined) {
-               return this.element.getAttribute(sName);
+         /** -----------------------------------------------------------------  Append
+          * Append a sibling element at the same level as the current element, then move to it.
+          * @param {string} sName - Name of the element to add
+          * @param {Object} oAttributes - Attributes to set on the new element
+          * @param {string|null} sText - Optional text content for the new element
+          * @returns {object} The builder object for chaining
+          */
+         Append(sName, oAttributes = {}, sText = null) {
+            XML_AppendElement(this.element, oAttributes, sText, sName);
+            return this;
+         },
+
+         /** -----------------------------------------------------------------  Attr
+          * Get or set an attribute on the current element. If value_ is undefined, returns the attribute value; otherwise sets it and returns the builder for chaining.
+          * 
+          * @param {*} name_ - Attribute name (string) or an object of key-value pairs to set multiple attributes
+          * @param {*} value_ - Value to set for the attribute (ignored if name_ is an object)
+          * @returns {object|string} The builder object for chaining or the attribute value if getting
+          */
+         Attr(name_, value_) {
+            if( typeof name_ === "string" ) {
+               const sName = name_;
+               if(value_ === undefined) { return this.element.getAttribute(sName);}
+               this.element.setAttribute(sName, String(value_));
             }
-            this.element.setAttribute(sName, String(value_));
+            else if( typeof name_ === "object" ) {
+               const oAttributes = name_;
+               for(const [sKey, value_] of Object.entries(oAttributes)) {
+                  this.element.setAttribute(sKey, String(value_));
+               }
+            }
             return this;
          },
 
@@ -594,14 +630,74 @@ const XML = {
 
          Parent(iLevels = 1) {
             let e_ = this.element;
-            for (let i = 0; i < iLevels; i++) { if (e_.parentElement) e_ = e_.parentElement; }
+            for(let i = 0; i < iLevels; i++) { if (e_.parentElement) e_ = e_.parentElement; }
             this.element = e_;
             return this;
          },
 
+         // Return the built XML document
          Done() { return this.document; },
 
-         ToString() { return XML.ToString(this.document); }
+         // Convenience method to get the XML string directly from the builder
+         ToString() { return XML.ToString(this.document); },
+
+         /** ---------------------------------------------------------------------  Command
+          * Append a server command to the current element and return a reader
+          * function that extracts its result from the server response document.
+          *
+          * Handles ToQueryString and JSON.stringify of nested values internally,
+          * auto-generates the echo id, and binds it to the returned reader so
+          * the two sides of the round trip are always in sync.
+          *
+          * @param {string} sEndpoint        - Server endpoint, e.g. "db/select"
+          * @param {Object} oParams          - Query parameters; any object/array value
+          *                                    is automatically JSON.stringify'd
+          * @param {Object} [oOptions={}]    - Optional overrides
+          * @param {string} [oOptions.sEcho] - Echo id; auto-generated if omitted
+          * @param {string} [oOptions.sNode] - Result node name to query (default "result")
+          * @returns {Function} reader(oData) — extracts content in result and returns it
+          *
+          * @example — single command
+          * const oXml  = XML.CreateXML("root");
+          * const read  = oXml.Command("db/select", { query: "user-get", values: { UserK: 5 } });
+          * gd.Send("!xml", {}, oXml.Done()).then(oResult => {
+          *    const aRows = JSON.parse(read(oResult.data));
+          * });
+          *
+          * @example — multiple commands
+          * const oXml      = XML.CreateXML("root");
+          * const readArea  = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10601 } });
+          * const readType  = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10602 } });
+          * gd.Send("!xml", {}, oXml.Done()).then(oResult => {
+          *    const aArea = JSON.parse(readArea(oResult.data));
+          *    const aType = JSON.parse(readType(oResult.data));
+          * });
+          *
+          * @example — explicit echo id (stable for debugging or logging)
+          * const read = oXml.Command("db/select", { query: "user-get" }, { sEcho: "user-main" });
+          */
+         Command(sEndpoint, oParams = {}, oOptions = {}) {
+            const sEcho = oOptions.sEcho || String(++iCommandEcho_s);
+            const sNode = oOptions.sNode || "result";
+
+            // ## Serialize any nested objects/arrays in oParams; primitives pass through as-is
+            const oSerialized = {};
+            for(const [sKey, value_] of Object.entries(oParams)) {
+               oSerialized[sKey] = (value_ !== null && typeof value_ === "object") ? JSON.stringify(value_) : value_;
+            }
+
+            const sQs = XML.ToQueryString(sEndpoint, { echo: sEcho, ...oSerialized });
+            XML_AppendElement(this.element, { qs: sQs }, null, "command");
+
+            // ## Return a reader bound to this echo id; caller uses it after Send resolves
+            return function(oData) {
+               const eNode = oData.querySelector(`${sNode}[echo="${sEcho}"]`);
+               if(!eNode) { console.warn(`Command reader: no <${sNode}> with echo="${sEcho}" found`); return null; }
+               const sContent = eNode.textContent.trim();
+               if(!sContent) { return null; }
+               return sContent;
+            };
+         },         
       };
 
       return xml_;

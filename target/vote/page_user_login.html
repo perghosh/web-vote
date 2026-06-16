@@ -120,9 +120,10 @@ PAGE_Initialize - Initialize the page
         }
 
         const oXmlDocument = XML.CreateXML("commands")
-            .Add("command", { qs: XML.ToQueryString("db/select", {echo: "login", query: "user-login", values: JSON.stringify({FLoginName: sName, FPassword: sPassword}) } ) });
+            .Add("command", { qs: XML.ToQueryString("db/select", {echo: "login", query: "user-login", values: JSON.stringify({FLoginName: sName, FPassword: sPassword}) } ) })
+            .Done();
 
-        gd.Send( "!xml", {}, oXmlDocument.Done()).then(function(oResult) {
+        gd.Send( "!xml", {}, oXmlDocument).then(function(oResult) {
             const oData = oResult.data;
 
             const eLogin = oData.querySelector('result[echo="login"]');

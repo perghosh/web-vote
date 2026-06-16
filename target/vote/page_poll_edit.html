@@ -312,79 +312,33 @@ gd.SetBaseUrl(sBaseUrl_g);
     */
    function LoadLists()
    {
-      const eForm = document.querySelector("#idForm");
+      // ## Build xml to load dropdown options for area, type, and state from server
+      const oXml = XML.CreateXML( "root" );
+      const ListArea  = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10601 } });
+      const ListType  = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10602 } });
+      const ListState = oXml.Command("db/select", { query: "code-get_list", values: { "TCode.CodeGroupK": 10603 } });
 
-      // callback that takes table and fills dropdown options
-      const fnFillDropdown = function(oTable, sFieldName) {
-         const eSelect = eForm.querySelector(`[data-field="${sFieldName}"]`);
-         eSelect.innerHTML = '<option value=""></option>';                    // clear existing options
-         // ## add new options from table ....................................
-         for(let i = 0; i < oTable.GetRowCount(); i++) {
-            const sValue = oTable.GetCellValue(i, 0);
-            const sText = oTable.GetCellValue(i, 1);
-            const eOption = document.createElement("option");
-            eOption.value = sValue;
-            eOption.textContent = sText;
-            eSelect.appendChild(eOption);
-         }
-      };
+      gd.Send( "!xml", {}, oXml.Done()).then(function(oResult) {
+         const eForm = document.querySelector("#idForm"); // form element for poll
 
-
-      const oXmlDocument = XML.CreateXML( "root" )
-         .Add( "command", { qs: XML.ToQueryString("db/select", { echo: "10601", query: "code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) } ) } )
-         .Parent()
-         .Add( "command", { qs: XML.ToQueryString("db/select", { echo: "10602", query: "code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10602 }) } ) } )
-         .Parent()
-         .Add( "command", { qs: XML.ToQueryString("db/select", { echo: "10603", query: "code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10603 }) } ) } );
-
-      const sXML = XML.Serialize(oXmlDocument.Done());
-      gd.Send( "!xml", {}, oXmlDocument.Done()).then(function(oResult) {
-         const oData = oResult.data;
-
-         const eArea10601 = oData.querySelector('result[echo="10601"]');
-         const aArea10601 = JSON.parse(eArea10601.textContent);
-         const oTable1 = new Table(aArea10601, { sName: "area" });
-         oDocument_g.AddTable(oTable1);
-         fnFillDropdown(oTable1, "AreaC");
-
-         const eType10602 = oData.querySelector('result[echo="10602"]');
-         const aType10602 = JSON.parse(eType10602.textContent);
-         const oTable2 = new Table(aType10602, { sName: "type" });
-         oDocument_g.AddTable(oTable2);
-         fnFillDropdown(oTable2, "TypeC");
-
-         const eState10603 = oData.querySelector('result[echo="10603"]');
-         const aState10603 = JSON.parse(eState10603.textContent);
-         const oTable3 = new Table(aState10603, { sName: "state" });
-         oDocument_g.AddTable(oTable3);
-         fnFillDropdown(oTable3, "StateC");
+         // ## For each list for all codes in poll table .....................
+         [ [ListArea, "area", "AreaC"], 
+           [ListType, "type", "TypeC"], 
+           [ListState, "state", "StateC"] 
+         ].forEach(function([fnRead, sName, sField]) {
+            const content_ = fnRead( oResult.data );
+            const oTable = new Table(JSON.parse(content_), { sName });
+            oDocument_g.AddTable(oTable);
+            const eSelect = eForm.querySelector(`[data-field="${sField}"]`);
+            eSelect.innerHTML = '<option value=""></option>';                 // first is empty option
+            for(let i = 0; i < oTable.GetRowCount(); i++) {
+               const eOption = document.createElement("option");
+               eOption.value       = oTable.GetCellValue(i, 0);               // set option value to first column of table 
+               eOption.textContent = oTable.GetCellValue(i, 1);               // set text
+               eSelect.appendChild(eOption);
+            }
+         });         
       });
-
-      /*
-      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10601 }) }).then(function(oResult) {
-         const eResult = oResult?.data?.querySelector("result");
-         const aResult = JSON.parse(eResult.textContent);
-         const oTable = new Table(aResult, { sName: "area" });
-         oDocument_g.AddTable(oTable);
-         fnFillDropdown(oTable, "AreaC");
-      });
-
-      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10602 }) }).then(function(oResult) {
-         const eResult = oResult?.data?.querySelector("result");
-         const aResult = JSON.parse(eResult.textContent);
-         const oTable = new Table(aResult, { sName: "type" });
-         oDocument_g.AddTable(oTable);
-         fnFillDropdown(oTable, "TypeC");
-      });
-
-      gd.Send("!db/select?", { query: "#code-get_list", values: JSON.stringify({ "TCode.CodeGroupK": 10603 }) }).then(function(oResult) {
-         const eResult = oResult?.data?.querySelector("result");
-         const aResult = JSON.parse(eResult.textContent);
-         const oTable = new Table(aResult, { sName: "state" });
-         oDocument_g.AddTable(oTable);
-         fnFillDropdown(oTable, "StateC");   
-      });
-      */
    }
 
    /** ---------------------------------------------------------------------------
@@ -526,64 +480,47 @@ gd.SetBaseUrl(sBaseUrl_g);
             e_.stopPropagation();
             const sPollK = eTarget.parentNode.dataset.key;                                         console.assert(sPollK, "sPollK is null or empty");
 
-            let {document: oDocument, root} = XML.Create("commands");
-            let sQS;
+            const oXml = XML.CreateXML( "commands" );
+            const PollRecord = oXml.Command("db/select", { query: "vote-poll_get", values: { PollK: sPollK } });
+            const PollTags = oXml.Command("db/select", { query: "vote-poll_get_tags", values: { "TPoll.PollK": sPollK } });
 
-            sQS = XML.ToQueryString("db/select", { echo: "poll", query: "vote-poll_get", values: JSON.stringify({ PollK: sPollK }) } );
-            XML.Add(root, "command", { qs: sQS } );
-            sQS = XML.ToQueryString("db/select", { echo: "tag", query: "vote-poll_get_tags", values: JSON.stringify({ "TPoll.PollK": sPollK }) } );
-            XML.Add(root, "command", { qs: sQS } );
-
-            gd.Send( "!xml", {}, oDocument).then(function(oResult) {
+            gd.Send( "!xml", {}, oXml.Done()).then(function(oResult) {
                const oData = oResult.data;
-               //const aPollResult = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
-               const aPollResult = XML_GetFirstArray( oData, "result", "poll" );                   console.assert(Array.isArray(aPollResult), "aPollResult is not an array");
+               const aPollResult = JSON.parse(PollRecord( oData ));
+               const aPollTags = JSON.parse(PollTags( oData ));
+
                const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
                oDBRecord.ClearValues();
 
                if( aPollResult.length > 1)
                {
+                  // ## Fill record and set active poll key ..................
                   oDBRecord.SetValue( aPollResult );
                   oDBRecord.SetKeyValue( sPollK );
                   oDocument_g.SetValue("PollK", sPollK);
 
+                  // ## Write values to form .................................
                   const eForm = document.querySelector("#idForm");
                   oDBRecord.WriteValues( eForm ); // write values to form
 
-                  PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
+                  // ## Write tags to form ...................................
+                  //    If tag contains space then enclose in quotes
+                  const eTags = document.querySelector('[data-id="tags"]');
+                  const aTags = aPollTags.length > 1 ? aPollTags.slice(1) : [];
+                  const sTags = aTags.map( aTagRow => {
+                     const sTagName = String( aTagRow[0] || "" ).trim();
+                     if( !sTagName ) { return ""; }
+                     if( sTagName.includes(" ") ) { return `"${sTagName}"`; }
+                     else { return sTagName; }
+                  }).filter( sTag => sTag !== "" ).join(" ");
+                  eTags.value = sTags;
+
                   LoadLink(sPollK);
+                  PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
                }
 
                PAGE_Update();
             });
-
-            /*
-            const sQueryName = "vote-poll_get";
-            const sArguments = "query=#" + sQueryName + "\n" + `values=${JSON.stringify({ PollK: sPollK })}`;
-
-            gd.SendToServer("", "!db/select?", sArguments).then(function(oResult)
-            {
-               const oData = oResult.data;
-               const aPollResult = JSON.parse( oData.querySelector("result").childNodes[0].nodeValue );
-               const oDBRecord = oDocument_g.GetRecord( "TPoll" ); // get poll record
-               oDBRecord.ClearValues();
-
-               if( aPollResult.length > 1)
-               {
-                  oDBRecord.SetValue( aPollResult );
-                  oDBRecord.SetKeyValue( sPollK );
-                  oDocument_g.SetValue("PollK", sPollK);
-
-                  oDBRecord.WriteValues( document.querySelector("#idForm") ); // write values to form
-
-                  PAGE_UpdateFieldLabels(document.querySelector("#idFieldLabels"));
-                  LoadLink(sPollK);
-               }
-
-               PAGE_Update();
-            });
-            */
-            return;
          }
 
          if(!eTarget.dataset.action) return;                                   // if clicked element does not have data-action attribute, ignore
