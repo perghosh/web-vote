@@ -462,7 +462,7 @@ function PAGE_SetListeners() {
                const [ oDocument, eValues ]  = XML_AppendObject(null, oValues, "values", "value"); // Convert values to XML format for sending to server
                XML_AppendElement(eValues, { name: "PollQuestionK" },undefined, "returning"); // append returning field.
                eValues.setAttribute("table", "TPollQuestion");
-               gd.SendToServer("", "!db/insert", `table=${sTableName}`, oDocument).then(function(oResponse) {
+               gd.Send( "!db/insert", {table: sTableName}, oDocument).then(function(oResponse) {
                   // ## Replace html form for adding new question with html form for question prepared to add answers
                   const eNew =  document.getElementById("idTemplateQuestion").content.cloneNode(true).firstElementChild; // oneliner for: gets template, clones the html and get element to cloned html
                   const eOld = document.getElementById("idNewQuestion");      // html form for adding new question

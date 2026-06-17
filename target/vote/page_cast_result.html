@@ -168,7 +168,31 @@ async function PAGE_Load() {
    const aColumn = ["TPoll","PollK", sPollK ];                                // table, column and value to fetch poll information
 
    // ## Fetch poll information ...............................................
+   const oXml = XML.CreateXML( "commands" );
+   const poll_ = oXml.Command( "db/select?", { query: "cast-poll", columns: JSON.stringify(aColumn) } );
+   const poll_questions_ = oXml.Command( "db/select?", { query: "cast-poll_questions", columns: JSON.stringify(aColumn) } );
+   const poll_answers_and_count_ = oXml.Command( "db/select?", { query: "cast-poll_answers_and_count", columns: JSON.stringify(aColumn) } );
 
+   gd.Send( "!xml", {}, oXml.Done()).then(function(oResult) {
+      const eResult = oResult?.data?.querySelector("result");
+      if( !eResult ) { console.error("No result element found in response for poll information", "Response data:", oResult?.data); oToast_g.Show("Failed to load poll information: No result element found in response", { type: "error" }); return; }
+
+      [ [poll_, "TPoll"], [poll_questions_, "TPollQuestion"], [poll_answers_and_count_, "TPollAnswer"] ].forEach(([fnGetData, sTable]) => {
+         const sData = fnGetData(eResult);
+         if( !sData ) { console.error(`No data found in result for query: ${sTable}`, "Result element:", eResult); oToast_g.Show(`Failed to load poll information: No data found for ${sTable}`, { type: "error" }); return; }
+         const aData = JSON.parse(sData);
+         const oTable = new Table(aData, {sName: sTable});
+         oDocument_g.AddTable(oTable);
+      });
+   })
+   .catch(function(e_) { 
+      console.error("Failed to load poll information", e_); 
+      oToast_g.Show("Failed to load poll information", { type: "error" });
+   });
+
+   // ## Fetch poll information ...............................................
+
+   /*
    const fnLoadTable = async (sQueryName, sTableName) => {
       try {
          const oResult = await gd.Send("!db/select?", { query: `#${sQueryName}`, columns: JSON.stringify(aColumn) });
@@ -207,6 +231,7 @@ async function PAGE_Load() {
 
    const oPollAnswerTable = await fnLoadTable("cast-poll_answers_and_count", "TPollAnswer");
    if( !oPollAnswerTable ) { console.error("PAGE_Load stopped: TPollAnswer failed to load"); return; }
+   */
 
    /*
    const oPollVoteTable = await fnLoadTable("cast-poll_votes", "TPollVote");

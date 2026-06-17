@@ -262,7 +262,7 @@ function PAGE_SetListeners() {
 
                // Prepare PollK to set for all votes
                const oPoll = { PollK: oDocument_g.GetValue("PollK") };
-               gd.SendToServer("", "!db/insert?table=TPollVote&query=%23cast-add_vote", `values=${JSON.stringify(oPoll)}`, oDocument).then((oResult) => {
+               gd.SendToServer("", "!db/insert?mode=bulk&table=TPollVote&query=%23cast-add_vote", `values=${JSON.stringify(oPoll)}`, oDocument).then((oResult) => {
                   const oVote = XML_GetFirstValue( oResult, undefined, "object" );
                   if( oVote.abort === true ) {
                      console.warn(oVote.text);
