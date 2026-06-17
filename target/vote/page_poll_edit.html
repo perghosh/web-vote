@@ -285,7 +285,6 @@ gd.SetBaseUrl(sBaseUrl_g);
 
       PollList.UpdateSearchResult();
 
-      //const eForm = document.querySelector("#idForm");
       let oRecord = new DBRecordContainer( document.querySelector("#idForm") );
       oRecord.SetColumnMember("PollK", { bKey: true } );                     // Set key column and type for PollK field
       oRecord.table = "TPoll";
@@ -546,7 +545,6 @@ gd.SetBaseUrl(sBaseUrl_g);
                const oArguments = `{ "table": "TPoll", "values": ${sValues}, "returning": "PollK" }`;
                const sArguments = `record=${oArguments}`;
 
-               // const oXml = Poll.ReadTags();
                const aTag = Poll.ReadTags();
                gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
                   const sPollK = XML_GetFirstValue(oResult);                                      console.assert(sPollK, "sPollK is null or empty");
@@ -572,6 +570,9 @@ gd.SetBaseUrl(sBaseUrl_g);
                });
             } break;
             case "poll-update": {
+               const eForm = document.querySelector("#idForm");
+
+               // ## Update poll record ......................................
                const sPollK = oDBRecord.GetKeyValue();
                const sValues = JSON.stringify(oDBRecord.GetFilledValues());
                const sWhere = `{"PollK": "${sPollK}"}`;
@@ -583,6 +584,26 @@ gd.SetBaseUrl(sBaseUrl_g);
                   if( iCount !== 0) { oToast_g.Show("Updaterad!"); }
                   else {oToast_g.Show("Kunde inte uppdatera")}
                });
+
+               // ## Check if tags have changed and update if necessary ......
+               const eTags = eForm.querySelector('[data-id="tags"]');
+               const sNewTags = eTags.value.trim();                           // new tags from form
+               const sOldTags = eTags.dataset.tags || "";                     // original tags
+
+               if( sNewTags != sOldTags ) {
+                  const oXml = XML.CreateXML( "commands" );
+                  oXml.Command("db/delete", { query: "vote-poll_delete_tags", values: { "TPoll.PollK": sPollK, } }); // delete existing tags for poll
+                  const aTag = Poll.ReadTags();
+                  aTag.forEach( sTag => {
+                     oXml.Command("db/insert", { query: "tag-add", values: JSON.stringify({ "TTag.FName": sTag }) } ); // add tag if not exists
+                     oXml.Command("db/insert", { query: "vote-poll_add_tag", values: JSON.stringify({ "TPoll.PollK": sPollK, "TTag.FName": sTag }) } ); // add new tag for poll
+                  });
+
+                  gd.Send( "!xml", {}, oXml.Done()).then(function(oResult) {
+                     oToast_g.Show("Taggar uppdaterade!");
+                  });
+               }
+
             } break;
             case "poll-delete": {
                const sKey = oDBRecord.GetKeyValue();
@@ -839,34 +860,6 @@ gd.SetBaseUrl(sBaseUrl_g);
          
          return aTag;                                                         // return array of tags or empty array if no tags
       },
-
-      WriteTags(oXml) {
-         const sXml = (new XMLSerializer()).serializeToString(oXml);
-         const sPollK = oDocument_g.GetValue("PollK");
-         let sQS;
-
-         let {document, root} = XML.Create("commands");
-         const oDocument = document;
-         sQS = XML.ToQueryString("db/delete", { query: "vote-poll_delete_tags", table: "TPoll", values: JSON.stringify({ "PollK": sKey }) });
-         XML.Add(root, "command", { qs: sQS } );
-
-
-         XML.Add(root, "command", { qs: "db/delete?values=" + JSON.stringify({ "rRecordxTag.FKey": sPollK, "rRecordxTag.table_number": 1060 }) } );
-         gd.Send( "!xml", { PollK: sPollK }, oDocument).then(function(oResult) {
-            // convert object to string for display
-            //const sResult = (new XMLSerializer()).serializeToString(oResult.data);
-            //alert(sResult);
-         });
-
-
-         /*
-         gd.Send( "!db/insert?", { query: "vote-poll_set_tags" }, oXml).then(function(oResult) {
-            // convert object to string for display
-            const sResult = (new XMLSerializer()).serializeToString(oResult.data);
-            alert(sResult);
-         });
-         */
-      }
    }
 
    const PollList= {
