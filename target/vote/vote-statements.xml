@@ -2,11 +2,14 @@
 <!--
 ## Queries and descriptions for groups of queries used in voting
 
-### cast statements
-Cast votes starts with cast-* statements, these are used for casting votes and getting data for voting. 
+### Query groups
+- "code" statements: These are used for development and testing, they are not used in production code, these are used to get data for development and testing, for example getting first poll to test if there are any polls in the database, getting list of codes for development, these are not used in production code
+- "tag" statements: These are used for managing tags for polls, these are used in admin interface for votes, these are used to add tags to polls, get tags for polls, delete tags from polls, these are not used in main vote page
+- "cast" statements: These are used for casting votes, these are used in main vote page, these are used to check if user has already voted, get poll data for voting, add votes to database, these are not used in admin interface for votes
+- "vote" statements: These are used for administering votes, creating and editing polls, these
 
-### "vote" statements
-Vote statements are used for administering votes, creating and editing polls, these are used in admin interface for votes.
+
+
 
 TIP: select name and search in project to find where these statements are used
 
@@ -28,10 +31,12 @@ TIP: select name and search in project to find where these statements are used
       <statements-group prefix="tag-" name="TTag.edit">
          <!-- @API [tag: TTag] [description: statements for tags, queries to edit tags]
          | - tag-add: Add tag if it does not exist
+         | - tag-poll_get_tags: Get all tags for a poll, used for editing poll in admin interface
          |-->
          <statement name="add" format="jinja" type="insert" description="add tag if it does not exist"><![CDATA[
 INSERT INTO TTag (FName, FNormalized) SELECT {FName}, LOWER(TRIM({FName})) WHERE NOT EXISTS ( SELECT 1 FROM TTag WHERE FName = {FName} )]]></statement>
-
+         <statement name="poll_get_tags" format="jinja" type="select" description="Get all tags for a poll"><![CDATA[
+SELECT TTag.FName FROM TTag JOIN rRecordxTag ON rRecordxTag.TagK = TTag.TagK WHERE rRecordxTag.table_number = 1060 AND rRecordxTag.FKey = {PollK}]]></statement>
       </statements-group>
 
       <statements-group prefix="vote-" name="TPoll.edit">
