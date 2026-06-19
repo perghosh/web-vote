@@ -184,7 +184,7 @@ GROUP BY TPollVote.PollAnswerK
    <!--Link-->
    <statement name="vote-link_get" format="jinja" type="select" table="TLink" description="Get link for a poll by foreign key">SELECT hex(LinkK) AS LinkK, FUrl, FDescription FROM TLink WHERE FKey = {FKey} AND table_number = {table_number} LIMIT 1</statement>
 
-   <!--User-->
+>   <!--User-->
    <statement name="user-login" format="jinja" type="select" table="TUser">SELECT hex(UserK) AS UserK, FLoginName FROM TUser WHERE FLoginName = {FLoginName} AND FPassword = {FPassword} LIMIT 1</statement>
 
    </statements>

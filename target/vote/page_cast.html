@@ -247,22 +247,30 @@ function PAGE_SetListeners() {
                const ePollContainer = document.getElementById("idPoll");
                const aQuestionContainers = ePollContainer.querySelectorAll(`[data-field="PollQuestionK"]`);
                const oDocument = document.implementation.createDocument(null, "document"); // Create new XML document to hold vote data
-               aQuestionContainers.forEach((eQuestionContainer) => {
-                  const sQuestionKey = eQuestionContainer.getAttribute("data-value");
 
-                  const aSelected = eQuestionContainer.querySelectorAll(`.vote-answer-input:checked`);
+               // ### Iterate all quetions and read keys for selected answers.
+               aQuestionContainers.forEach((eQuestionContainer) => {
+                  const sPollQuestionK = eQuestionContainer.getAttribute("data-value");
+
+                  const aSelected = eQuestionContainer.querySelectorAll(`.vote-answer-input:checked`); // selected answers for this question
                   aSelected.forEach((eAnswer) => {
-                     const sAnswerKey = eAnswer.getAttribute("data-value");
+                     const sPollAnswerK = eAnswer.getAttribute("data-value"); // key for selected answer
 
                      const eValues = oDocument.createElement("values");       // values element to hold poll information as attributes
-                     eValues.setAttribute("_TPollVote.PollAnswerK", sAnswerKey); // extended attribute name
+                     eValues.setAttribute("TPollVote.PollQuestionK", sPollQuestionK); // extended attribute name
+                     eValues.setAttribute("TPollVote.PollAnswerK", sPollAnswerK); // extended attribute name
                      oDocument.documentElement.appendChild(eValues);
                   });
                });
 
+               // @DEBUG_BEGIN
+               const sXmlString = new XMLSerializer().serializeToString(oDocument);
+               // @DEBUG_END
+
                // Prepare PollK to set for all votes
                const oPoll = { PollK: oDocument_g.GetValue("PollK") };
-               gd.SendToServer("", "!db/insert?mode=bulk&table=TPollVote&query=%23cast-add_vote", `values=${JSON.stringify(oPoll)}`, oDocument).then((oResult) => {
+               //gd.SendToServer("", "!db/insert?mode=bulk&table=TPollVote&query=%23cast-add_vote", `values=${JSON.stringify(oPoll)}`, oDocument).then((oResult) => {
+               gd.Send("!db/insert", { mode: "bulk", table: "TPollVote", query: "cast-add_vote", values: JSON.stringify(oPoll) }, oDocument).then((oResult) => {
                   const oVote = XML_GetFirstValue( oResult, undefined, "object" );
                   if( oVote.abort === true ) {
                      console.warn(oVote.text);
