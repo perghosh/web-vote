@@ -36,7 +36,7 @@ TIP: select name and search in project to find where these statements are used
          <statement name="add" format="jinja" type="insert" description="add tag if it does not exist"><![CDATA[
 INSERT INTO TTag (FName, FNormalized) SELECT {FName}, LOWER(TRIM({FName})) WHERE NOT EXISTS ( SELECT 1 FROM TTag WHERE FName = {FName} )]]></statement>
          <statement name="poll_get_tags" format="jinja" type="select" description="Get all tags for a poll"><![CDATA[
-SELECT TTag.FName FROM TTag JOIN rRecordxTag ON rRecordxTag.TagK = TTag.TagK WHERE rRecordxTag.table_number = 1060 AND rRecordxTag.FKey = {PollK}]]></statement>
+SELECT TTag.TagK, TTag.FName, TTag.FNormalized FROM TTag JOIN rRecordxTag ON rRecordxTag.TagK = TTag.TagK WHERE rRecordxTag.table_number = 1060 AND rRecordxTag.FKey = {PollK}]]></statement>
       </statements-group>
 
       <statements-group prefix="vote-" name="TPoll.edit">

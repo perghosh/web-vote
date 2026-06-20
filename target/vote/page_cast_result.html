@@ -17,6 +17,12 @@ Queries used in page ==========================================================
 #cast-poll_questions - Fetch questions related to the poll
 #cast-poll_answers_and_count - Fetch answers related to the poll along with their vote counts
 
+Id's of html elements used in page ============================================
+idPage - Main container for the page
+idPoll - Container for poll information (title, description, tags)
+idTags - Container for poll tags
+idQuestions - Container for poll questions and answers
+
 -->
 
 <!DOCTYPE html>
@@ -70,6 +76,9 @@ Queries used in page ==========================================================
          <h1><span data-field="FName">Poll Title</span><span class="page-count-marker"><span data-field="VoteCount">0</span>röster</span></h1>
          <p data-field="FDescription">Poll description goes here...</p>
          <a href="page_cast_list.html" style="font-size: 0.9rem; color: var(--color-body); text-decoration: none; align-self: flex-end; margin-top: 8px;">← Tillbaka till omröstningar</a>
+         <div id="idTags" class="margin_b-small">
+            <!-- Tags will be rendered here based on loaded data -->
+         </div>               
       </div>
       <!-- Questions and answers will be rendered here -->
       <div id="idQuestions" class="margin_b-small">
@@ -169,83 +178,56 @@ async function PAGE_Load() {
 
    // ## Fetch poll information ...............................................
    const oXml = XML.CreateXML( "commands" );
-   const poll_ = oXml.Command( "db/select?", { query: "cast-poll", columns: JSON.stringify(aColumn) } );
-   const poll_questions_ = oXml.Command( "db/select?", { query: "cast-poll_questions", columns: JSON.stringify(aColumn) } );
-   const poll_answers_and_count_ = oXml.Command( "db/select?", { query: "cast-poll_answers_and_count", columns: JSON.stringify(aColumn) } );
+   const poll_ = oXml.Command( "db/select", { query: "cast-poll", columns: JSON.stringify(aColumn) } );
+   const poll_questions_ = oXml.Command( "db/select", { query: "cast-poll_questions", columns: JSON.stringify(aColumn) } );
+   const poll_answers_and_count_ = oXml.Command( "db/select", { query: "cast-poll_answers_and_count", columns: JSON.stringify(aColumn) } );
+   const poll_get_tags_ = oXml.Command( "db/select", { query: "tag-poll_get_tags", columns: JSON.stringify(aColumn) } );  
 
    gd.Send( "!xml", {}, oXml.Done()).then(function(oResult) {
-      const eResult = oResult?.data?.querySelector("result");
-      if( !eResult ) { console.error("No result element found in response for poll information", "Response data:", oResult?.data); oToast_g.Show("Failed to load poll information: No result element found in response", { type: "error" }); return; }
+      const oXml = oResult.data;
 
       [ [poll_, "TPoll"], [poll_questions_, "TPollQuestion"], [poll_answers_and_count_, "TPollAnswer"] ].forEach(([fnGetData, sTable]) => {
-         const sData = fnGetData(eResult);
-         if( !sData ) { console.error(`No data found in result for query: ${sTable}`, "Result element:", eResult); oToast_g.Show(`Failed to load poll information: No data found for ${sTable}`, { type: "error" }); return; }
+         const sData = fnGetData(oXml);
+         if( !sData ) { console.error(`No data found in result for query: ${sTable}`, "Result element:", oXml); oToast_g.Show(`Failed to load poll information: No data found for ${sTable}`, { type: "error" }); return; }
          const aData = JSON.parse(sData);
          const oTable = new Table(aData, {sName: sTable});
          oDocument_g.AddTable(oTable);
       });
+
+      {
+         const sData = poll_get_tags_(oXml);
+         if( sData ) { 
+            const aData = JSON.parse(sData);
+            const oTable = new Table(aData, {sName: "TTag"});
+            oDocument_g.AddTable(oTable);
+         }
+      }
+
+      PAGE_RenderResult();                                                     // Render the page with loaded data
    })
    .catch(function(e_) { 
       console.error("Failed to load poll information", e_); 
       oToast_g.Show("Failed to load poll information", { type: "error" });
    });
 
-   // ## Fetch poll information ...............................................
-
-   /*
-   const fnLoadTable = async (sQueryName, sTableName) => {
-      try {
-         const oResult = await gd.Send("!db/select?", { query: `#${sQueryName}`, columns: JSON.stringify(aColumn) });
-         const eResult = oResult?.data?.querySelector("result");
-         if( !eResult ) {
-            console.error("No result element found in response for query:", sQueryName, "Response data:", oResult?.data);
-            return null;
-         }
-
-         if( !eResult.textContent ) { console.error("No data found in result for query:", sQueryName, "Result element:", eResult); return null; }
-
-         const aResult = JSON.parse(eResult.textContent);
-         const oTable = new Table(aResult);
-         oTable.name = sTableName;
-         oTable.SetProperty("query", sQueryName);
-         oDocument_g.AddTable(oTable);
-         return oTable;
-      }
-      catch( e_ ) { console.error("Failed to load table for query:", sQueryName, e_); return null;}
-   };
-
-   // ## Load main TPoll record ..............................................
-   const oPollTable = await fnLoadTable("cast-poll", "TPoll");
-   if( !oPollTable ) { console.error("PAGE_Load stopped: TPoll failed to load"); return; }
-   const oRecord = new DBRecordContainer(oPollTable.GetColumnInformation());
-   const oPollData = oPollTable.AsObject(0);
-   oRecord.AddValue(oPollData);
-   oRecord.WriteValues(document.getElementById("idPoll")); 
-
-   const iTotalCount = Number(oPollData.VoteCount) || 0; // Ensure VoteCount is defined for rendering
-   oDocument_g.SetValue("TotalCount", iTotalCount); // Store vote count in document for later use in rendering
-
-   // ## Load related tables for questions, answers and votes ................
-   const oPollQuestionTable = await fnLoadTable("cast-poll_questions", "TPollQuestion");
-   if( !oPollQuestionTable ) { console.error("PAGE_Load stopped: TPollQuestion failed to load"); return; }
-
-   const oPollAnswerTable = await fnLoadTable("cast-poll_answers_and_count", "TPollAnswer");
-   if( !oPollAnswerTable ) { console.error("PAGE_Load stopped: TPollAnswer failed to load"); return; }
-   */
-
-   /*
-   const oPollVoteTable = await fnLoadTable("cast-poll_votes", "TPollVote");
-   if( !oPollVoteTable ) { console.error("PAGE_Load stopped: TPollVote failed to load"); return; }
-   */
-
-   PAGE_RenderResult();                                                             // Render the page with loaded data
+   
 }
 
 /** --------------------------------------------------------------------------- PAGE_Render
  * Render the poll results on the page using the loaded data
  */
 function PAGE_RenderResult() {
-   const iTotalCount = oDocument_g.GetValue("TotalCount");                      // Total vote count
+
+   // ## Load main TPoll record ..............................................
+   const oPollTable = oDocument_g.GetTable("TPoll");
+   if( !oPollTable ) { console.error("PAGE_Load stopped: TPoll failed to load"); return; }
+   const oRecord = new DBRecordContainer(oPollTable.GetColumnInformation());
+   const oPollData = oPollTable.AsObject(0);
+   oRecord.AddValue(oPollData);
+   oRecord.WriteValues(document.getElementById("idPoll"));
+
+   const iTotalCount = Number(oPollData.VoteCount) || 0; // Ensure VoteCount is defined for rendering
+   oDocument_g.SetValue("TotalCount", iTotalCount); // Store vote count in document for later use in rendering   
 
    {  // ## Render all questions ...............................................
       const tablePollQuestion = oDocument_g.GetTable("TPollQuestion");
