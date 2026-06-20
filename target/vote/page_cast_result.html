@@ -76,7 +76,7 @@ idQuestions - Container for poll questions and answers
          <h1><span data-field="FName">Poll Title</span><span class="page-count-marker"><span data-field="VoteCount">0</span>röster</span></h1>
          <p data-field="FDescription">Poll description goes here...</p>
          <a href="page_cast_list.html" style="font-size: 0.9rem; color: var(--color-body); text-decoration: none; align-self: flex-end; margin-top: 8px;">← Tillbaka till omröstningar</a>
-         <div id="idTags" class="margin_b-small">
+         <div id="idTags" class="margin_t-small">
             <!-- Tags will be rendered here based on loaded data -->
          </div>               
       </div>
@@ -226,6 +226,20 @@ function PAGE_RenderResult() {
    oRecord.AddValue(oPollData);
    oRecord.WriteValues(document.getElementById("idPoll"));
 
+   // ## Load tags for poll .................................................
+   const oTagTable = oDocument_g.GetTable("TTag"); 
+   if( oTagTable ) {
+      const eTags = document.getElementById("idTags");
+      for( let i = 0; i < oTagTable.GetRowCount(); i++ ) {
+         const oRow = oTagTable.AsObject(i);
+         const eTag = document.createElement("span");
+         eTag.textContent = oRow.FName;
+         eTag.style.cssText = "background: var(--background-info); border-radius: 999px; color: var(--color-info); display: inline-flex; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; margin-right: 10px; padding: 4px 10px;";
+         eTags.appendChild(eTag);
+      }
+   }
+
+   // ## Calculate total vote count for poll .................................
    const iTotalCount = Number(oPollData.VoteCount) || 0; // Ensure VoteCount is defined for rendering
    oDocument_g.SetValue("TotalCount", iTotalCount); // Store vote count in document for later use in rendering   
 
