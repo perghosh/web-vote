@@ -209,8 +209,19 @@ async function PAGE_Load() {
       console.error("Failed to load poll information", e_); 
       oToast_g.Show("Failed to load poll information", { type: "error" });
    });
+}
 
-   
+// --------------------------------------------------------------------------- PAGE_SetListeners
+function PAGE_SetListeners() {
+   // ## Listen to idTags for click events to filter results by tag
+   const eTags = document.getElementById("idTags");
+   eTags.addEventListener("click", function(e) {
+      const eTag = e.target.closest("span[data-key]");
+      if( !eTag ) { return; }
+      const sTagK = eTag.dataset.key;
+      console.log("Tag clicked, filter results by tag key:", sTagK);
+      // TODO: Implement filtering logic based on the clicked tag
+   });
 }
 
 /** --------------------------------------------------------------------------- PAGE_Render
@@ -234,7 +245,8 @@ function PAGE_RenderResult() {
          const oRow = oTagTable.AsObject(i);
          const eTag = document.createElement("span");
          eTag.textContent = oRow.FName;
-         eTag.style.cssText = "background: var(--background-info); border-radius: 999px; color: var(--color-info); display: inline-flex; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; margin-right: 10px; padding: 4px 10px;";
+         eTag.dataset.key = oRow.TagK;
+         eTag.style.cssText = "background: var(--background-info); border-radius: 999px; color: var(--color-info); display: inline-flex; font-size: 0.8rem; font-weight: 700; margin-right: 10px; padding: 4px 10px;";
          eTags.appendChild(eTag);
       }
    }
