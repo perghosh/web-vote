@@ -7,11 +7,10 @@ PAGE_Render -  Render the page, update UI elements based on current document sta
 PAGE_SetListeners - Configure page listeners, handle page specific events  
 PAGE_ProcessResponse - Handle response data from server and display it in the container
 
-PollList.Render - Render the poll list based on current document state
-PollList.LoadSearchValues - Load options for advanced Area filter dropdown in search panel
-PollList.GetResult - Update Poll result based on options, options can include filters, sorting and pagination parameters
-
 Objects:
+PollList - Namespace object to handle poll list related operations
+
+External Objects:
 CDocument - Manages data and state of the page, including records and tables
 DBRecord - Represents a database record, with methods to read/write values and get arguments for server
 UITableLite - A lightweight table UI component for displaying data in a table format
@@ -49,6 +48,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .container-result th { padding: 6px 8px; text-align: left; font-weight: 600; color: var(--color-body); border-bottom: 2px solid var(--color-border); }
       .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
 
+
+      /* general styles for page */
       button.button { border: none; }
       .divider { border-radius: 5px; border-top: 2px solid var(--color-border); }
       .group { align-items: flex-end; display: flex; gap: 12px; }
@@ -85,6 +86,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .poll-row [data-field='FDescription'] { color: var(--color-muted); font-size: 90%; overflow: hidden; padding-top: 2pt; text-overflow: ellipsis; white-space: nowrap; }
       .poll-row [data-field='TotalVotes'] { color: var(--background-success); font-size: 30px; font-weight: 600; max-width: 200px; text-align: center; }
 
+      /* Special styles for pagination buttons */
+      #idPagination button:disabled { cursor: not-allowed; opacity: 0.45; }
+
       @media (max-width: 768px) { 
          .label-text { display: none; } 
          .filter { width: 70px; } 
@@ -114,9 +118,9 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                </div>
    
                <label class="label-text">Sortera efter:</label>
-   
+
+               <!-- Dropdown that sets order fields for sorting, these indexes match columns in query "list-poll" -->
                <select class="filter" data-id="id-sort">
-                  <!-- <option value="votes">Most Votes</option> -->
                   <option value="3">A-Z</option>
                   <option value="-3">Z-A</option>
                   <option value="-5" selected>Ny</option>
@@ -157,6 +161,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          </div>
    
          <div id="idListPoll" data-section="list-poll" class="container-result"></div>
+         <div id="idPagination" data-section="pagination" style="display: none; align-items: center; justify-content: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 12px; background: linear-gradient(180deg, var(--background-light), var(--background-light-hover)); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);">
+            <button type="button" class="button" data-action="prev-page" style="background: var(--background-success); border-radius: 999px; color: var(--color-success); padding: 8px 14px;"><</button>
+            <span data-id="page-number" style="min-width: 88px; text-align: center; font-weight: 600; color: var(--color-body);">Sida 1</span>
+            <button type="button" class="button" data-action="next-page" style="background: var(--background-success); border-radius: 999px; color: var(--color-success); padding: 8px 14px;">></button>
+         </div>
       </form>
    </div>
 
@@ -240,7 +249,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    */
    function PAGE_SetListeners() {
 
-      const fnOnClick = (e_) => {
+      const on_row_click_ = (e_) => {
          const eTarget = e_.target;
          const sAction = eTarget.dataset.action;
          if( !sAction && !eTarget.closest(".poll-row") ) { return; }          // disable for all scenarios not related to actions
@@ -259,10 +268,16 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          }
 
 
-         if(!eTarget.dataset.action) return;
+         if(!eTarget.dataset.action) return;                                  // No action found, exit
          e_.stopPropagation();
 
          switch(sAction) {
+            case "prev-page": {
+               PollList.GetResult({ pageDelta: -1 });
+            } break;
+            case "next-page": {
+               PollList.GetResult({ pageDelta: 1 });
+            } break;
             case "view-advanced": {
                const eAdvancedSearch = eContainer.querySelector("#idSearchAdvanced");
                if(!eAdvancedSearch) { return; }
@@ -286,10 +301,14 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
       };
 
+      // ## Poll list click listener - handle clicks on poll rows ............
+      
       const eListPoll = document.querySelector("#idListPoll");
-      eListPoll.addEventListener("click", fnOnClick);
+      eListPoll.addEventListener("click", on_row_click_);
+      const ePagination = document.querySelector("#idPagination");
+      ePagination.addEventListener("click", on_row_click_);
       const eSearch = document.querySelector("#idSearch");
-      eSearch.addEventListener("click", fnOnClick);
+      eSearch.addEventListener("click", on_row_click_);
 
       // ## Sort select change listener - trigger search on sort change ......
       const eSortSelect = eSearch.querySelector('[data-id="id-sort"]');
@@ -338,7 +357,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
             // If oData.data is an XML Document object, serialize it to string
             if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
-               //sResult = (new XMLSerializer()).serializeToString(oData.data);
 
                // ## query results element
                eResults = oData.data.querySelector('results');                   // get results element holding result elements
@@ -346,7 +364,6 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                // If it's already a string, use it directly
                sResult = oData.data;
             }
-
             break;
          case 'text':
             sResult = oData.data;
@@ -364,16 +381,16 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             const aPoll = JSON.parse(eSelect.textContent);
             aPoll.shift();
 
-            let oTable = oDocument_g.GetTable("search");
-            if(!oTable)
+            let tableSearch = oDocument_g.GetTable("search");
+            if(!tableSearch)
             {
-               oTable = new Table(["id", "Header", "Name", "Description", "CreateD", "Votes"], {sName: "search"} );
-               oDocument_g.AddTable(oTable);
+               tableSearch = new Table(["id", "Header", "Name", "Description", "CreateD", "Votes"], {sName: "search"} );
+               oDocument_g.AddTable(tableSearch);
             }
-            else { oTable.Clear(); }
+            else { tableSearch.Clear(); }
 
             // loop array and add rows to table
-            for(const aRow of aPoll) {oTable.Add(aRow);}
+            for(const aRow of aPoll) {tableSearch.Add(aRow);}
 
             PAGE_Render();
          }
@@ -381,29 +398,59 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    }
 
 
+   /** --------------------------------------------------------------------- @API [tag: PollList, list]
+    * Object that manages the poll list, including rendering the list, loading search filter values and getting results based on filters and sorting options
+    */
    const PollList = {
-      /** ---------------------------------------------------------------------------
-       * Update UI elements
+      iMaxVisibleRowCount_s: 10, // maximum number of rows to show 
+      iCurrentPage_s: 0, // current page index for pagination, starts from 0
+
+      /** --------------------------------------------------------------------- 
+       * Render the poll list based on current document state
        */
       Render() {
-         const oTable = oDocument_g.GetTable("search");
-         if (!oTable) return;
+         const tableSearch = oDocument_g.GetTable("search");
+         if (!tableSearch) return;
 
-         const eSelectPoll = document.getElementById("idContainer").querySelector('[data-section="list-poll"]');
-         eSelectPoll.innerHTML = "";
+         const eListPoll = document.getElementById("idContainer").querySelector('[data-section="list-poll"]');
+         eListPoll.innerHTML = "";
 
-         const oRecord = new DBRecordContainer(oTable.GetColumnInformation()); // create a record to write values
+         const oRecord = new DBRecordContainer(tableSearch.GetColumnInformation()); // create a record to write values
 
+         const iRowCount = tableSearch.GetRowCount(); // numbers of rows to render
+
+         // ## Add polls as rows to list of polls .............................
          const eTemplate = document.getElementById("idTemplateRow");
-
-         for(let i = 0; i < oTable.GetRowCount(); i++)
+         for(let i = 0; i < iRowCount; i++)
          {
             const eRow = eTemplate.content.cloneNode(true).firstElementChild;
-            oRecord.AddValue(oTable.AsObject(i));                             // write values of the current row to the record
+            oRecord.AddValue(tableSearch.AsObject(i));                             // write values of the current row to the record
             oRecord.WriteValues(eRow);
 
-            eSelectPoll.appendChild(eRow);
+            eListPoll.appendChild(eRow);
          }
+
+         // ## When row count is max then enable pagination ..................
+         const ePagination = document.getElementById("idPagination"); // pagenation container
+         const bPagingNeeded = iRowCount === PollList.iMaxVisibleRowCount_s || PollList.iCurrentPage_s > 0; // show pagination if max rows loaded or we are not on first page
+         if(ePagination && bPagingNeeded) {
+            ePagination.style.display = "flex";                               // show pagination
+            // ## Update pagination buttons state based on current
+
+            // ### Enable back button? 
+            let eButton = ePagination?.querySelector('[data-action="prev-page"]')
+            if( PollList.iCurrentPage_s > 0 ) { eButton.disabled = false; }
+            else { eButton.disabled = true; }
+
+            // ### Enable next button if row count is max, this means there might be more rows to load
+            eButton = ePagination?.querySelector('[data-action="next-page"]');
+            if( iRowCount === PollList.iMaxVisibleRowCount_s ) { eButton.disabled = false; }
+            else { eButton.disabled = true; }
+
+            const ePageNumber = ePagination.querySelector('[data-id="page-number"]');
+            ePageNumber.textContent = `Sida ${PollList.iCurrentPage_s + 1}`;
+         }
+         else if(ePagination) { ePagination.style.display = "none"; }         // hide pagination if not needed
       },
 
       /** ----------------------------------------------------------------------- @API [tag: search, load]
@@ -435,36 +482,58 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                eSearchArea.appendChild(eOption);
             }
 
-            // ## set selected area if it exists in options ......................
+            // ## set selected area if it exists in options ...................
             const iArea = oDocument_g.GetValue("area");
             if(iArea !== undefined && iArea !== null) {
                const sArea = String(iArea);
                if(eSearchArea.querySelector(`option[value="${sArea}"]`)) { eSearchArea.value = sArea; } // select option if it exists
             }
          });
+
+         const sTag = oDocument_g.GetValue("tag");
+         if(sTag) {  
+         }
       },
 
       /** --------------------------------------------------------------------- @API [tag: result, poll]
        * Update Poll result based on options, options can include filters, sorting and pagination parameters
        */
-      GetResult(options_) {
+      GetResult(oSearchModifiers) {
          const eSearch = document.getElementById("idSearch");
-         let oModifiers = oDocument_g.GetValue("search");
+         let oModifiers = oDocument_g.GetValue("search-modifiers"); // get current modifiers from document
          if( !oModifiers ) {
-            oModifiers = { table: "TPoll", order: [-5], "limit": [0, 20] };
-            oDocument_g.MergeValue( "modifiers", oModifiers );
+            oModifiers = { table: "TPoll", order: [-5], "limit": [0, PollList.iMaxVisibleRowCount_s] };
+            oDocument_g.MergeValue( "search-modifiers", oModifiers );
          }
 
 
-         if( typeof options_ === "object" )
+         if( typeof oSearchModifiers === "object" )
          {
-            // merge options_ into oModifiers
-            for(const sKey in options_) { oModifiers[sKey] = options_[sKey]; }
-            oDocument_g.MergeValue( "modifiers", oModifiers ); // merge to keep old values, only update changed values
+            if( typeof oSearchModifiers.pageDelta === "number" ) {
+               PollList.iCurrentPage_s = Math.max(0, PollList.iCurrentPage_s + oSearchModifiers.pageDelta);
+            }
+            else {
+               PollList.iCurrentPage_s = 0;
+            }
+
+            // merge oSearchModifiers into oModifiers
+            for(const sKey in oSearchModifiers) {
+               if( sKey === "pageDelta" ) { continue; }
+               oModifiers[sKey] = oSearchModifiers[sKey];
+            }
+
+            oModifiers["limit"] = [PollList.iCurrentPage_s * PollList.iMaxVisibleRowCount_s, PollList.iMaxVisibleRowCount_s];
+            oDocument_g.MergeValue( "search-modifiers", oModifiers ); // merge to keep old values, only update changed values
+         }
+         else { 
+            PollList.iCurrentPage_s = 0; // reset to first page if no valid modifiers provided
+            oModifiers["limit"] = [PollList.iCurrentPage_s, PollList.iMaxVisibleRowCount_s]; // reset to default limit if invalid modifiers provided
          }
 
          let oArguments = { query: "list-poll", modifiers: JSON.stringify(oModifiers) }; // arguments passed to server
          let oValues = {};
+
+         // ## Add filters from document values ...............................
          const iArea = oDocument_g.GetValue("area"); // area are taken from document because this may be passed from url
          if(iArea) { oValues["area"] = iArea; }
          const sTag = oDocument_g.GetValue("tag"); // tag filter taken from document because this may be passed from url
