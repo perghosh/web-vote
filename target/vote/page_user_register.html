@@ -23,7 +23,7 @@ PAGE_Initialize - Initialize the page
     <script src="js/gd_browser.js"></script>
     <script src="js/document.js"></script>
     <script src="js/gd_server.js"></script>
-    <title>Logga in</title>
+    <title>Skapa konto</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
@@ -50,7 +50,7 @@ PAGE_Initialize - Initialize the page
         <form id="idForm" class="container-form" onsubmit="event.preventDefault();">
 
             <div class=" title" style="margin-bottom: 20px;">
-                <h2 class="page-title">Logga in</h2>
+                <h2 class="page-title">Skapa konto</h2>
             </div>
 
             <div data-section="poll-form">
@@ -70,12 +70,19 @@ PAGE_Initialize - Initialize the page
                         </label>
                     </div>
 
-                    <div class="center">
-                        <button class="button" style="width: 100%; height: 40px;" data-action="user-submit">Logga in</button>
+                    <div style="flex: 1">
+                        <label class="floating">
+                        <input type="password" placeholder=" " data-field="FPassword2">
+                        <span>Bekräfta lösenord</span>
+                        </label>
                     </div>
 
                     <div class="center">
-                        <span>Har du inte ett konto?</span> <a href="page_user_register.html">Registrera dig</a>
+                        <button class="button" style="width: 100%; height: 40px;" data-action="user-submit">Registrera konto</button>
+                    </div>
+
+                    <div class="center">
+                        <span>Har du redan ett konto?</span> <a href="page_user_login.html">Logga in</a>
                     </div>
 
                 </div>
@@ -108,19 +115,20 @@ PAGE_Initialize - Initialize the page
         oToast_g = new UIToast(document.body, { sPosition: "top-right", iDuration: 3000 });
     }
 
-    function LoginUser() {
+    function RegisterUser() {
         const eForm = document.querySelector("#idForm");
 
         const sName = eForm.querySelector('[data-field="FName"]').value.trim();
         const sPassword = eForm.querySelector('[data-field="FPassword"]').value;
+        const sPassword2 = eForm.querySelector('[data-field="FPassword2"]').value;
 
-        if(!sName || !sPassword) {
+        if(!sName || !sPassword || sPassword != sPassword2) {
             oToast_g.Show("Du måste ange namn och lösenord");
             return;
         }
 
         const oXmlDocument = XML.CreateXML("commands")
-            .Add("command", { qs: XML.ToQueryString("db/select", {echo: "login", query: "user-login", values: JSON.stringify({FLoginName: sName, FPassword: sPassword}) } ) })
+            .Add("command", { qs: XML.ToQueryString("db/select", {echo: "login", query: "user-login", values: JSON.stringify({ FLoginName: sName, FPassword: sPassword }) } ) })
             .Done();
 
         gd.Send( "!xml", {}, oXmlDocument).then(function(oResult) {
@@ -151,7 +159,7 @@ PAGE_Initialize - Initialize the page
 
             switch(eTarget.dataset.action) {
                 case "user-submit":
-                    LoginUser();
+                    RegisterUser();
                     break;
             }
         });
