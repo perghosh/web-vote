@@ -209,18 +209,21 @@ async function PAGE_Load() {
       console.error("Failed to load poll information", e_); 
       oToast_g.Show("Failed to load poll information", { type: "error" });
    });
+
+   PAGE_SetListeners();                                                       // Set event listeners for user interactions on the page
 }
 
 // --------------------------------------------------------------------------- PAGE_SetListeners
 function PAGE_SetListeners() {
-   // ## Listen to idTags for click events to filter results by tag
+   // ## Listen to idTags for click events to filter results by tag ..........
    const eTags = document.getElementById("idTags");
    eTags.addEventListener("click", function(e) {
       const eTag = e.target.closest("span[data-key]");
       if( !eTag ) { return; }
-      const sTagK = eTag.dataset.key;
-      console.log("Tag clicked, filter results by tag key:", sTagK);
-      // TODO: Implement filtering logic based on the clicked tag
+      const sTagK = eTag.dataset.key;                                         // console.log("Tag clicked, filter results by tag key:", sTagK);
+      // ## Open list of votes and pass filter for selected tag ..............
+      const sUrl = `page_cast_list.html?tag=${sTagK}`;
+      window.location.href = sUrl;
    });
 }
 
@@ -238,15 +241,15 @@ function PAGE_RenderResult() {
    oRecord.WriteValues(document.getElementById("idPoll"));
 
    // ## Load tags for poll .................................................
-   const oTagTable = oDocument_g.GetTable("TTag"); 
-   if( oTagTable ) {
-      const eTags = document.getElementById("idTags");
-      for( let i = 0; i < oTagTable.GetRowCount(); i++ ) {
-         const oRow = oTagTable.AsObject(i);
+   const tableTag = oDocument_g.GetTable("TTag"); 
+   if( tableTag && tableTag.GetRowCount() > 0 ) {
+      const eTags = document.getElementById("idTags");                         // tag container element
+      for( let i = 0; i < tableTag.GetRowCount(); i++ ) {
+         const oRow = tableTag.AsObject(i);
          const eTag = document.createElement("span");
          eTag.textContent = oRow.FName;
          eTag.dataset.key = oRow.TagK;
-         eTag.style.cssText = "background: var(--background-info); border-radius: 999px; color: var(--color-info); display: inline-flex; font-size: 0.8rem; font-weight: 700; margin-right: 10px; padding: 4px 10px;";
+         eTag.style.cssText = "background: var(--background-info); border-radius: 999px; color: var(--color-info); cursor: pointer; display: inline-flex; font-size: 0.8rem; font-weight: 700; margin-right: 10px; padding: 4px 10px;";
          eTags.appendChild(eTag);
       }
    }

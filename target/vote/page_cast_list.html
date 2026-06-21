@@ -201,6 +201,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       // ## Read arguments from url and set to document
       const oUrlParameter = new URLSearchParams(window.location.search);
       const sArea = oUrlParameter.get("area") || null;
+      const sTag = oUrlParameter.get("tag") || null;
       if(sArea && !isNaN(parseInt(sArea))) {                                  // check if area is a valid number
          oDocument_g.SetValue("area", parseInt(sArea, 10));
          localStorage.setItem("area", sArea);
@@ -210,8 +211,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          if(sArea && !isNaN(parseInt(sArea))) { oDocument_g.SetValue("area", parseInt(sArea, 10)); }
       }
 
-      PollList.LoadSearchValues();
-      PollList.GetResult();
+      if( sTag ) { oDocument_g.SetValue("tag", sTag); }                       // set tag filter if exists in url
+
+      PollList.LoadSearchValues();                                            // Load options for advanced search filters
+      PollList.GetResult();                                                   // Load initial poll list based on default or url parameters
 
       oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
    }
@@ -464,14 +467,15 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          let oValues = {};
          const iArea = oDocument_g.GetValue("area"); // area are taken from document because this may be passed from url
          if(iArea) { oValues["area"] = iArea; }
-         const sSearchValue = eSearch.querySelector('[data-id="id-search"]')?.value;
-         //if(sSearchValue) { oValues["search"] = sSearchValue; }
-         const sPeriodValue = eSearch.querySelector('input[name="period"]:checked')?.value; // date period value from radio buttons
+         const sTag = oDocument_g.GetValue("tag"); // tag filter taken from document because this may be passed from url
+         if(sTag) { oValues["_wrRecordxTag.TagK"] = sTag; }
+         const sSearch = eSearch.querySelector('[data-id="id-search"]')?.value;
+         const sPeriod = eSearch.querySelector('input[name="period"]:checked')?.value; // date period value from radio buttons
          let oXml;
-         if(sSearchValue || sPeriodValue) {
+         if(sSearch || sPeriod) {
             const eRoot = XML.Create("conditions").root;
-            sSearchValue && XML.Add( eRoot, "where", { id: "poll-search", meta_type: "expression", type_part: "where", table: "TPoll", name: "search", value: sSearchValue } );
-            sPeriodValue && XML.Add( eRoot, "where", { id: sPeriodValue, meta_type: "expression", type_part: "where", table: "TPoll" } ); 
+            sSearch && XML.Add( eRoot, "where", { id: "poll-search", meta_type: "expression", type_part: "where", table: "TPoll", name: "search", value: sSearch } );
+            sPeriod && XML.Add( eRoot, "where", { id: sPeriod, meta_type: "expression", type_part: "where", table: "TPoll" } ); 
             oXml = eRoot.ownerDocument;                                 // set to xml document
          }
          

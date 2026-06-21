@@ -651,7 +651,7 @@ CREATE TABLE "TSystemStatement" (
 
 
 -- Insert table numbers for all tables in the script
--- Starting at 1000, incrementing by 10 for each table
+-- Starting at 1000, incrementing by 10 for each table, relations start at 10000
 
 INSERT INTO table_number (number, name, description) VALUES (10, 'table_number', 'Stores table numbers for system tables');
 INSERT INTO table_number (number, name, description) VALUES (101, 'TGroup', 'Group codes table');
@@ -674,6 +674,8 @@ INSERT INTO table_number (number, name, description) VALUES (1400, 'TThreadHeade
 INSERT INTO table_number (number, name, description) VALUES (1410, 'TThread', 'Table for storing thread entries for nested comments');
 INSERT INTO table_number (number, name, description) VALUES (1420, 'TFeedback', 'Table for storing user feedback, suggestions, and bug reports');
 INSERT INTO table_number (number, name, description) VALUES (1500, 'TSystemStatement', 'Table for storing predefined system statements');
+INSERT INTO table_number (number, name, description) VALUES (1600, 'TTag', 'Table for storing tags and hashtags');
+INSERT INTO table_number (number, name, description) VALUES (10000, 'rRecordxTag', 'Relation table for connecting records to tags');
 
 
 -- TCodeGroup inserts for code groups
