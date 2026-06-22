@@ -63,6 +63,8 @@ idQuestions - Container for poll questions and answers
 
       .page-count-marker { background: var(--chart-line, var(--background-primary)); border-radius: 999px; color: var(--color-primary); display: inline-flex; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; margin-left: 10px; padding: 4px 10px; text-transform: uppercase; vertical-align: middle; }
       .page-count-marker [data-field="VoteCount"] { margin-right: 4px; }
+         .page-tag { background: var(--background-info); border: 1px solid transparent; border-radius: 999px; color: var(--color-info); cursor: pointer; display: inline-flex; font-size: 0.8rem; font-weight: 700; margin-right: 10px; padding: 4px 10px; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease; }
+         .page-tag[data-marked="1"] { background: var(--chart-line, var(--background-primary)); border-color: var(--color-active); color: var(--color-primary); transform: translateY(-1px); }
       @media (max-width: 640px) { .page-answer-row { grid-template-columns: 72px 1fr; } .page-answer-percentage { font-size: 1.2rem; } }
     </style>
 </head>
@@ -217,12 +219,36 @@ async function PAGE_Load() {
 function PAGE_SetListeners() {
    // ## Listen to idTags for click events to filter results by tag ..........
    const eTags = document.getElementById("idTags");
-   eTags.addEventListener("click", function(e) {
-      const eTag = e.target.closest("span[data-key]");
+   eTags.addEventListener("click", function(e_) {
+      const eTag = e_.target.closest("span[data-key]");
       if( !eTag ) { return; }
-      const sTagK = eTag.dataset.key;                                         // console.log("Tag clicked, filter results by tag key:", sTagK);
+
+      // ## add key to document with marked tags
+      let sTags = oDocument_g.GetValue("selected-tags") || ""; // get selected tags in commana separated format
+      const sTagK = eTag.dataset.key;
+
+      // ### Find key in selected tags and remove empty values from split result
+      const aSelectedTags = sTags.split(","). map(s => s.trim()).filter(s => s.length > 0);
+      const iTagIndex = aSelectedTags.indexOf(sTagK);
+
+      if( e_.ctrlKey ) {
+         // ## If ctrl key is pressed, toggle tag in selected tags without navigating to list page
+         if( iTagIndex > -1 ) {
+            aSelectedTags.splice(iTagIndex, 1);                               // remove tag from selected tags
+            eTag.dataset.marked = "0";                                        // unmark tag
+         }
+         else {
+            aSelectedTags.push(sTagK); // add tag to selected tags
+            eTag.dataset.marked = "1";                                        // mark tag                                     
+         }
+         oDocument_g.SetValue("selected-tags", aSelectedTags.join(",")); // update document with new selected tags
+         return;
+      }
+
+      if( iTagIndex === -1 ) { aSelectedTags.push(sTagK); }                   // If tag is not already in selected tags, add it
+
       // ## Open list of votes and pass filter for selected tag ..............
-      const sUrl = `page_cast_list.html?tag=${sTagK}`;
+      const sUrl = `page_cast_list.html?tag=${aSelectedTags.join(",")}`;
       window.location.href = sUrl;
    });
 }
@@ -247,9 +273,10 @@ function PAGE_RenderResult() {
       for( let i = 0; i < tableTag.GetRowCount(); i++ ) {
          const oRow = tableTag.AsObject(i);
          const eTag = document.createElement("span");
+         eTag.className = "page-tag";
          eTag.textContent = oRow.FName;
          eTag.dataset.key = oRow.TagK;
-         eTag.style.cssText = "background: var(--background-info); border-radius: 999px; color: var(--color-info); cursor: pointer; display: inline-flex; font-size: 0.8rem; font-weight: 700; margin-right: 10px; padding: 4px 10px;";
+         eTag.dataset.marked = "0";
          eTags.appendChild(eTag);
       }
    }

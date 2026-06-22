@@ -39,7 +39,7 @@ INSERT INTO TTag (FName, FNormalized) SELECT {FName}, LOWER(TRIM({FName})) WHERE
          <statement name="poll_get_tags" format="jinja" type="select" description="Get all tags for a poll"><![CDATA[
 SELECT TTag.TagK, TTag.FName, TTag.FNormalized FROM TTag JOIN rRecordxTag ON rRecordxTag.TagK = TTag.TagK WHERE rRecordxTag.table_number = 1060 AND rRecordxTag.FKey = {PollK}]]></statement>
          <statement name="selected" format="jinja" type="select" table="TTag" description="Select tags based on conditions"><![CDATA[
-SELECT FName, FNormalized FROM TTag WHERE {+where}]]></statement>
+SELECT TagK, FName, FNormalized FROM TTag WHERE {+where}]]></statement>
       </statements-group>
 
       <statements-group prefix="vote-" name="TPoll.edit">

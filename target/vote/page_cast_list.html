@@ -491,7 +491,29 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          });
 
          const sTag = oDocument_g.GetValue("tag");
-         if(sTag) {  
+         if(sTag) { 
+            const a_ = sTag.split(",").map(s => s.trim()).filter(s => s !== ""); // split and trim tags
+            const aValidTag = a_.map(s => parseInt(s, 10)).filter(i => !isNaN(i)).map(i => String(i)); // convert to numbers and back to string
+
+            // ## Fetch tag names from server ................................
+
+            if(aValidTag.length > 0) {
+               const oXml = XML.CreateXML( "values" );
+               for(const sTagK of aValidTag) {
+                  oXml.Append( "where", { table: "TTag", name: "TagK", value: sTagK } );
+               }
+
+               gd.Send("!db/select", { query: "tag-selected" }, oXml.Done()).then(function(oResult) {
+                  const oXmlResult = oResult?.data;
+
+                  // ## parse result and create a table of tags for later use in document
+                  const sContent = oXmlResult.querySelector("result").textContent;
+                  if(!sContent) { return; }
+
+                  // create table of tags and set to document for later use
+                  const oTable = new Table(JSON.parse(sContent), { sName: "TTag" });
+               });
+            }
          }
       },
 
@@ -537,15 +559,28 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          const iArea = oDocument_g.GetValue("area"); // area are taken from document because this may be passed from url
          if(iArea) { oValues["area"] = iArea; }
          const sTag = oDocument_g.GetValue("tag"); // tag filter taken from document because this may be passed from url
-         if(sTag) { oValues["_wrRecordxTag.TagK"] = sTag; }
+         //if(sTag) { oValues["_wrRecordxTag.TagK"] = sTag; }
          const sSearch = eSearch.querySelector('[data-id="id-search"]')?.value;
          const sPeriod = eSearch.querySelector('input[name="period"]:checked')?.value; // date period value from radio buttons
          let oXml;
-         if(sSearch || sPeriod) {
-            const eRoot = XML.Create("conditions").root;
-            sSearch && XML.Add( eRoot, "where", { id: "poll-search", meta_type: "expression", type_part: "where", table: "TPoll", name: "search", value: sSearch } );
-            sPeriod && XML.Add( eRoot, "where", { id: sPeriod, meta_type: "expression", type_part: "where", table: "TPoll" } ); 
-            oXml = eRoot.ownerDocument;                                 // set to xml document
+         if(sTag || sSearch || sPeriod) {
+            const oXml_ = XML.CreateXML( "values" );
+            sSearch && oXml_.Append( "where", { id: "poll-search", meta_type: "expression", type_part: "where", table: "TPoll", name: "search", value: sSearch } );
+            sPeriod && oXml_.Append( "where", { id: sPeriod, meta_type: "expression", type_part: "where", table: "TPoll" } );
+
+            // ## If tag filter exists, split by comma and create where clause for each tag
+            if(sTag) {
+               const a_ = sTag.split(",").map(s => s.trim()).filter(s => s !== ""); // split and trim tags
+               const aValidTag = a_.map(s => parseInt(s, 10)).filter(i => !isNaN(i)).map(i => String(i)); // convert to numbers and back to string
+
+               if(aValidTag.length > 0) {
+                  for(const sTagK of aValidTag) {
+                     oXml_.Append( "where", { table: "rRecordxTag", name: "TagK", value: sTagK } );
+                  }
+               }
+            }
+
+            oXml = oXml_.Done();
          }
          
          // ## Add oValues if not empty .....................................
