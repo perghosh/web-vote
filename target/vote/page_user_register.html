@@ -122,28 +122,38 @@ PAGE_Initialize - Initialize the page
         const sPassword = eForm.querySelector('[data-field="FPassword"]').value;
         const sPassword2 = eForm.querySelector('[data-field="FPassword2"]').value;
 
-        if(!sName || !sPassword || sPassword != sPassword2) {
+        if(!sName || !sPassword) {
             oToast_g.Show("Du måste ange namn och lösenord");
             return;
         }
 
+        if(sPassword != sPassword2) {
+            oToast_g.Show("Lösenordet matchar inte");
+            return;
+        }
+
         const oXmlDocument = XML.CreateXML("commands")
-            .Add("command", { qs: XML.ToQueryString("db/select", {echo: "login", query: "user-login", values: JSON.stringify({ FLoginName: sName, FPassword: sPassword }) } ) })
+            .Append("command", { qs: XML.ToQueryString("db/select", {echo: "user", query: "user-exists", values: JSON.stringify({ FLoginName: sName }) } ) })
+            .Append("command", { qs: XML.ToQueryString("db/insert", {query: "user-register", values: JSON.stringify({ FLoginName: sName, FPassword: sPassword }) } ) })
+            
             .Done();
 
         gd.Send( "!xml", {}, oXmlDocument).then(function(oResult) {
             const oData = oResult.data;
 
-            const eLogin = oData.querySelector('result[echo="login"]');
-            const aLogin = JSON.parse(eLogin.textContent);
+            const eUser = oData.querySelector('result[echo="user"]');
+            const aUser = JSON.parse(eUser.textContent);
 
-            if (aLogin.length > 1) {
-                const sUserK = aLogin[1][0];
-                oToast_g.Show("Loggade in");
+            if( aUser.length > 1 )
+            {
+                oToast_g.Show("Användare finns redan, kunde inte skapa konto");
+                return;
             }
-            else {
-                oToast_g.Show("Kunde inte logga in");
-            }
+            
+            oToast_g.Show("Konto skapat");
+
+            console.log(oResult)
+            window.location.href = "page_user_login.html";
         });
     }
 
