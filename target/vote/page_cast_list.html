@@ -74,6 +74,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       .advanced-search-period-option { align-items: center; color: var(--color-muted); display: inline-flex; gap: 5px; }
       .advanced-search-period-option input { margin: 0; }
 
+      /* styles for tags used for filtering */
+      .page-tag { background: var(--background-info); border: 1px solid transparent; border-radius: 999px; color: var(--color-info); cursor: pointer; display: inline-flex; font-size: 0.8rem; font-weight: 700; margin-right: 10px; padding: 4px 10px; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease; }
+      .page-tag[data-marked="1"] { background: var(--chart-line, var(--background-primary)); border-color: var(--color-active); color: var(--color-primary); transform: translateY(-1px); }
+
 
       /* poll row, content inside each row */
       .poll-row { align-items: center; border: 1px solid var(--color-border); border-radius: 10px; background: var(--background-light); cursor: pointer; display: flex; gap: 12px; margin-bottom: 10px; padding: 8px 18px; transition: all 0.2s ease; }
@@ -117,9 +121,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   </label>
                </div>
    
-               <label class="label-text">Sortera efter:</label>
-
                <!-- Dropdown that sets order fields for sorting, these indexes match columns in query "list-poll" -->
+               <label class="label-text">Sortera efter:</label>
                <select class="filter" data-id="id-sort">
                   <option value="3">A-Z</option>
                   <option value="-3">Z-A</option>
@@ -129,6 +132,10 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
                <button class="button" data-action="view-advanced" style="margin-left: 10px;">Mer...</button>
             </div>
+
+            <div id="idTags" class="margin_t-small">
+               <!-- Tags will be rendered here based on loaded data -->
+            </div>               
 
             <div id="idSearchAdvanced" class="advanced-search" data-visible="false">
                <div class="advanced-search-row">
@@ -405,6 +412,32 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       iMaxVisibleRowCount_s: 10, // maximum number of rows to show 
       iCurrentPage_s: 0, // current page index for pagination, starts from 0
 
+      /** --------------------------------------------------------------------- @API [tag: render, tag]
+       * Render selected tag markers from `TTag` table using `TagK` and `FName`
+       */
+      RenderTags() {
+         const oTableTag = oDocument_g.GetTable("TTag");
+         const eTagContainer = document.getElementById("idTags");
+         if( !eTagContainer ) { return; }
+
+         eTagContainer.innerHTML = "";
+         if( !oTableTag || oTableTag.GetRowCount() <= 0 ) { return; }
+
+         for( let i = 0; i < oTableTag.GetRowCount(); i++ ) {
+            const oRow = oTableTag.AsObject(i);
+            const sTagK = String(oRow.TagK ?? "").trim();
+            const sTagName = String(oRow.FName ?? "").trim();
+            if( sTagK === "" || sTagName === "" ) { continue; }
+
+            const eTag = document.createElement("span");
+            eTag.className = "page-tag";
+            eTag.dataset.key = sTagK;
+            eTag.dataset.marked = "1";
+            eTag.textContent = sTagName;
+            eTagContainer.appendChild(eTag);
+         }
+      },
+
       /** --------------------------------------------------------------------- 
        * Render the poll list based on current document state
        */
@@ -510,8 +543,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                   const sContent = oXmlResult.querySelector("result").textContent;
                   if(!sContent) { return; }
 
-                  // create table of tags and set to document for later use
+                  // ## create table of tags and set to document for later use
+                  //    columns are TagK, FName and FNormalized, this allows us to show tag names in the UI instead of just tag keys
                   const oTable = new Table(JSON.parse(sContent), { sName: "TTag" });
+                  oDocument_g.AddTable(oTable);
+                  PollList.RenderTags();
                });
             }
          }
