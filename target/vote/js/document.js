@@ -80,7 +80,10 @@ class CDocument {
    // Set global value by name -----------------------------------------------
    SetValue( sName, value_ ) { this.oValues[sName] = value_; }
 
-   // Merge global value by name without replacing existing values ------------
+   // Remove global value by name --------------------------------------------
+   RemoveValue( sName ) { delete this.oValues[sName]; }
+
+   // Merge global value by name without replacing existing values -----------
    MergeValue( sName, value_ ) {
       const vExisting = this.oValues[sName];
 
@@ -152,7 +155,7 @@ class CDocument {
    // Add a table, returns the id --------------------------------------------
    AddTable( oTable, sId = null ) {
       if( !sId ) { sId = CDocument.GenerateUUID(); }  
-      oTable.sId = sId;
+      oTable.id = sId;
       this.mapTable.set( sId, oTable );
       return sId;
    }
@@ -176,6 +179,13 @@ class CDocument {
    GetTableById( sId ) {
       let oTable = this.mapTable.get( sId );                                                       console.assert( oTable, `No table found with id "${sId}"` );
       return oTable ?? null;
+   }
+
+   // Remove table -----------------------------------------------------------
+   RemoveTable( sName ) {
+      const oTable = this.GetTable(sName);
+      if(oTable) { this.mapTable.delete(oTable.id); }
+      else { console.warn( `No table found with name "${sName}" to remove` ); }
    }
 
    // Generate a UUID that works in both HTTP and HTTPS -----------------------
@@ -786,7 +796,7 @@ function THEME_Select( sTheme, options_ = {}, bReturnKeys = false ) {
    const oTypeDefault = {
       color: {
          sStorageKey: "vote.theme.color",
-         sDefaultValue: "color-default",
+         sDefaultThemeKey: "color-default",
          sApplyMode: "stylesheet",
          sThemePath: "css/variables/",
          sSelector: "link[href*='variables-color-']",
@@ -811,7 +821,6 @@ function THEME_Select( sTheme, options_ = {}, bReturnKeys = false ) {
             "dark-forest": "variables-color-dark-forest.css",
             "dark-ocean": "variables-color-dark-ocean.css",
             "dark-violet": "variables-color-dark-violet.css"
-
          }
       }
    };
@@ -824,28 +833,28 @@ function THEME_Select( sTheme, options_ = {}, bReturnKeys = false ) {
    };
 
    let oOptions = options_;
-   if( typeof options_ === "string") { oOptions = { sValue: options_ }; }
+   if( typeof options_ === "string") { oOptions = { sValue: options_ }; }     // Allow passing a string as the value for convenience
 
    const o_ = Object.assign( oDefault, oOptions );
 
-   const sThemeType = String( sTheme || "" ).trim().toLowerCase();            // Get theme type that matches key to theme config
+   const sThemeType = String( sTheme || "" ).trim().toLowerCase();            // Get main theme section (maybe "color") that matches key to theme config
    if( Object.keys( oTypeDefault ).includes( sThemeType ) === false  ) { throw new Error( `Unknown theme type: ${sThemeType}.` ); }
 
    const oThemeByType = Object.assign( {}, oTypeDefault, o_.oThemeByType || {} );
 
    const oTheme = oThemeByType[sThemeType]; // active theme config, this should now be a valid object in config
 
+   // ## Determine the selected theme value ..................................
    const sThemeValue = String( localStorage.getItem( oTheme.sStorageKey ) || "" ).trim().toLowerCase(); // Get saved theme value from localStorage
-
-   let sSelectedValue = o_.sValue || sThemeValue; // Determine selected theme value: explicit value from options takes precedence over saved value
-   if( !sSelectedValue ) { sSelectedValue = oTheme.sDefaultValue; }           // If no explicit or saved value, use default from config
+   let sSelectedThemeKey = o_.sValue || sThemeValue; // Determine selected theme value: explicit value from options takes precedence over saved value
+   if( !sSelectedThemeKey ) { sSelectedThemeKey = oTheme.sDefaultThemeKey; }           // If no explicit or saved value, use default from config
 
    const oValue = oTheme.oValue || {};
-   let sResolved = oValue[sSelectedValue];
+   let sResolved = oValue[sSelectedThemeKey];
 
    if( !sResolved ) {
-      sSelectedValue = oTheme.sDefaultValue;
-      sResolved = oValue[sSelectedValue] || sSelectedValue;
+      sSelectedThemeKey = oTheme.sDefaultThemeKey;
+      sResolved = oValue[sSelectedThemeKey] || sSelectedThemeKey;
    }
 
    if( oTheme.sApplyMode === "stylesheet" ) {
@@ -867,14 +876,17 @@ function THEME_Select( sTheme, options_ = {}, bReturnKeys = false ) {
       eTarget.setAttribute( `data-theme-${sThemeType}`, sResolved );
    }
 
-   if( o_.bPersist ) { localStorage.setItem( oTheme.sStorageKey, sSelectedValue );}
+   if( o_.bPersist ) { localStorage.setItem( oTheme.sStorageKey, sSelectedThemeKey );}
 
    if( bReturnKeys === true ) { return Object.keys( oValue ); }
 
-   return sSelectedValue;
+   return sSelectedThemeKey;
 }
 
-
+function I18N_GetLanguageKeys() {
+   // Return an array of available language keys
+   return ["sv", "en", /*"de", "fr"*/];
+}
 
 /** --------------------------------------------------------------------------- ELEMENT_Show
  * Show/hide elements based on whether they contain specific keywords in their

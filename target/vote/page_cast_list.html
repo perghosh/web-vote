@@ -4,7 +4,7 @@ PAGE_ Method Documentation:
 PAGE_Initialize - Initialize the page
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_Render -  Render the page, update UI elements based on current document state
-PAGE_SetListeners - Configure page listeners, handle page specific events  
+PAGE_SetListeners - Configure page listeners, handle page specific events
 PAGE_ProcessResponse - Handle response data from server and display it in the container
 
 Objects:
@@ -19,7 +19,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv" id="idRoot">
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,12 +27,14 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    <link rel="stylesheet" href="css/poll.css">
    <link rel="stylesheet" href="css/elements.css">
    <link rel="stylesheet" href="css/input-effects.css">
-   <script src="js/gd_server.js"></script>
-   <script src="js/gd_ui_toast.js"></script>
-   <script src="js/gd_ui_tablelite.js"></script>
-   <script src="js/gd_db.js"></script>
-   <script src="js/gd_data_table.js"></script>
-   <script src="js/document.js"></script>
+   <script src="js/document.js" defer></script>
+   <script src="js/gd_server.js" defer></script>
+   <script src="js/gd_db.js" defer></script>
+   <script src="js/gd_data_table.js" defer></script>
+   <script src="js/gd_ui_toast.js" defer></script>
+   <script src="js/gd_ui_tablelite.js" defer></script>
+   <script src="js/gd_ui_slidepanel.js" defer></script>
+   <script src="js/i18n.js" defer></script>
    <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -93,15 +95,15 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       /* Special styles for pagination buttons */
       #idPagination button:disabled { cursor: not-allowed; opacity: 0.45; }
 
-      @media (max-width: 768px) { 
-         .label-text { display: none; } 
-         .filter { width: 70px; } 
-         .poll-row [data-field='CreateD'] { display: none; } 
+      @media (max-width: 768px) {
+         .label-text { display: none; }
+         .filter { width: 70px; }
+         .poll-row [data-field='CreateD'] { display: none; }
          .poll-row [data-field='FHeader'] { display: none; }
          .poll-row [data-field='FDescription'] { display: none; }
       }
 
-      .container-form {height: 100%;}
+      /*.container-form {height: 100%;} */
    </style>
 </head>
 <body>
@@ -111,7 +113,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          <div class="title" style="margin-bottom: 20px;">
             <h2 class="page-title">Sök och filtrera omröstningar</h2>
          </div>
-   
+
          <div id="idSearch" data-section="search" class="group search-group">
             <div class="row">
                <div style="flex: 1;">
@@ -120,53 +122,53 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                      <span>Sök</span>
                   </label>
                </div>
-   
+
                <!-- Dropdown that sets order fields for sorting, these indexes match columns in query "list-poll" -->
-               <label class="label-text">Sortera efter:</label>
+               <label class="label-text"><span data-i18n="label-SortOn">Sortera efter</span>:</label>
                <select class="filter" data-id="id-sort">
-                  <option value="3">A-Z</option>
-                  <option value="-3">Z-A</option>
-                  <option value="-5" selected>Ny</option>
-                  <option value="5">Äldre</option>
+                  <option value="3" data-i18n="list-sort-vote.sort_az">A-Z</option>
+                  <option value="-3" data-i18n="list-sort-vote.sort_za">Z-A</option>
+                  <option value="-5" selected data-i18n="list-sort-vote.sort_new">Ny</option>
+                  <option value="5" data-i18n="list-sort-vote.sort_old">Äldre</option>
                </select>
-               <button class="button" data-action="search" style="margin-left: 10px;">Sök</button>
-               <button class="button" data-action="view-advanced" style="margin-left: 10px;">Mer...</button>
+               <button class="button" data-action="search" style="margin-left: 10px;" data-i18n="command-SearchButton">Sök</button>
+               <button class="button" data-action="view-advanced" style="margin-left: 10px;" data-i18n="command-MoreButton">Mer...</button>
             </div>
 
             <div id="idTags" class="margin_t-small">
                <!-- Tags will be rendered here based on loaded data -->
-            </div>               
+            </div>
 
             <div id="idSearchAdvanced" class="advanced-search" data-visible="false">
                <div class="advanced-search-row">
                   <div class="advanced-search-group">
-                     <label class="advanced-search-label" for="idSearchArea">Område:</label>
+                     <label class="advanced-search-label" for="idSearchArea" data-i18n="label-Area">Område:</label>
                      <select id="idSearchArea" class="filter advanced-search-select" data-id="id-area">
                         <option value="">Alla</option>
                      </select>
                   </div>
 
                   <fieldset class="advanced-search-group advanced-search-period-group">
-                     <legend class="advanced-search-label">Period:</legend>
+                     <legend class="advanced-search-label" data-i18n="label-Period"><span data-i18n="label-Period">Period</span>:</legend>
                      <div class="advanced-search-period-options">
                         <label class="advanced-search-period-option">
                            <input type="radio" name="period" value="" checked>
-                           <span>Alla</span>
+                           <span data-i18n="label-All">Alla</span>
                         </label>
                         <label class="advanced-search-period-option">
                            <input type="radio" name="period" value="date-created.last_7_days">
-                           <span>Vecka</span>
+                           <span data-i18n="label-Week">Vecka</span>
                         </label>
                         <label class="advanced-search-period-option">
                            <input type="radio" name="period" value="date-created.last_month">
-                           <span>Månad</span>
+                           <span data-i18n="label-Month">Månad</span>
                         </label>
                      </div>
                   </fieldset>
                </div>
             </div>
          </div>
-   
+
          <div id="idListPoll" data-section="list-poll" class="container-result"></div>
          <div id="idPagination" data-section="pagination" style="display: none; align-items: center; justify-content: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 12px; background: linear-gradient(180deg, var(--background-light), var(--background-light-hover)); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);">
             <button type="button" class="button" data-action="prev-page" style="background: var(--background-success); border-radius: 999px; color: var(--color-success); padding: 8px 14px;"><</button>
@@ -185,11 +187,11 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
                <div> <span class="badge" data-field="CreateD"></span> <span class="badge" data-field="FHeader"></span> <span  data-field="FName"></span></div>
                <div data-field="FDescription"></div>
             </div>
-            <a href="#" data-action="add-vote" style="margin-left: auto; padding: 8px 12px; border-radius: 50px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;">Rösta här</a>
+            <a href="#" data-action="add-vote" style="margin-left: auto; padding: 8px 12px; border-radius: 50px; background: var(--background-success); color: var(--color-success); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-decoration: none; white-space: nowrap; align-self: center;" data-i18n="link-VoteHere">Rösta här</a>
          </div>
       </div>
    </template>
-   
+
 
    <script>
 
@@ -210,7 +212,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
     */
    function PAGE_Initialize() {
       oDocument_g = new CDocument({});
-      
+
       let oTable = new Table(["PollK", "FHeader", "FName", "FDescription", "CreateD", "TotalVotes"], {sName: "search"} );
       oDocument_g.AddTable(oTable);
 
@@ -233,6 +235,19 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
       PollList.GetResult();                                                   // Load initial poll list based on default or url parameters
 
       oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
+
+      window.setTimeout(() => {
+         const sNavigate = oTranslations_g["js-navigate"] || "Navigera";
+         const sUserPage = oTranslations_g["link-User"] || "User settings";
+         const oTopPanel = new UISlidePanel(document.body, {
+            sEdgeDirection: 'top',
+            iPanelWidth: 360,
+            iContentSize: 80,
+            iHandleSize: 28,
+            sHandleText: sNavigate,
+            sContentHtml: "<div class=\"padding_a-small\"><div class=\"margin_t-small\"><a href=\"page_user.html\" style=\"display:inline-flex;align-items:center;gap:6px;color:var(--color-body);text-decoration:none;\"><span aria-hidden=\"true\" style=\"opacity:0.75;\">▶&nbsp;</span><span>"+sUserPage+"</span></a></div></div>"
+         });
+      }, 200);
    }
 
 
@@ -247,16 +262,16 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
    /** --------------------------------------------------------------------- @API [tag: event, command]
    * Configure page listeners, handle page specific events
-   * 
+   *
    * ## Main listener containers
    * - Poll list click listener: Handles clicks on poll rows, redirects to vote page or result page based on click target
    * - Menu clicks listener: Handles clicks on menu buttons, triggers actions like search or toggling advanced search visibility
    * - Sort select change listener: Handles sort option change, triggers search with new sorting
-   * - Area select change listener: Handles area filter change, updates document value and triggers search 
+   * - Area select change listener: Handles area filter change, updates document value and triggers search
    */
    function PAGE_SetListeners() {
 
-      const on_row_click_ = (e_) => {
+      const on_action_click_ = (e_) => {
          const eTarget = e_.target;
          const sAction = eTarget.dataset.action;
          if( !sAction && !eTarget.closest(".poll-row") ) { return; }          // disable for all scenarios not related to actions
@@ -279,18 +294,23 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          e_.stopPropagation();
 
          switch(sAction) {
-            case "prev-page": {
-               PollList.GetResult({ pageDelta: -1 });
+            case "prev-page": {                                               // go to previous page
+               PollList.GetResult({ iPageDelta: -1 });
             } break;
-            case "next-page": {
-               PollList.GetResult({ pageDelta: 1 });
+            case "next-page": {                                               // go to next page
+               PollList.GetResult({ iPageDelta: 1 });
             } break;
-            case "view-advanced": {
+            case "view-advanced": {                                           // toggle advanced search visibility
                const eAdvancedSearch = eContainer.querySelector("#idSearchAdvanced");
                if(!eAdvancedSearch) { return; }
 
                const bVisible = eAdvancedSearch.dataset.visible === "true";
                eAdvancedSearch.dataset.visible = bVisible ? "false" : "true";
+            } break;
+            case "clear-tags": {                                              // clear all tags
+               PollList.ClearTags();
+               PollList.RenderTags();
+               PollList.GetResult();
             } break;
             case "search": {
                const sArea = eContainer.querySelector('[data-id="id-area"]').value;
@@ -305,17 +325,15 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             default:
                console.error("Unknown action:", sAction);
          }
-
       };
 
       // ## Poll list click listener - handle clicks on poll rows ............
-      
       const eListPoll = document.querySelector("#idListPoll");
-      eListPoll.addEventListener("click", on_row_click_);
+      eListPoll.addEventListener("click", on_action_click_);
       const ePagination = document.querySelector("#idPagination");
-      ePagination.addEventListener("click", on_row_click_);
+      ePagination.addEventListener("click", on_action_click_);
       const eSearch = document.querySelector("#idSearch");
-      eSearch.addEventListener("click", on_row_click_);
+      eSearch.addEventListener("click", on_action_click_);
 
       // ## Sort select change listener - trigger search on sort change ......
       const eSortSelect = eSearch.querySelector('[data-id="id-sort"]');
@@ -378,7 +396,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          default:
             console.error("Unknown response type:", oData.type);
       }
-      
+
 
       if(eResults)
       {
@@ -409,23 +427,30 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
     * Object that manages the poll list, including rendering the list, loading search filter values and getting results based on filters and sorting options
     */
    const PollList = {
-      iMaxVisibleRowCount_s: 10, // maximum number of rows to show 
+      iMaxVisibleRowCount_s: 10, // maximum number of rows to show
       iCurrentPage_s: 0, // current page index for pagination, starts from 0
 
       /** --------------------------------------------------------------------- @API [tag: render, tag]
        * Render selected tag markers from `TTag` table using `TagK` and `FName`
        */
       RenderTags() {
-         const oTableTag = oDocument_g.GetTable("TTag");
-         const eTagContainer = document.getElementById("idTags");
-         if( !eTagContainer ) { return; }
+         const tableTag = oDocument_g.HasTable("TTag") ? oDocument_g.GetTable("TTag") : null;
+         const eTagContainer = document.getElementById("idTags");                                  console.assert(eTagContainer, "Tag container element not found");
 
          eTagContainer.innerHTML = "";
-         if( !oTableTag || oTableTag.GetRowCount() <= 0 ) { return; }
+         if( !tableTag || tableTag.GetRowCount() <= 0 ) { return; }           // check for tags to render
 
-         for( let i = 0; i < oTableTag.GetRowCount(); i++ ) {
-            const oRow = oTableTag.AsObject(i);
-            const sTagK = String(oRow.TagK ?? "").trim();
+         // ## Create clear all tags button ..................................
+         const eClearAll = document.createElement("span");
+         eClearAll.dataset.action = "clear-tags";
+         eClearAll.className = "page-tag";
+         eClearAll.textContent = "✕ Rensa alla";                              // Button used to remove all tag filters
+         eTagContainer.appendChild(eClearAll);
+
+         // ## Add buttons for each selected tag .............................
+         for( let i = 0; i < tableTag.GetRowCount(); i++ ) {
+            const oRow = tableTag.AsObject(i);
+            const sTagK = oRow.TagK;
             const sTagName = String(oRow.FName ?? "").trim();
             if( sTagK === "" || sTagName === "" ) { continue; }
 
@@ -438,7 +463,16 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          }
       },
 
-      /** --------------------------------------------------------------------- 
+      ClearTags() {
+         // ## remove tags from document and local storage
+         oDocument_g.RemoveValue("tag");
+         localStorage.removeItem("tag");
+
+         // ## remove tag table
+         oDocument_g.RemoveTable("TTag");
+      },
+
+      /** ---------------------------------------------------------------------
        * Render the poll list based on current document state
        */
       Render() {
@@ -470,7 +504,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             ePagination.style.display = "flex";                               // show pagination
             // ## Update pagination buttons state based on current
 
-            // ### Enable back button? 
+            // ### Enable back button?
             let eButton = ePagination?.querySelector('[data-action="prev-page"]')
             if( PollList.iCurrentPage_s > 0 ) { eButton.disabled = false; }
             else { eButton.disabled = true; }
@@ -481,7 +515,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
             else { eButton.disabled = true; }
 
             const ePageNumber = ePagination.querySelector('[data-id="page-number"]');
-            ePageNumber.textContent = `Sida ${PollList.iCurrentPage_s + 1}`;
+            const sPageTemplate = oTranslations_g["js-pagination_page"] || "Sida {0}";
+            ePageNumber.textContent = sPageTemplate.replace("{0}", PollList.iCurrentPage_s + 1);
          }
          else if(ePagination) { ePagination.style.display = "none"; }         // hide pagination if not needed
       },
@@ -524,7 +559,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
          });
 
          const sTag = oDocument_g.GetValue("tag");
-         if(sTag) { 
+         if(sTag) {
             const a_ = sTag.split(",").map(s => s.trim()).filter(s => s !== ""); // split and trim tags
             const aValidTag = a_.map(s => parseInt(s, 10)).filter(i => !isNaN(i)).map(i => String(i)); // convert to numbers and back to string
 
@@ -567,8 +602,8 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
          if( typeof oSearchModifiers === "object" )
          {
-            if( typeof oSearchModifiers.pageDelta === "number" ) {
-               PollList.iCurrentPage_s = Math.max(0, PollList.iCurrentPage_s + oSearchModifiers.pageDelta);
+            if( typeof oSearchModifiers.iPageDelta === "number" ) {
+               PollList.iCurrentPage_s = Math.max(0, PollList.iCurrentPage_s + oSearchModifiers.iPageDelta);
             }
             else {
                PollList.iCurrentPage_s = 0;
@@ -576,14 +611,14 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
             // merge oSearchModifiers into oModifiers
             for(const sKey in oSearchModifiers) {
-               if( sKey === "pageDelta" ) { continue; }
+               if( sKey === "iPageDelta" ) { continue; }
                oModifiers[sKey] = oSearchModifiers[sKey];
             }
 
             oModifiers["limit"] = [PollList.iCurrentPage_s * PollList.iMaxVisibleRowCount_s, PollList.iMaxVisibleRowCount_s];
             oDocument_g.MergeValue( "search-modifiers", oModifiers ); // merge to keep old values, only update changed values
          }
-         else { 
+         else {
             PollList.iCurrentPage_s = 0; // reset to first page if no valid modifiers provided
             oModifiers["limit"] = [PollList.iCurrentPage_s, PollList.iMaxVisibleRowCount_s]; // reset to default limit if invalid modifiers provided
          }
@@ -618,7 +653,7 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
 
             oXml = oXml_.Done();
          }
-         
+
          // ## Add oValues if not empty .....................................
          if(Object.keys(oValues).length > 0) { oArguments.values = JSON.stringify(oValues); }
 

@@ -418,34 +418,39 @@ class UISlidePanel {
 		const sTransitionDuration = this.oPanelSettings.sTransitionDuration || '0.35s';
 		const sTransitionTiming = this.oPanelSettings.sTransitionTiming || 'ease-in-out';
 
+      // ## Apply styles to panel ............................................
       let oStyle = this.ePanel.style;
-		this.ePanel.style.position = 'fixed';
-		this.ePanel.style.zIndex = String(this.oPanelSettings.iZIndex ?? 1000);
-		this.ePanel.style.display = 'flex';
-		this.ePanel.style.flexDirection = this._is_horizontal_edge() ? 'row' : 'column';
-		this.ePanel.style.transitionDuration = sTransitionDuration;
-		this.ePanel.style.transitionTimingFunction = sTransitionTiming;
-		this.ePanel.style.boxShadow = 'var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2))';
-		this.ePanel.style.overflow = 'hidden';
-		this.ePanel.style.background = 'var(--background-body, #ffffff)';
+		oStyle.position = 'fixed';
+		oStyle.zIndex = String(this.oPanelSettings.iZIndex ?? 1000);
+		oStyle.display = 'flex';
+		oStyle.flexDirection = this._is_horizontal_edge() ? 'row' : 'column';
+		oStyle.transitionDuration = sTransitionDuration;
+		oStyle.transitionTimingFunction = sTransitionTiming;
+		oStyle.boxShadow = 'var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2))';
+		oStyle.overflow = 'hidden';
+		oStyle.background = 'var(--background-body, #ffffff)';
 
-		this.eContent.style.boxSizing = 'border-box';
-		this.eContent.style.padding = '12px';
-		this.eContent.style.background = 'var(--background-body, #ffffff)';
-		this.eContent.style.color = 'var(--color-body, #111827)';
-		this.eContent.style.overflow = 'auto';
+      // ## Apply styles to content and handle elements ......................
+      oStyle = this.eContent.style;
+		oStyle.boxSizing = 'border-box';
+		oStyle.padding = '12px';
+		oStyle.background = 'var(--background-body, #ffffff)';
+		oStyle.color = 'var(--color-body, #111827)';
+		oStyle.overflow = 'auto';
 
-		this.eHandle.style.display = 'flex';
-		this.eHandle.style.alignItems = 'center';
-		this.eHandle.style.justifyContent = 'center';
-		this.eHandle.style.cursor = 'pointer';
-		this.eHandle.style.border = 'none';
-		this.eHandle.style.padding = '0';
-		this.eHandle.style.margin = '0';
-		this.eHandle.style.userSelect = 'none';
-		this.eHandle.style.background = 'var(--background-primary, var(--primary, #2563eb))';
-		this.eHandle.style.color = 'var(--color-primary, #ffffff)';
-		this.eHandle.style.fontWeight = '600';
+      // ## Apply styles to handle button ....................................
+		oStyle = this.eHandle.style;
+		oStyle.display = 'flex';
+		oStyle.alignItems = 'center';
+		oStyle.justifyContent = 'center';
+		oStyle.cursor = 'pointer';
+		oStyle.border = 'none';
+		oStyle.padding = '0';
+		oStyle.margin = '0';
+		oStyle.userSelect = 'none';
+		oStyle.background = 'var(--background-primary, var(--primary, #2563eb))';
+		oStyle.color = 'var(--color-primary, #ffffff)';
+		oStyle.fontWeight = '600';
 
 		// Rounded corners follow edge direction for a cleaner visual shape.
 		if( this._get_edge_direction() === 'top' ) {
@@ -509,8 +514,9 @@ class UISlidePanel {
 	 * @private
 	 */
 	_bind_events() {
-		this.eHandle.addEventListener('click', this.oBoundHandlers.fnOnHandleClick);
-		document.addEventListener('click', this.oBoundHandlers.fnOnDocumentClick);
+      this.eHandle.addEventListener('click', this.oBoundHandlers.fnOnHandleClick);
+    
+      if(this.oPanelSettings.bCloseOnOutsideClick) { document.addEventListener('click', this.oBoundHandlers.fnOnDocumentClick, true); } // capture phase
 	}
 
 	/** -----------------------------------------------------------------------
@@ -518,9 +524,11 @@ class UISlidePanel {
 	 * @private
 	 */
 	_unbind_events() {
-		if( this.eHandle ) { this.eHandle.removeEventListener('click', this.oBoundHandlers.fnOnHandleClick); }
-		document.removeEventListener('click', this.oBoundHandlers.fnOnDocumentClick);
-	}
+      if(this.eHandle) { this.eHandle.removeEventListener('click', this.oBoundHandlers.fnOnHandleClick);}
+
+      // Safe to call even if listener was never added
+      document.removeEventListener('click', this.oBoundHandlers.fnOnDocumentClick, true);
+   }
 
 	/** -----------------------------------------------------------------------
 	 * Emit toggle callback when state changes.

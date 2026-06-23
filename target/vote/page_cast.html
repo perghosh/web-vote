@@ -22,7 +22,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
 #cast-check_if_voted - Checks if the user has already voted in the poll based on poll key and client IP
 -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv" id="idRoot">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,6 +39,7 @@ PAGE_Validate - Validate user input before sending votes to server, ensuring req
     <script src="js/gd_db.js"></script>
     <script src="js/gd_server.js"></script>
     <script src="js/document.js"></script>
+    <script src="js/i18n.js" defer></script>
 [[lua 
 if request:HasClientValue("PollK") == false then return end
 local sPollK = request:GetClientValue("PollK")
@@ -115,12 +116,12 @@ else view:EchoHtml( "title", {}, sHeader ) end
       </div>
 
       <div id="idPollCommand" data-page-state="cast">
-         <button class="button-primary page-command" data-command="insert" data-action="cast-vote" data-table="TPoll">Tryck för att rösta</button>
+         <button class="button-primary page-command" data-command="insert" data-action="cast-vote" data-table="TPoll" data-i18n="command-VoteButton">Tryck för att rösta</button>
       </div>
 
       <div class="container-view margin_b-small page-poll-frame page-poll-header page-auto_hide" data-page-state="voted">
-         <h2 class="page-poll-title">Du har röstat i denna omröstning</h2>
-         <p class="page-poll-description">Tack för ditt deltagande!</p>
+         <h2 class="page-poll-title" data-i18n="text-VotedTitle">Du har röstat i denna omröstning</h2>
+         <p class="page-poll-description" data-i18n="text-VotedDescription">Tack för ditt deltagande!</p>
          <!-- link to vote result -->
             <a id="idGotoResult" href="#" class="page-poll-link" style="font-size: 1.5rem; font-weight: 800; text-decoration: underline; text-decoration-thickness: 2px;"><strong>Visa resultat</strong></a>
    </div>
@@ -269,21 +270,20 @@ function PAGE_SetListeners() {
 
                // Prepare PollK to set for all votes
                const oPoll = { PollK: oDocument_g.GetValue("PollK") };
-               //gd.SendToServer("", "!db/insert?mode=bulk&table=TPollVote&query=%23cast-add_vote", `values=${JSON.stringify(oPoll)}`, oDocument).then((oResult) => {
                gd.Send("!db/insert", { mode: "bulk", table: "TPollVote", query: "cast-add_vote", values: JSON.stringify(oPoll) }, oDocument).then((oResult) => {
                   const oVote = XML_GetFirstValue( oResult, undefined, "object" );
                   if( oVote.abort === true ) {
                      console.warn(oVote.text);
-                     oToast_g.Warning(oVote.text);
+                     oToast_g.Show(oVote.text, { sType: "warning" });
                      return;
                   }
                   const iCount = parseInt(oVote.count) || 0;
-                  oToast_g.Show(`Successfully cast ${iCount} votes.`);
+                  oToast_g.Show(`Successfully cast vote.`, { sType: "success" });
                   ELEMENT_Show("voted");
                }).catch((error) => {
                   console.error("Failed to cast votes:", error);
                   const sMessage = error?.response?.data?.message || "Failed to cast votes. Please try again.";
-                  oToast_g.Show(sMessage);
+                  oToast_g.Show(sMessage, { sType: "error" });
                });
             }
          }

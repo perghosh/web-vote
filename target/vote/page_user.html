@@ -1,0 +1,161 @@
+<!--
+@FILE [tag: result] [description: page for user management, including registration and login] [name: page_user.html]
+
+Importanbt data attributes are data-action, data-section. These are both used for
+command and simplify navigation in page.
+
+PAGE_ Method documentation:
+=========================
+
+PAGE_Initialize - Initialize the page by creating necessary objects and loading initial data
+PAGE_SetListeners - Set event listeners for user interactions on the page
+
+-->
+
+<!DOCTYPE html>
+<html lang="sv" id="idRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/variables/variables-color-default.css">
+    <link rel="stylesheet" href="css/poll.css">
+    <link rel="stylesheet" href="css/elements.css">
+    <link rel="stylesheet" href="css/input-effects.css">
+    <script src="js/gd_ui_toast.js" defer></script>
+    <script src="js/gd_ui_tablelite.js" defer></script>
+    <script src="js/gd_data_table.js" defer></script>
+    <script src="js/gd_db.js" defer></script>
+    <script src="js/gd_server.js" defer></script>
+    <script src="js/document.js" defer></script>
+    <script src="js/gd_ui_slidepanel.js" defer></script>
+    <script src="js/i18n.js" defer></script>
+    <title data-i18n="title-User">Användare</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      /* select */
+      .filter { padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 5px; background: var(--background-light); color: var(--color-body); transition: all 0.2s ease;}
+      .filter:hover { background: var(--background-light-hover); }
+
+   </style>
+</head>
+<body>
+   <div id="idContainer" class="page-container container page" data-section="page">
+      <div class="container-form" data-section="navigation">
+         <h1 data-i18n="header-UserManagement">Användarhantering</h1>
+         <p data-i18n="text-UserManagementDescription">Här kan du hantera användare, inklusive registrering och inloggning.</p>
+         <div class="center">
+            <span data-i18n="text-AlreadyHaveAccount">Har du redan ett konto?</span>
+            <a href="page_user_login.html" data-i18n="link-Login">Logga in</a>   
+         </div>
+
+
+         <!-- Color theme selector -->
+         <div class="margin_t-large" data-section="theme-selector">
+            <!-- Theme select is injected by PAGE_Initialize -->
+            <label for="idThemeSelect"><span data-i18n="label-SelectTheme">Välj tema</span>:&nbsp;</label>
+            <select id="idThemeSelect" class="filter" data-action="select-theme"></select>
+         </div>
+
+         <!-- Language selector -->
+         <div class="margin_t-large" data-section="language-selector">
+            <label for="idLanguageSelect"><span data-i18n="label-SelectLanguage">Välj språk</span>:&nbsp;</label>
+            <select id="idLanguageSelect" class="filter" data-action="select-language"></select>
+         </div>
+      <div>
+   </div>
+
+   <script>
+   let oDocument_g;
+   
+   // Start page initialization -----------------------------------------------
+   document.addEventListener('DOMContentLoaded', function() {
+      THEME_Select("color", {});
+      PAGE_Initialize();                                                      // Initialize page
+      PAGE_SetListeners();
+   });
+
+   /** ----------------------------------------------------------------------- @API [tag: initialize]
+    * Main initialization function that initializes the page
+    */
+   function PAGE_Initialize() {
+      oDocument_g = new CDocument({});
+
+
+      // ## Initialize theme selector ........................................
+      const aThemeKey = THEME_Select("color", {}, true);
+      const sSelectedThemeKey = String( localStorage.getItem("vote.theme.color") || "color-default" ); // Get selected theme
+
+      const eThemeSelect = document.querySelector("[data-action='select-theme']");
+      if( !eThemeSelect ) { return; }
+      eThemeSelect.classList.add("filter");
+      eThemeSelect.innerHTML = "";
+
+      aThemeKey.forEach((sThemeKey) => {
+         const eOption = document.createElement("option");
+         eOption.value = sThemeKey;
+         eOption.textContent = sThemeKey;
+         if( sThemeKey === sSelectedThemeKey ) { eOption.selected = true; }
+         eThemeSelect.appendChild(eOption);
+      });
+
+      window.setTimeout(() => {
+
+         // ## Initialize language selector .....................................
+         const aLanguageKey = I18N_GetLanguageKeys();
+         const sSelectedLanguageKey = String( localStorage.getItem("user-language") || "sv" ); // Get selected language
+         const eLanguageSelect = document.querySelector("[data-action='select-language']");
+         if( !eLanguageSelect ) { return; }
+         eLanguageSelect.classList.add("filter");
+         eLanguageSelect.innerHTML = "";
+
+         aLanguageKey.forEach((sLanguageKey) => {
+            const eOption = document.createElement("option");
+            eOption.value = sLanguageKey;
+            eOption.textContent = sLanguageKey;
+            if( sLanguageKey === sSelectedLanguageKey ) { eOption.selected = true; }
+            eLanguageSelect.appendChild(eOption);
+         });
+
+         const sNavigate = oTranslations_g["js-navigate"] || "Navigera";
+         const sPollListPage = oTranslations_g["link-VoteList"] || "Lista på omröstningar";
+         const oTopPanel = new UISlidePanel(document.body, {
+            sEdgeDirection: 'top',
+            iPanelWidth: 360,
+            iContentSize: 80,
+            iHandleSize: 28,
+            sHandleText: sNavigate,
+            sContentHtml: "<div class=\"padding_a-small\"><div class=\"margin_t-small\"><a href=\"page_cast_list.html\" style=\"display:inline-flex;align-items:center;gap:6px;color:var(--color-body);text-decoration:none;\"><span aria-hidden=\"true\" style=\"opacity:0.75;\">▶&nbsp;</span><span>"+sPollListPage+"</span></a></div></div>"
+         });
+      }, 200);
+
+   }
+
+   /** ----------------------------------------------------------------------- @API [tag: set-listeners]
+    * Set event listeners for user interactions on the page
+    */
+    function PAGE_SetListeners() {
+
+      // ## Theme selector change listener ....................................
+      const eThemeSelect = document.querySelector("[data-action='select-theme']");
+      eThemeSelect.addEventListener("change", function(e_) {
+         const eTarget = e_.target;
+         const sThemeKey = String( eTarget.value || "" );
+         if( !sThemeKey ) { return; }
+         THEME_Select("color", { sValue: sThemeKey, bPersist: true });
+      });
+
+      // ## Language selector change listener .................................
+      const eLanguageSelect = document.querySelector("[data-action='select-language']");
+      eLanguageSelect.addEventListener("change", function(e_) {
+         const eTarget = e_.target;
+         const sLanguageKey = String( eTarget.value || "" );
+         if( !sLanguageKey ) { return; }
+         localStorage.setItem("user-language", sLanguageKey);
+      });
+    }   
+
+
+   </script>
+</body>
+</html>

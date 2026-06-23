@@ -1,0 +1,43 @@
+{
+   "command-SearchButton": "Sök",
+   "command-MoreButton": "Mer...",
+   "command-VoteButton": "Tryck för att rösta!",
+
+   "label-Area": "Område",
+   "label-Category": "Kategori",
+   "label-Period": "Period",
+   "label-Search": "Sök",
+   "label-SortOn": "Sortera efter",
+   "label-All": "Alla",
+   "label-Week": "Vecka",
+   "label-Month": "Månad",
+   "label-SelectTheme": "Välj tema",
+
+   "title-User": "Användare",
+
+   "link-Login": "Logga in",
+   "link-User": "Användarinställningar",
+   "link-VoteList": "Lista omröstningar",
+   "link-VoteHere": "Rösta här",
+
+   "header-UserManagement": "Användarhantering",
+
+   "text-AlreadyHaveAccount": "Har du redan ett konto?",
+   "text-VotedTitle": "Du har röstat i denna omröstning",
+   "text-VotedDescription": "Tack för ditt deltagande!",
+   "text-UserManagementDescription": "Här kan du hantera användare, inklusive registrering och inloggning.",
+
+   "js-navigate": "Navigera",
+   "js-page_user": "Användarinställningar",
+   "js-pagination_page": "Sida {0}",
+      
+   "list-sort-vote": {
+      "period_label": "Period",
+      "sort_az": "A-Ö",
+      "sort_za": "Ö-A",
+      "sort_new": "Nyast",
+      "sort_old": "Äldst"
+   },
+  
+  "dummy": "dummy"
+}

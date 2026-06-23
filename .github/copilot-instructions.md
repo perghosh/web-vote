@@ -68,8 +68,8 @@ By enforcing full semantic names on anything with domain meaning, we guarantee t
 
 | Suffix  | Description | Examples |
 | ------- | ----------- | -------- |
-| `_`     | Constructor and method parameters (indicates input to function) | `constructor(parent_, table_)`, `Render(oTable)` |
-| `_`     | Very local/temporary variables (callback parameters, loop variables) | `(idxA, idxB) => {}`, `const e_ = event` |
+| `_`     | Multitype values, when values can be of different types | `constructor(parent_, table_)`, `Render(oTable)` |
+| `_`     | Very local/temporary variables in code like one liners | `(idxA, idxB) => {}`, `const e_ = event` |
 | `_g`    | Global variables (file or module level) | `oDocument_g`, `oToast_g` |
 | `_s`    | Static/class variables | `sDefaultBaseUrl_s`, `iIdleTimerId_s` |
 

@@ -163,6 +163,10 @@ class Table {
    get name() { return this.sName; }
    set name(value) { this.sName = value; }
 
+   // Getter/Setter for id property
+   get id() { return this.sId; }
+   set id(value) { this.sId = value; }
+
    /** -----------------------------------------------------------------------
     * Set custom property value on table metadata container
     *

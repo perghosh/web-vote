@@ -12,19 +12,25 @@
 @TASK [project: edit-poll] [description: Jump to edit poll page or cast vote page] [status: done]
 */
 
-/* ## Cast vote, page to cast votes on polls, a bit more complex page
-@PROJECT [name: cast-vote] [description: Page used for casting votes on polls] [user: per]
+/* ## Duplicate vote, logic to prevent duplicate votes -----------------------
+@PROJECT [name: stop-duplicate-vote] [description: Logic to prevent duplicate votes] [user: per]
 
-@TASK [project: cast-vote] [description: Load Questions for the poll, place them in document] [status: done] [tag: sql, data]
+@TASK [project: stop-duplicate-vote] [description: Save vote information in local storage to prevent duplicate votes] [status: open]
 
-@TASK [project: cast-vote] [description: Load answers for each question, place them in document] [status: done] [tag: sql, data]
+@TASK [project: stop-duplicate-vote] [description: Keep the number of votes stored to 10, no need to store more] [status: open]
 
-@TASK [project: cast-vote] [description: Render poll and answers in page] [status: active] [tag: ui]
+*/
 
-@TASK [project: cast-vote] [description: Add functionality to submit vote and save it in database] [status: open] [tag: sql, backend, ui]
+/* ## Hashtags, logic to manage hashtags -------------------------------------
+@PROJECT [name: hashtags] [description: Logic to manage hashtags] [user: per]
 
-@TASK [project: cast-vote] [description: Generate thread key to connect all votes] [status: open] [tag: sql, backend]
+@TASK [project: hashtags] [summary: turn off or on selected hashtags] [status: open]
+[description: Add logic to turn off or on selected hashtags, so that the user can filter questions based on hashtags.]
+[idea: If user press on then toggle the hashtag, then the hashtag will be added to the list of selected hashtags. If user press off then toggle the hashtag, then the hashtag will be removed from the list of selected hashtags.]
 
+@TASK [project: hashtags] [summary: only update hashtags in page to edit poll] [status: open]
+[description: Add logic to turn off or on selected hashtags, so that the user can filter questions based on hashtags.]
+[sample: add button close to hashtags to quickly update the selected hashtags.]
 */
 
 

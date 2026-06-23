@@ -1,0 +1,42 @@
+{
+   "command-SearchButton": "Search",
+   "command-MoreButton": "More...",
+   "command-VoteButton": "Press to vote",
+
+   "label-Area": "Area",
+   "label-Category": "Category",
+   "label-Period": "Period",
+   "label-Search": "Search",
+   "label-SortOn": "Sort on",
+   "label-All": "All",
+   "label-Week": "Week",
+   "label-Month": "Month",
+   "label-SelectTheme": "Select Theme",
+
+   "title-User": "User",
+
+   "link-Login": "Log in",
+   "link-User": "User settings",
+   "link-VoteList": "Vote list",
+   "link-VoteHere": "Vote here",
+
+   "header-UserManagement": "User Management",
+
+   "text-AlreadyHaveAccount": "Do you already have an account?",
+   "text-VotedTitle": "You have voted in this poll",
+   "text-VotedDescription": "Thank you for your participation!",
+   "text-UserManagementDescription": "Here you can manage users, including registration and login.",
+
+   "js-navigate": "Navigate",
+   "js-pagination_page": "Page {0}",
+
+   "list-sort-vote": {
+      "period_label": "Period",
+      "sort_az": "A-Z",
+      "sort_za": "Z-A",
+      "sort_new": "Newest",
+      "sort_old": "Oldest"
+  },
+  
+  "dummy": "dummy"
+}
