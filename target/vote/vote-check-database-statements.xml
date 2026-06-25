@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<document>
+   <statements>
+      <!--
+       | "invalid_tie_in_vote" - Check for invalid tie values in the TPollVote table
+       | "duplicate_ties_for_ip" - Count of invalid tie values in the TPollTie table
+       -->
+      <statements-group prefix="pollvote-" name="TPollVote.check">
+         <statement name="invalid_tie_in_vote" type="select" format="jinja" description="Check for invalid tie values"><![CDATA[
+-- Detect invalid tie values in the TPollVote table
+-- Should return 0 rows in a consistent system.
+SELECT PV.PollVoteK,PV.FTie AS Invalid_FTie_Value
+FROM TPollVote PV
+LEFT JOIN TPollTie PT ON PV.FTie = PT.PollTieK
+WHERE PV.FTie IS NOT NULL AND PT.PollTieK IS NULL
+      ]]></statement>
+         <statement name="duplicate_ties_for_ip" type="select" format="jinja" description="Count of invalid tie values"><![CDATA[
+-- Detect multiple ties created from the same IP address for the same poll
+-- Should return 0 rows in a consistent system.
+SELECT PollK, FIp, COUNT(*) AS tie_count, GROUP_CONCAT(PollTieK) AS PollTieKs, MIN(CreateD) AS first_tie, MAX(CreateD) AS last_tie
+FROM TPollTie
+WHERE FIp IS NOT NULL
+GROUP BY PollK, FIp
+HAVING COUNT(*) > 1
+ORDER BY tie_count DESC
+      ]]></statement>
+      </statements-group>
+   </statements>
+</document>
+
