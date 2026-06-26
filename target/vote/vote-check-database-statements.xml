@@ -25,6 +25,31 @@ HAVING COUNT(*) > 1
 ORDER BY tie_count DESC
       ]]></statement>
       </statements-group>
+
+      <!--
+       | "invalid_tie_in_vote" - Check for invalid tie values in the TPollVote table
+       | "duplicate_ties_for_ip" - Count of invalid tie values in the TPollTie table
+       -->
+      <statements-group prefix="votecount-" name="TPollVote.count">
+         <statement name="count_for_poll" type="select" format="jinja" description="Select count of votes and some keys for selected poll"><![CDATA[
+-- Select count of votes and some keys for selected poll
+SELECT (SELECT P_.FName FROM TPoll P_ WHERE P_.PollK = PQ_.PollK) AS PollName,
+   hex(PQ_.PollK), PQ_.FName ,hex(PV_.PollAnswerK), COUNT(PV_.PollVoteK) FROM TPollQuestion PQ_
+	INNER JOIN TPollAnswer PA_ ON PQ_.PollQuestionK = PA_.PollQuestionK 
+	INNER JOIN TPollVote PV_ ON PA_.PollAnswerK = PV_.PollAnswerK
+-- WHERE PQ_.PollK = X'82D5B2EB5051AEF825A34600268C3DF9'	
+GROUP BY PV_.PollAnswerK
+      ]]></statement>
+         <statement name="count_for_poll" type="select" format="jinja" description="Count of counts of votes based on selected answers"><![CDATA[
+-- Count of counts of votes based on selected answers
+SELECT hex(PV_.PollAnswerK), COUNT(PV_.PollVoteK)
+   FROM TPollQuestion PQ_
+   INNER JOIN TPollAnswer PA_ ON PQ_.PollQuestionK = PA_.PollQuestionK 
+   INNER JOIN TPollVote PV_ ON PA_.PollAnswerK = PV_.PollAnswerK
+WHERE PQ_.PollK = X'82D5B2EB5051AEF825A34600268C3DF9' AND PV_.FTie IN (SELECT FTie FROM  TPollVote WHERE PollAnswerK IN( X'EA21D327AB5F42DF4FAB0797EFB39FCE') )
+GROUP BY PV_.PollAnswerK
+      ]]></statement>
+      </statements-group>
    </statements>
 </document>
 

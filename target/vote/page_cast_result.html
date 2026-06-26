@@ -10,6 +10,7 @@ PAGE_ Method documentation:
 PAGE_Initialize - Initialize the page by creating necessary objects and loading initial data
 PAGE_SetListeners - Set event listeners for user interactions on the page
 PAGE_Load - Load poll information from the server and store it in the document
+PAGE_LoadFilterResults - Load filtered poll information based on selected answers and render graphs inside the vote graphs
 PAGE_Render - Render the poll results on the page using the loaded data
 
 Queries used in page ==========================================================
@@ -26,7 +27,7 @@ idQuestions - Container for poll questions and answers
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv" id="idRoot">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,10 +47,13 @@ idQuestions - Container for poll questions and answers
       * { box-sizing: border-box; margin: 0; padding: 0; }
       .page-command { align-items: center; border: none; border-radius: 80px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); cursor: pointer; display: flex; font-family: inherit; font-size: 1.2rem; font-weight: 600; gap: 12px; justify-content: center; padding: 1rem 0; transition: all 0.2s ease; width: 100%; }
       @media (max-width: 640px) { .vote-answer-box { margin-top: 1px; } .vote-answer-option { align-items: flex-start; } }
+
+      /* bar styles*/
       .page-bar { background: var(--chart-background, var(--color-border)); border-radius: 12px; height: 24px; overflow: hidden; position: relative; width: 100%; }
       .page-fill { background: var(--chart-primary, var(--background-success)); border-radius: 12px; height: 100%; position: relative; z-index: 1; }
       .page-fill-filter { background: var(--chart-secondary, var(--background-info)); border-radius: 999px; height: 50%; left: 0; position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; }
 
+      /* layout for bars and sections for bars (questons and answers) */
       .page-answer-block { padding-bottom: 16px; margin-bottom: 12px; }
       .page-answer-block:not(:last-child) { border-bottom: 1px solid var(--color-border); }
 
@@ -57,6 +61,8 @@ idQuestions - Container for poll questions and answers
 
       .page-answer-percentage { display: flex; justify-content: center; }
       .page-answer-count { display: flex; justify-content: center; }
+      [data-id="SelectVote"] { border-radius: 14px; cursor: pointer; padding: 10px 8px; transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
+      [data-id="SelectVote"][data-selected="1"] { background: color-mix(in srgb, var(--chart-line, var(--background-primary)) 20%, transparent); box-shadow: inset 0 0 0 2px var(--color-active); transform: translateY(-1px); }
       
 
       .page-answer-content { display: grid; gap: 8px; }
@@ -113,11 +119,12 @@ idQuestions - Container for poll questions and answers
       <div class="page-answer-block" data-table="TPollAnswer">
          <div data-field="PollAnswerK" data-value="" data-table="TPollAnswer" data-description="key for answer">
             <div data-section="record" data-table="TPollAnswer">
-               <div class="page-answer-row">
-                  <div style="color: var(--chart-line, var(--color-active)); font-weight: 700;">
+               <div class="page-answer-row" data-section="answer">
+                  <div style="color: var(--chart-line, var(--color-active)); font-weight: 700;" data-id="SelectVote" data-action="select-vote">
                      <span class="page-answer-percentage" style="font-size: 1.45rem; line-height: 1; min-height: 20px;" data-id="VotePercent">0%</span>
                      <span class="page-answer-count" style="font-size: 1rem;" data-field="VoteCount">0</span>
                   </div>
+                  <!-- Answer bar content, each answer bar is rendered using this html -->
                   <div class="page-answer-content">
                      <p class="margin_b-small" data-field="FAnswer">Answer text goes here...</p>
                      <div class="page-bar" data-field="VoteCount" data-value="">
@@ -175,7 +182,7 @@ function PAGE_Initialize() {
 /** --------------------------------------------------------------------------- PAGE_Load
  * Load poll information from the server and store it in the document
  */
-async function PAGE_Load() {
+function PAGE_Load() {
    const sPollK = oDocument_g.GetValue("PollK");                              // Get poll key from document
    const aColumn = ["TPoll","PollK", sPollK ];                                // table, column and value to fetch poll information
 
@@ -216,6 +223,46 @@ async function PAGE_Load() {
    PAGE_SetListeners();                                                       // Set event listeners for user interactions on the page
 }
 
+/** --------------------------------------------------------------------------- PAGE_LoadFilterResults
+ * Load filtered poll information based on selected answers and store it in the document
+ */
+function PAGE_LoadFilterResults() {
+   const sPollK = oDocument_g.GetValue("PollK");                              // Get poll key from document
+   const aColumn = ["TPoll","PollK", sPollK ];                                // table, column and value to fetch poll information
+   // ## Fetch filtered poll information .....................................
+   const oXml = XML.CreateXML( "commands" );
+   const poll_ = oXml.Command( "db/select", { query: "cast-poll_count_selected_answers", columns: JSON.stringify(aColumn) } );
+
+   // ## Append answer array values to document for filtering ................
+   const aSelectedAnswers = oDocument_g.GetValue("selected-answers") || [];
+   if( aSelectedAnswers.length > 0 ) {
+      
+      // ### Set element to first child for commands (that is the command element)
+      const eCommands = oXml.GetElement();
+      oXml.SetElement(eCommands.firstElementChild);
+
+      for( let i = 0; i < aSelectedAnswers.length; i++ ) {
+         const sAnswerK = aSelectedAnswers[i];
+         oXml.Append( "where", { table: "TPollAnswer", name: "PollAnswerK", value: sAnswerK, operator: "=" } );
+      }
+   }
+
+   // ## Send request to server and handle response ..........................
+   gd.Send( "!xml", {}, oXml.Done()).then(function(oResult) {
+      const oXml = oResult.data;
+      const sData = poll_(oXml);
+      if( !sData ) { console.error(`No data found in result for query: cast-poll_count_selected_answers`, "Result element:", oXml); oToast_g.Show(`Failed to load filtered poll information: No data found for cast-poll_count_selected_answers`, { type: "error" }); return; }
+      const aData = JSON.parse(sData);
+      const oTable = new Table(aData, {sName: "TPollAnswer.Filtered"});
+
+      // ## Remove existing filtered table if it exists and add new filtered table to document
+      if( oDocument_g.HasTable("TPollAnswer.Filtered") ) { oDocument_g.RemoveTable("TPollAnswer.Filtered"); }
+      oDocument_g.AddTable(oTable);
+
+      PAGE_RenderFiltered();                                                  // Render the page with loaded data
+   })
+}
+
 // --------------------------------------------------------------------------- PAGE_SetListeners
 function PAGE_SetListeners() {
    // ## Listen to idTags for click events to filter results by tag ..........
@@ -252,12 +299,49 @@ function PAGE_SetListeners() {
       const sUrl = `page_cast_list.html?tag=${aSelectedTags.join(",")}`;
       window.location.href = sUrl;
    });
+
+   const eQuestions = document.getElementById("idQuestions");
+   eQuestions.addEventListener("click", function(e_) {
+      const eTarget = e_.target;
+      const sAction = eTarget.closest('[data-action]')?.dataset.action;
+      if( !sAction ) { return; }                                              // disable for all scenarios not related to actions
+
+      switch(sAction) {
+         case "select-vote": {
+            const eSelected = eTarget.closest("[data-id='SelectVote']");
+            const eAnswer = eSelected?.closest("[data-field='PollAnswerK']");
+            if( !eSelected || !eAnswer ) { console.warn("No answer element found for select-vote action"); return; }
+
+            const sPollAnswerK = eAnswer.dataset.value; // Get the key of the selected answer
+            
+            if( eSelected.dataset.selected === "1" ) {
+               eSelected.dataset.selected = "0"; // Deselect if already selected
+               oDocument_g.RemoveFromArray("selected-answers", sPollAnswerK); // Remove selected answer key from document
+            } else {
+               eSelected.dataset.selected = "1"; // Select the clicked vote
+               oDocument_g.AddToArray("selected-answers", sPollAnswerK);      // Add selected answer key 
+            }
+
+            PAGE_LoadFilterResults();                                         // Load filtered results based on selected answers
+
+            break;
+         }
+         default: {
+            console.warn(`Unhandled action: ${sAction}`);
+         }
+      }
+   });
+
 }
 
 /** --------------------------------------------------------------------------- PAGE_Render
  * Render the poll results on the page using the loaded data
  */
 function PAGE_RenderResult() {
+
+   // ## Clear existing questions and answers ...................................
+   const eQuestions = document.getElementById("idQuestions");
+   eQuestions.innerHTML = "";
 
    // ## Load main TPoll record ..............................................
    const oPollTable = oDocument_g.GetTable("TPoll");
@@ -317,12 +401,16 @@ function PAGE_RenderResult() {
          const eTemplate = document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
 
          /// ### Calculate vote percentage for this question based on total vote count, we can use this later to render a progress bar or similar visual representation of votes for this question
-         const iVoteCount = Number(oRow.VoteCount) || 0; //
+         const iVoteCount = Number(oRow.VoteCount) || 0; // get vote count for this answer
          const dVotePercentage = iTotalCount > 0 ? (iVoteCount / iTotalCount) * 100 : 0;
          const iVotePercentageRounded = Math.round(dVotePercentage);
 
+         const eVoteCount = eTemplate.querySelector("[data-section='answer']");    // Select answer element to display vote count
+         if( eVoteCount ) { eVoteCount.dataset.vote_count = `${iVoteCount}`; }
+
          const eBar = eTemplate.querySelector("[data-target='bar']");         // Select bar target and set witdth based on vote percentage
          eBar.style.width = `${dVotePercentage}%`;
+
 
          recordAnswer.WriteValues(eTemplate);
          const eVotePercentage = eTemplate.querySelector("[data-id='VotePercent']");
@@ -331,6 +419,34 @@ function PAGE_RenderResult() {
       }
    }
 }
+
+function PAGE_RenderFiltered() {
+   // ## Clear existing filtered bars ........................................
+   const eFilteredBars = document.querySelectorAll("[data-target='bar-filter']");
+   eFilteredBars.forEach(eBar => eBar.style.width = "0%");
+
+   {
+      const tableFiltered = oDocument_g.GetTable("TPollAnswer.Filtered");
+      if( tableFiltered && tableFiltered.GetRowCount() > 0 ) {
+         const iTotalCount = Number(oDocument_g.GetValue("TotalCount")) || 0; // Ensure VoteCount is defined for rendering
+         for( let i = 0; i < tableFiltered.GetRowCount(); i++ ) {
+            const oRow = tableFiltered.AsObject(i);                            // { PollAnswerK, VoteCount }
+
+            const sQuestionK = oRow.PollQuestionK; // key to question
+
+            // ## Find the answer element in the DOM that corresponds to this filtered answer
+            const eAnswer = document.querySelector(`[data-table="TPollAnswer"] [data-value="${oRow.PollAnswerK}"]`);
+            if( !eAnswer ) { console.warn(`No answer element found for PollAnswerK: ${oRow.PollAnswerK}`); continue; }
+
+            const iVoteCount = Number(oRow.VoteCount) || 0; //
+            const dVotePercentage = iTotalCount > 0 ? (iVoteCount / iTotalCount) * 100 : 0;
+
+            const eBar = eAnswer.querySelector("[data-target='bar-filter']");         // Select bar target and set witdth based on vote percentage
+            eBar.style.width = `${dVotePercentage}%`;
+         }
+      }
+   }
+}   
    </script>
 </body>
 </html>

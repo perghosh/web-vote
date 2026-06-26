@@ -83,6 +83,19 @@ class CDocument {
    // Remove global value by name --------------------------------------------
    RemoveValue( sName ) { delete this.oValues[sName]; }
 
+   // Add to array -----------------------------------------------------------
+   AddToArray( sName, value_ ) {
+      if( !Array.isArray(this.oValues[sName]) ) { this.oValues[sName] = []; }
+      this.oValues[sName].push(value_);
+   }
+
+   // Remove from array ------------------------------------------------------
+   RemoveFromArray( sName, value_ ) {
+      if( !Array.isArray(this.oValues[sName]) ) { return; }
+      const iIndex = this.oValues[sName].indexOf(value_);
+      if( iIndex > -1 ) { this.oValues[sName].splice(iIndex, 1); }
+   }
+
    // Merge global value by name without replacing existing values -----------
    MergeValue( sName, value_ ) {
       const vExisting = this.oValues[sName];
@@ -588,6 +601,9 @@ const XML = {
          document: oDocument,
          root: eRoot,
          element: eRoot, // current element for building
+
+         SetElement(eElement) { this.element = eElement; return this; },
+         GetElement() { return this.element; },
 
          /** -----------------------------------------------------------------  Add
           * Append a child element to the current element, then move to it.

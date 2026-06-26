@@ -167,6 +167,14 @@ SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FNa
 FROM TPollAnswer 
 WHERE PollK = {PollK}
 ]]></statement>
+      <statement name="cast-poll_count_selected_answers" format="jinja" type="select" table="TPollAnswer" description="answers and vote count"><![CDATA[
+SELECT hex(PV_.PollAnswerK) AS PollAnswerK, COUNT(PV_.PollVoteK) AS VoteCount
+   FROM TPollQuestion PQ_
+   INNER JOIN TPollAnswer PA_ ON PQ_.PollQuestionK = PA_.PollQuestionK 
+   INNER JOIN TPollVote PV_ ON PA_.PollAnswerK = PV_.PollAnswerK
+WHERE PQ_.PollK = {PollK} AND PV_.FTie IN (SELECT FTie FROM  TPollVote WHERE PollAnswerK IN( {PollAnswerK[]} ) )
+GROUP BY PV_.PollAnswerK
+]]></statement>
 
       <statement name="cast-poll_votes" format="jinja" type="select" table="TPollVote" description="Count number of votes per answer"><![CDATA[
 SELECT hex(TPollVote.PollAnswerK) AS PollAnswerK, COUNT(*) AS count 
