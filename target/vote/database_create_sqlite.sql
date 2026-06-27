@@ -568,6 +568,11 @@ CREATE TABLE rRecordxTag (
 CREATE INDEX I_rRecordxTag_Record ON rRecordxTag(FKey); -- For fast lookup of tags for a record
 CREATE INDEX I_rRecordxTag_TagK   ON rRecordxTag(TagK); -- For fast lookup of records for a tag
 
+-- =====================================================
+-- SUPPORTING TABLES (Counters, Feedback, etc.)
+-- =====================================================
+
+-- Counter table for counting votes, views, likes, etc. This is a generic counter table that can be used for any record in the system.
 CREATE TABLE TCounter (
     CounterK        BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
     
@@ -585,7 +590,7 @@ CREATE TABLE TCounter (
 CREATE INDEX I_TCounter_Record ON TCounter(table_number, RecordK);
 CREATE INDEX I_TCounter_Type   ON TCounter(TypeC);
 
-
+-- Feedback table for user feedback, bug reports, suggestions, etc.
 CREATE TABLE TFeedback (
     FeedbackK       BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16)),
     
@@ -634,6 +639,33 @@ CREATE TABLE TFeedback (
     CONSTRAINT FK_TFeedback_ResolvedBy FOREIGN KEY (ResolvedByUserK) REFERENCES TUser(UserK) ON DELETE SET NULL
 );
 
+-- =====================================================
+-- VERSION TABLE (Tracks database schema versions and migrations)
+-- =====================================================
+
+/* 
+   TVersion is used to track the version of the database schema.
+   This table helps manage schema migrations by recording which 
+   versions have been applied, when they were applied, and by whom.
+   It ensures that database upgrades are applied in the correct order
+   and provides an audit trail of all schema changes.
+*/
+CREATE TABLE TVersion (
+    VersionK        INTEGER      PRIMARY KEY AUTOINCREMENT NOT NULL,  -- Unique identifier for each version record
+    CreateD         DATETIME     DEFAULT CURRENT_TIMESTAMP,           -- When this version record was created
+    UpdateD         DATETIME,                                         -- Last time this version record was updated
+    FVersion        VARCHAR(50)  NOT NULL,                            -- Human-readable version number (e.g., '2.1.3', '1.0.0-beta')
+    FSchemaVersion  VARCHAR(20),                                      -- Schema version identifier (e.g., '2026.06.27.01')
+    FReleaseName    VARCHAR(200),                                     -- Optional codename for the release (e.g., 'Stable Release', 'Election 2026')
+    FDescription    TEXT,                                             -- Detailed description of what this version changes
+    FAppliedD       DATETIME,                                         -- Date/time when the migration was actually applied to the database
+    FAppliedBy      VARCHAR(100),                                     -- Username or identifier of who applied the migration
+    FScriptName     VARCHAR(200),                                     -- Name of the migration script file (e.g., 'migration_20260627_add_rPollxSection.sql')
+    FChecksum       VARCHAR(128),                                     -- SHA-256 or MD5 checksum of the migration script for integrity verification
+    FIdle           INTEGER      DEFAULT 0,                           -- Version is temporarily disabled (0=active, 1=idle)
+    FDeleted        INTEGER      DEFAULT 0                            -- Version is deleted but kept in database (0=active, 1=deleted)
+);
+
 
 CREATE TABLE "TSystemStatement" (
     "SystemStatementK" INTEGER PRIMARY KEY AUTOINCREMENT
@@ -647,22 +679,24 @@ CREATE TABLE "TSystemStatement" (
 -- Generate insert statements for TSystemStatement
 
 
-
-
-
 -- Insert table numbers for all tables in the script
 -- Starting at 1000, incrementing by 10 for each table, relations start at 10000
 
 INSERT INTO table_number (number, name, description) VALUES (10, 'table_number', 'Stores table numbers for system tables');
-INSERT INTO table_number (number, name, description) VALUES (101, 'TGroup', 'Group codes table');
-INSERT INTO table_number (number, name, description) VALUES (102, 'TBaseCode', 'Base codes for common code meanings');
+INSERT INTO table_number (number, name, description) VALUES (101, 'TCodeGroup', 'Group codes table');
+INSERT INTO table_number (number, name, description) VALUES (102, 'TCodeBase', 'Base codes for common code meanings');
 INSERT INTO table_number (number, name, description) VALUES (103, 'TCode', 'Lookup codes for fields in other tables');
+INSERT INTO table_number (number, name, description) VALUES (110, 'TSystemCode', 'System codes for internal use');
+INSERT INTO table_number (number, name, description) VALUES (111, 'TSystemCodeGroup', 'System code groups for internal use');
 INSERT INTO table_number (number, name, description) VALUES (200, 'TContainer', 'Groups users and items to a Container entity');
 INSERT INTO table_number (number, name, description) VALUES (300, 'TOrganization', 'Organization table');
 INSERT INTO table_number (number, name, description) VALUES (400, 'TUser', 'User information table');
+INSERT INTO table_number (number, name, description) VALUES (401, 'TUserGroup', 'User group table for grouping users');
+INSERT INTO table_number (number, name, description) VALUES (1000, 'TVoter', 'Table for storing voter information');
 INSERT INTO table_number (number, name, description) VALUES (1060, 'TPoll', 'Main poll table');
 INSERT INTO table_number (number, name, description) VALUES (1070, 'TPollSection', 'Poll sections for organizing questions');
 INSERT INTO table_number (number, name, description) VALUES (1080, 'TPollComment', 'Comments on polls');
+INSERT INTO table_number (number, name, description) VALUES (1081, 'TPollCommentVote', 'Votes for poll comments');
 INSERT INTO table_number (number, name, description) VALUES (1090, 'TPollLimit', 'Poll limits and rules');
 INSERT INTO table_number (number, name, description) VALUES (1100, 'TPollQuestion', 'Poll questions table');
 INSERT INTO table_number (number, name, description) VALUES (1110, 'TPollAnswer', 'Poll answers table');
@@ -675,7 +709,10 @@ INSERT INTO table_number (number, name, description) VALUES (1410, 'TThread', 'T
 INSERT INTO table_number (number, name, description) VALUES (1420, 'TFeedback', 'Table for storing user feedback, suggestions, and bug reports');
 INSERT INTO table_number (number, name, description) VALUES (1500, 'TSystemStatement', 'Table for storing predefined system statements');
 INSERT INTO table_number (number, name, description) VALUES (1600, 'TTag', 'Table for storing tags and hashtags');
+INSERT INTO table_number (number, name, description) VALUES (1700, 'TCounter', 'Table for storing counters for votes, views, likes, etc.');
+INSERT INTO table_number (number, name, description) VALUES (1800, 'TVersion', 'Table for tracking database schema versions and migrations');
 INSERT INTO table_number (number, name, description) VALUES (10000, 'rRecordxTag', 'Relation table for connecting records to tags');
+INSERT INTO table_number (number, name, description) VALUES (10010, 'rPollxSection', 'Relation table for connecting polls to sections');
 
 
 -- TCodeGroup inserts for code groups
@@ -775,3 +812,24 @@ VALUES
     (1, 1, 'Admin Container', 'Admin', 'admin_db'),
     (2, 2, 'User Container', 'User', 'user_db'),
     (3, 3, 'Guest Container', 'Guest', 'guest_db');
+
+
+-- Insert initial version record
+/* 
+   This is the initial database schema creation.
+   All subsequent migrations should add a new record to this table.
+   The FSchemaVersion follows a YYYY.MM.DD.XX pattern for clear version tracking.
+*/
+INSERT INTO TVersion ( FVersion, FSchemaVersion, FReleaseName, FDescription, FAppliedD, FAppliedBy, FScriptName, FChecksum, FIdle, FDeleted)
+VALUES (
+    '1.0.0',                                                  -- Initial release
+    '2026.06.27.01',                                          -- Schema version: YYYY.MM.DD.XX
+    'Initial Release',                                        -- Release name
+    'Initial database schema creation with all core tables',  -- Description
+    datetime('now'),                                          -- Applied timestamp
+    'system',                                                 -- Applied by system during initial setup
+    'database_create_sqlite.sql',                             -- Initial schema script
+    NULL,                                                     -- No checksum for initial schema
+    0,                                                        -- Active
+    0                                                         -- Not deleted
+);
