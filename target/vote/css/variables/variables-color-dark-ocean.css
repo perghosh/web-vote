@@ -16,10 +16,10 @@ Dark body, dark cards, bright cyan accents.
    --background-primary: #00b4d8;
    --background-primary-hover: #0096c7;
 
-   /* Secondary: Steel Blue */
+   /* Secondary: Ocean Teal */
    --color-secondary: #e2e8f0;
-   --background-secondary: #1d4e6e;
-   --background-secondary-hover: #155a82;
+   --background-secondary: #1f6f8b;
+   --background-secondary-hover: #2a86a5;
 
    /* Success: Sea Green */
    --color-success: #050e1f;
@@ -86,7 +86,7 @@ Dark body, dark cards, bright cyan accents.
    /* Charts */
    --chart-background: var(--color-border);
    --chart-primary: var(--background-success);
-   --chart-secondary: var(--background-info);
+   --chart-secondary: var(--background-secondary);
    --chart-line: var(--background-primary);
 
    /* Shadows */

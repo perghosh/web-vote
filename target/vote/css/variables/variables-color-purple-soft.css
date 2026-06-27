@@ -89,6 +89,6 @@
    /* Charts */
    --chart-background: var(--color-border);
    --chart-primary: var(--background-success);
-   --chart-secondary: var(--background-info);
+   --chart-secondary: var(--background-dark);
    --chart-line: var(--background-primary);
 }

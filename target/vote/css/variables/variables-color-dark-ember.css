@@ -86,7 +86,7 @@ Inspired by dying coals and molten metal — warm and dramatic.
    /* Charts */
    --chart-background: var(--color-border);
    --chart-primary: var(--background-success);
-   --chart-secondary: var(--background-info);
+   --chart-secondary: #f59e0b;
    --chart-line: var(--background-primary);
 
    /* Shadows */

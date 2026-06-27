@@ -80,7 +80,7 @@
    /* Charts */
    --chart-background: var(--color-border);
    --chart-primary: var(--background-success);
-   --chart-secondary: var(--background-info);
+   --chart-secondary: #fd7e14;
    --chart-line: var(--background-primary);
    
    /* Shadows */
