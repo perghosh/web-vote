@@ -86,9 +86,13 @@ idQuestions - Container for poll questions and answers
    <div id="idPage" class="page-container container page" data-section="page">
       <!-- Poll information -->
       <div id="idPoll" class="container-view margin_b-small">
-         <h1><span data-field="FName">Poll Title</span><span class="page-count-marker"><span data-field="VoteCount">0</span>röster</span></h1>
-         <p data-field="FDescription">Poll description goes here...</p>
-         <a href="page_cast_list.html" style="font-size: 0.9rem; color: var(--color-body); text-decoration: none; align-self: flex-end; margin-top: 8px;">← Tillbaka till omröstningar</a>
+         <div style="align-items: flex-start; display: flex; gap: 16px; justify-content: space-between;">
+            <div style="flex: 1 1 auto; min-width: 0;">
+               <h1><span data-field="FName">Poll Title</span><span class="page-count-marker"><span data-field="VoteCount">0</span>röster</span></h1>
+               <p data-field="FDescription">Poll description goes here...</p>
+            </div>
+            <a href="page_cast_list.html" class="page-tag" style="margin-right: 0; white-space: nowrap;">← <span data-i18n="link-BackToVoteList">Tillbaka till omröstningslistan</span></a>
+         </div>
          <div id="idTags" class="margin_t-small">
             <!-- Tags will be rendered here based on loaded data -->
          </div>               

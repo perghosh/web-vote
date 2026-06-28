@@ -98,6 +98,8 @@ else view:EchoHtml( "title", {}, sHeader ) end
       .page-poll-description { border-left: 3px solid color-mix(in srgb, var(--background-primary) 60%, transparent); font-size: 1.03rem; line-height: 1.5; margin: 0; max-width: 76ch; padding-left: 12px; }
 
       .page-auto_hide:empty { display: none; }
+      .page-tag { background: var(--background-info); border: 1px solid transparent; border-radius: 999px; color: var(--color-info); cursor: pointer; display: inline-flex; font-size: 0.8rem; font-weight: 700; margin-right: 10px; padding: 4px 10px; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease; }
+      .page-tag[data-marked="1"] { background: var(--chart-line, var(--background-primary)); border-color: var(--color-active); color: var(--color-primary); transform: translateY(-1px); }
 
 
       @media (max-width: 640px) { .vote-answer-box { margin-top: 1px; } .vote-answer-option { align-items: flex-start; } }
@@ -110,9 +112,13 @@ else view:EchoHtml( "title", {}, sHeader ) end
    <div id="idPage" class="page-container container page" data-section="page">
       <!-- Poll information -->
       <div id="idPoll" class="container-view page-poll-frame page-poll-header" data-page-state="cast">
-         <h1 class="page-poll-title" data-field="FName">Poll Title</h1>
-         <p class="page-poll-description" data-field="FDescription">Poll description goes here...</p>
-         <a href="page_cast_list.html" style="font-size: 0.9rem; color: var(--color-body); text-decoration: none; align-self: flex-end; margin-top: 8px;">← Tillbaka till omröstningar</a>
+         <div style="align-items: flex-start; display: flex; gap: 16px; justify-content: space-between;">
+            <div style="flex: 1 1 auto; min-width: 0;">
+               <h1 class="page-poll-title" data-field="FName">Poll Title</h1>
+               <p class="page-poll-description" data-field="FDescription">Poll description goes here...</p>
+            </div>
+            <a href="page_cast_list.html" class="page-tag" style="margin-right: 0; white-space: nowrap;">← <span data-i18n="link-BackToVoteList">Tillbaka till omröstningslistan</span></a>
+         </div>
       </div>
 
       <div id="idPollCommand" data-page-state="cast">
