@@ -132,7 +132,7 @@ vote-get_polls - Select poll questions for poll
          <div data-section="command">
             <span class="button" data-action="update-poll" data-command="update" data-table="TPoll">Save Poll</span>
             <span class="button" data-action="delete-poll" data-command="delete" data-table="TPoll">Delete</span>
-            <span class="button" data-action="new-question-form" data-command="new" data-table="TPollQuestion">Add Question</span>
+            <span class="button" data-action="new-question-form" data-command="new-question" data-table="TPollQuestion">Add Question</span>
          </div>
       </div>
          
@@ -170,7 +170,7 @@ vote-get_polls - Select poll questions for poll
                      <h2 class="margin_b-small">Question</h2>
                      <div data-section="command" style="margin-left: auto;"> <!-- right align buttons for question -->
                         <span class="button" data-action="update-pollquestion" data-command="update" data-table="TPollQuestion">Update question</span>
-                        <span class="button" data-action="new-answer-form" data-command="new" data-table="TPollAnswer">Add Answer</span>
+                        <span class="button" data-action="new-answer-form" data-command="new-answer" data-table="TPollAnswer">Add Answer</span>
                         <span class="button button-danger" data-action="delete-pollquestion" data-command="delete" data-table="TPollQuestion">Delete</span>
                      </div>
                   </div>
@@ -367,7 +367,7 @@ function PAGE_LoadPollInformation() {
          }
 
       }
-   };
+};
 
 
    gd.SendToServer("", "!db/select", "query=#vote-all_questions\n" + `values={"PollK":"${sPollKey}"}`).then(function(oResult) {
@@ -446,7 +446,7 @@ function PAGE_SetListeners() {
             case "cancel": // Cancel the current operation adding new question
                document.getElementById("idNewQuestion").remove(); // Remove the new question form from the page
                break;
-            case "new": {
+            case "new-question": {
                if( document.getElementById("idNewQuestion") !== null ) { Message_d("New question is already open. Please close it before adding a new one.  ", "error"); return; }
 
                // ## Clone the html table idQuestions and add to page
@@ -499,10 +499,23 @@ function PAGE_SetListeners() {
             oDBRecord.ReadValues( eForm );
          }
          switch( sCommand ) {
-            case "new": {
+            case "new-answer": {
                // ## Clone the html fragment for new answer and add to page
                const eQuestion = eFormList.querySelector('[data-table="TPollQuestion"]'); // Get question form container for current answer form based on command
+
+               // ## Check if there is a previous answer and if to take the order value from it and add 1 to it for the new answer order value
+               let iOrder = 1;
                const eAnswer = document.getElementById("idTemplateAnswer").content.cloneNode(true).firstElementChild;
+
+               // search for data-table="TPollAnswer" data-section="form"
+               const ePreviousAnswer = eFormList.querySelector('[data-table="TPollAnswer"][data-section="form"]:last-of-type'); // Get the last answer form container for current question form
+               if( ePreviousAnswer ) {
+                  const sPreviousOrder = ePreviousAnswer.querySelector('[data-field="FOrder"]').value; // Get the order value from the last answer form
+                  const iPreviousOrder = parseInt(sPreviousOrder, 10);        // Convert to integer
+                  if( !isNaN(iPreviousOrder) ) { iOrder = iPreviousOrder + 1; } // Increment by 1 for new answer order value
+               }
+               eAnswer.querySelector('[data-field="FOrder"]').value = iOrder; // Set the order value in the new answer form
+
                FIELD_CopyValues(eQuestion,  eAnswer, ["PollK", "PollQuestionK"] ); // Copy poll key and question key values from question form to answer form
                const eAnswerList = eFormList.querySelector('[data-section="answer-list"]'); // Get the answer list container within the question form
                eAnswerList.appendChild(eAnswer);                              // Append new answer form to the answer list container
@@ -510,7 +523,6 @@ function PAGE_SetListeners() {
             } break;
             case "update": {
                const oValues = oDBRecord.GetFilledValues();
-               console.log("Values to update: ", oValues);
                // try to get key to answer
                const sPollAnswerK = eForm.querySelector(`[data-field="PollAnswerK"]`).value;
                if( !sPollAnswerK ) {

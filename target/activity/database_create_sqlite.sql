@@ -113,10 +113,111 @@ CREATE TABLE TUser (
    -- Foreign Key
    ,CONSTRAINT FK_TUser_ContainerK FOREIGN KEY (ContainerK) REFERENCES TContainer(ContainerK) ON DELETE CASCADE ON UPDATE CASCADE
    ,CONSTRAINT FK_TUser_UserGroupK FOREIGN KEY (UserGroupK) REFERENCES TUserGroup(UserGroupK) ON DELETE SET NULL ON UPDATE CASCADE
-   -- CONSTRAINT FK_TUser_OrganizationK FOREIGN KEY (OrganizationK) REFERENCES TOrganization(OrganizationK) ON DELETE SET NULL ON UPDATE CASCADE
+   ,CONSTRAINT FK_TUser_OrganizationK FOREIGN KEY (OrganizationK) REFERENCES TOrganization(OrganizationK) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 
+
+
+
+/* Activities connected to different items in changelog */
+CREATE TABLE "TActivity" (
+    "ActivityK" BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
+    ,"SuperK" BLOB                                 -- owner TActivity when used in hierarchical structure
+    ,"ParentK" BLOB NOT NULL
+    ,"table_number" INTEGER                        -- Table number for describing what table activity belongs to
+    ,"UserK" BLOB                                  -- responsible user
+    ,"User2K" BLOB                                 -- second user
+    ,"CreateD" DATETIME
+    ,"UpdateD" DATETIME
+    ,"ColorS" INTEGER                              -- for color coding
+    ,"AliveS" INTEGER                              -- active, closed, deleted
+    ,"TypeC" INTEGER                               -- type code
+    ,"PriorityC" INTEGER                           -- priority code
+    ,"StateC" INTEGER                              -- activity state code
+    ,"ServiceC" INTEGER                            -- used for mark if activity is some sort of service, like consultation and can be used to calculate price
+    ,"AreaC" INTEGER                               -- area where activity belongs to, could be e.g. sales, development, administration
+    ,"FormC" INTEGER                               -- form (format) could be code language if programming task
+    ,"LevelC" INTEGER                              -- level (difficulty) for activity, useful when activity has a lot of text.
+    ,"ContextC" INTEGER                            -- In what context this activity is for
+    ,"ReportC" INTEGER                             -- if activity is used in some type of reporting, could be used as who gets the report
+    ,"FDescription" VARCHAR(1000)                  -- Activity description, use this for hashtags
+    ,"FBeginD" DATETIME                            -- activity start
+    ,"FEndD" DATETIME                              -- activity end
+    ,"FAlertD" DATETIME                            -- alert time
+    ,"FDeadlineD" DATETIME                         -- deadline time
+    ,"FDoneD" DATETIME                             -- date when activity was done
+    ,"FTimeSpent" REAL                             -- time spent on activity
+    ,"FTimeEstimated" REAL                         -- estimated time
+    ,"FTimeActual" REAL                            -- actual time spent
+    ,"FAmount" REAL                                -- amount associated with activity
+    ,"FFromUser" BLOB                              -- if user sent activity to another user
+    ,"FToUser" BLOB                                -- to user if activity was sent (like mail)
+    ,"FSort" INTEGER                               -- Helper field that could be use for custom sorting
+    ,"FDone" SMALLINT DEFAULT 0                    -- Mark that activity is done
+    ,"FDeleted" SMALLINT DEFAULT 0                 -- Delete activity but keep it in database
+);
+
+CREATE INDEX "application.IC_TActivity_ParentK" ON "TActivity" ("ParentK");
+CREATE INDEX "application.I_TActivity_UserK" ON "TActivity" ("UserK");
+CREATE INDEX "application.I_TActivity_TypeC" ON "TActivity" ("TypeC");
+CREATE INDEX "application.I_TActivity_FBeginD" ON "TActivity" ("FBeginD");
+
+
+/* Systems connected to different changelog scopes */
+CREATE TABLE "TSystem" (
+    "SystemK" BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
+   ,"GlobalK" BLOB
+   ,"SuperK" BLOB                                  -- owner TSystem when used in hierarchical structure
+   ,"UserK" BLOB                                   -- responsible user
+   ,"CreateD" DATETIME
+   ,"UpdateD" DATETIME
+   ,"TypeC" INTEGER                                -- Type of system, application dependent
+   ,"StateC" INTEGER                               -- State system is in, application dependent
+   ,"PriorityC" INTEGER                            -- Priority for system
+   ,"AreaC" INTEGER                                -- area system belongs to, could be areas in the organization
+   ,"FName" VARCHAR(100)
+   ,"FAbbreviation" VARCHAR(100)                   -- abbreviation for system, sometimes a short name is needed
+   ,"FDescription" VARCHAR(1000)
+   ,"FIdle" SMALLINT DEFAULT 0
+   ,"FDeleted" SMALLINT DEFAULT 0
+);
+
+CREATE INDEX "application.IC_TSystem_GlobalK" ON "TSystem" ("GlobalK");
+
+
+/* Projects connected to different changelog scopes */
+CREATE TABLE "TProject" (
+    "ProjectK" BLOB NOT NULL PRIMARY KEY DEFAULT (randomblob(16))
+   ,"GlobalK" BLOB
+   ,"CustomerChapterK" BLOB                        -- Use this to create navigation trees
+   ,"SuperK" BLOB                                  -- owner TProject when used in hierarchical structure
+   ,"ParentK" BLOB
+   ,"table_number" INTEGER                         -- Table number for describing what table note belongs to
+   ,"UserK" BLOB                                   -- responsible user
+   ,"CreateD" DATETIME
+   ,"UpdateD" DATETIME
+   ,"TypeC" INTEGER                                -- Type of project
+   ,"StateC" INTEGER                               -- Some sort of project status
+   ,"AreaC" INTEGER                                -- area where project belongs to, could be e.g. sales, development, administration
+   ,"PriorityC" INTEGER DEFAULT 0                  -- Priority for project
+   ,"FName" VARCHAR(500)
+   ,"FDescription" VARCHAR(1000)
+   ,"FText0" VARCHAR(100)
+   ,"FText1" VARCHAR(100)
+   ,"FBeginD" DATETIME                             -- project start
+   ,"FEndD" DATETIME                               -- project end
+   ,"FDeadlineD" DATETIME                          -- deadline time
+   ,"FTodo" SMALLINT DEFAULT 0
+   ,"FDone" SMALLINT DEFAULT 0                     -- Project is ready
+   ,"FPrivate" SMALLINT DEFAULT 0                  -- Mark project as private, only those related can view it
+   ,"FDeleted" SMALLINT DEFAULT 0
+);
+
+CREATE INDEX "application.IC_TProject_ParentK" ON "TProject" ("ParentK");
+CREATE INDEX "application.I_TProject_GlobalK" ON "TProject" ("GlobalK");
+CREATE INDEX "application.I_TProject_FStartD" ON "TProject" ("FBeginD");
+CREATE INDEX "application.I_TProject_StateC" ON "TProject" ("StateC");
 
 
 -- Add three default containers, admin, user and guest
