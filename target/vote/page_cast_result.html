@@ -155,7 +155,9 @@ idQuestions - Container for poll questions and answers
 let oDocument_g; // Global document object
 let oToast_g;
 
-// ## Prepare base url .....................................................
+// ## Prepare url ............................................................
+const sUrl_g = gd.GetUrl();
+gd.SetUrl(sUrl_g);
 const sBaseUrl_g = gd.GetBaseUrl();
 gd.SetBaseUrl(sBaseUrl_g);
 

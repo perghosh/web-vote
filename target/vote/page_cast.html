@@ -172,7 +172,9 @@ else view:EchoHtml( "title", {}, sHeader ) end
 let oDocument_g; // Global document object
 let oToast_g; // Global toast object for showing messages to user
 
-// ## Prepare base url .....................................................
+// ## Prepare url ............................................................
+const sUrl_g = gd.GetUrl();
+gd.SetUrl(sUrl_g);
 const sBaseUrl_g = gd.GetBaseUrl();
 gd.SetBaseUrl(sBaseUrl_g);
 

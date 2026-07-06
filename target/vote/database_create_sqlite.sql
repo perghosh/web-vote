@@ -249,8 +249,8 @@ CREATE TABLE TPoll (
    ,ClassC INTEGER          -- Class of poll, could be some sort of quality, level or other type of division based on similar attribute
    ,ChartC INTEGER          -- How to present statistics
    ,DisplayC INTEGER        -- How to display this poll, may be used for some temporary settings on how this poll is promoted
-   ,FName VARCHAR(500)      -- poll name
-   ,FHeader VARCHAR(200)    -- poll header
+   ,FName VARCHAR(500)      -- poll name, this is a short description of the poll
+   ,FHeader VARCHAR(200)    -- poll header, often one single or some words
    ,FDescription TEXT       -- describe poll
    ,FPreview TEXT           -- description used when poll is shared on social media, this can be used to get better presentation on social media and also to inform voters about what the poll is about.
    ,FBegin DATETIME         -- begin date, when poll starts
@@ -658,6 +658,7 @@ CREATE TABLE TVersion (
     FSchemaVersion  VARCHAR(20),                                      -- Schema version identifier (e.g., '2026.06.27.01')
     FReleaseName    VARCHAR(200),                                     -- Optional codename for the release (e.g., 'Stable Release', 'Election 2026')
     FDescription    TEXT,                                             -- Detailed description of what this version changes
+    FLanguage       VARCHAR(10)  DEFAULT 'en',                        -- Primary language for this version (e.g., 'en', 'sv', 'da', 'no', 'fi')
     FAppliedD       DATETIME,                                         -- Date/time when the migration was actually applied to the database
     FAppliedBy      VARCHAR(100),                                     -- Username or identifier of who applied the migration
     FScriptName     VARCHAR(200),                                     -- Name of the migration script file (e.g., 'migration_20260627_add_rPollxSection.sql')
@@ -665,6 +666,9 @@ CREATE TABLE TVersion (
     FIdle           INTEGER      DEFAULT 0,                           -- Version is temporarily disabled (0=active, 1=idle)
     FDeleted        INTEGER      DEFAULT 0                            -- Version is deleted but kept in database (0=active, 1=deleted)
 );
+
+-- Add index for language lookups
+CREATE INDEX I_TVersion_FLanguage ON TVersion(FLanguage);
 
 
 CREATE TABLE "TSystemStatement" (

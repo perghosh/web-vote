@@ -262,19 +262,21 @@ UITableLite - A lightweight table UI component for displaying data in a table fo
    let oToast_g;
    let oDocument_g;
 
-   // ## Prepare base url .....................................................
-const sBaseUrl_g = gd.GetBaseUrl();
-gd.SetBaseUrl(sBaseUrl_g);
+   // ## Prepare url ..........................................................
+   const sUrl_g = gd.GetUrl();
+   gd.SetUrl(sUrl_g);
+   const sBaseUrl_g = gd.GetBaseUrl();
+   gd.SetBaseUrl(sBaseUrl_g);
 
 
-      // Start page initialization ----------------------------------------------- @API [summary: main]
+   // Start page initialization ----------------------------------------------- @API [summary: main]
    document.addEventListener('DOMContentLoaded', function() {
       THEME_Select("color", {});
       PAGE_Initialize();                                                      // Initialize page
       PAGE_SetListeners();                                                     // Set page listeners
    });
 
-      /** ----------------------------------------------------------------------- @API [summary: initialize page]
+   /** ----------------------------------------------------------------------- @API [summary: initialize page]
     * Main initialization function that initializes the page
     */
    function PAGE_Initialize() {

@@ -2,8 +2,18 @@ var gd = gd || {};
 
 (function(oNS) {
 
+// Static URL that will be used if sUrl argument is empty
+oNS.sUrl_s = ""; // Set your default URL here   
+
 // Static base URL that will be used if sBaseUrl argument is empty
 oNS.sDefaultBaseUrl_s = ""; // Set your default base URL here
+
+/** ---------------------------------------------------------------------------
+ * Set the URL for SendToServer
+ * @param {string} sUrl - The base URL to use as default
+ */
+oNS.SetUrl = function(sUrl) { oNS.sUrl_s = sUrl; };
+
 
 /** ---------------------------------------------------------------------------
  * Set the default base URL for SendToServer
@@ -13,8 +23,31 @@ oNS.SetBaseUrl = function(sBaseUrl) { oNS.sDefaultBaseUrl_s = sBaseUrl; };
 
 
 /** ---------------------------------------------------------------------------
- * Get the default base URL for SendToServer
- * @returns {string} The default base URL
+ * Get base URL with directory path (recommended for most cases)
+ * Example: https://www.site.com/extra1/test.html  →  https://www.site.com/extra1/
+ * @returns {string}
+ */
+oNS.GetUrl = function() {
+   const { protocol, hostname, port, pathname } = window.location;
+
+   let sUrl = `${protocol}//${hostname}`;
+
+   if(port && port !== "80" && port !== "443" && port !== "") { sUrl += `:${port}`; }
+
+   // Remove filename if it exists and keep only directory path
+   const sDirPath = pathname.substring(0, pathname.lastIndexOf('/') + 1) || '/';
+    
+   sUrl += sDirPath;
+
+   return sUrl;
+}
+
+
+
+/** ---------------------------------------------------------------------------
+ * Get origin only (domain + protocol)
+ * Example: https://www.site.com/extra1/test.html  →  https://www.site.com
+ * @returns {string}
  */
 oNS.GetBaseUrl = function() {
    // Extract protocol, hostname, and port from current page
@@ -163,7 +196,10 @@ oNS.SendToServer = function(sBaseUrl, sEndpoint, arguments_, body_) {
    }
 
    // Use static base URL if sBaseUrl is empty or undefined
-   if(!sBaseUrl) { sBaseUrl = gd.sDefaultBaseUrl_s; }
+   if(!sBaseUrl) { 
+      if( gd.sUrl_s ) { sBaseUrl = gd.sUrl_s; }
+      else { sBaseUrl = gd.sDefaultBaseUrl_s; }
+   }
 
    if(!sBaseUrl.endsWith('/') && !sBaseUrl.endsWith("?") ) { sBaseUrl += '/'; }
    let sFullUrl = sBaseUrl;
